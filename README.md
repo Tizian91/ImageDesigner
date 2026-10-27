@@ -10,6 +10,8 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 
 - **Layout:** Vorlagen (einzeln, 2/3/4 nebeneinander oder untereinander, 2×2, 3×2, 1 groß + 2/3 klein …), freies Raster und **Smart**: ordnet die Bilder zeilenweise so an, dass sie nach ihren Seitenverhältnissen ohne Beschnitt die Breite füllen. Höhe automatisch oder fest, Abstand und Außenrand in mm.
 - **Platzhalter:** in der Vorschau verschieben und skalieren (mit Einrasten an Kanten und Abständen; Alt = ohne Einrasten, Shift = Seitenverhältnis halten) oder per Zahlenfeld. Ergänzen, entfernen, duplizieren, Reihenfolge per Ziehen ändern.
+- **Arbeitsfläche:** Platzhalter bleiben auch außerhalb der Abbildung sichtbar und greifbar (blass = wird nicht exportiert, die Statuszeile warnt). „Abbildung an Platzhalter anpassen“ setzt Breite und Höhe passend zu allen Platzhaltern.
+- **Seite als Größenvergleich:** A2–A6 hochkant/quer, Folie 16:9 oder 4:3, individuell; mit Seitenrand und Satzspiegel, Abbildung am Rand oder mittig. „100 %“ zeigt die Originalgröße. Export wahlweise nur die Abbildung oder die ganze Seite.
 - **Ausrichten & Verteilen:** Mehrfachauswahl mit Shift/Strg + Klick, gemeinsam verschieben; links/Mitte/rechts, oben/Mitte/unten, gleichmäßig verteilen, mit eingestelltem Abstand aneinanderreihen, gleiche Breite/Höhe/Größe.
 - **Zeilen- und Spaltenüberschriften** (z. B. „vorher/nachher“, „Probe A/B“), Platz wird automatisch freigehalten; Zeilenüberschriften senkrecht oder waagerecht.
 - **Diagramme einfügen:** SVG und PNG aus dem Diagramm-Designer per Datei, Drag & Drop oder Strg+V. Diagramme werden ganz gezeigt (Einpassen), mit weißem Grund und schwarzem Label; „Originalgröße“ setzt den Platzhalter auf die Größe des Diagramms, damit Schriftgrößen erhalten bleiben. Im SVG-/PDF-Export bleibt ein SVG-Diagramm Vektorgrafik. Transparente PNGs zeigen den Abbildungshintergrund.
@@ -23,7 +25,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 - **Bildlabels** a, b, c / A, B, C / (a) / a) / i, ii … mit Größe, Farbe, Fett/Kursiv, Kasten und Ecke; je Platzhalter überschreibbar.
 - **Textfelder** in sechs Positionen (Ecken und Mitte oben/unten), mehrzeilig, links-/rechtsbündig oder zentriert. Elemente in derselben Ecke werden automatisch gestapelt.
 - **Insets:** eigenes Bild oder vergrößerter Ausschnitt (im Bild aufziehen) mit Markierung und Verbindungslinien; Ecke per Ziehen wählen.
-- **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – sie hängen am Bild und wandern beim Verschieben/Zoomen mit.
+- **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – mit Linienstil (durchgezogen, gestrichelt, gepunktet, Strich-Punkt) und runden oder eckigen Enden; sie hängen am Bild und wandern beim Verschieben/Zoomen mit.
 - **Rahmen** um die Platzhalter (Farbe, Breite, je Platzhalter an/aus), **Bildunterschrift** mit **fett**/*kursiv* und Blocksatz.
 - **Export:** PNG, TIFF (LZW) und JPG mit dpi-Angabe (150–1200 dpi), SVG (Bilder eingebettet, Text als Vektor), PDF über Drucken, „Für Word kopieren“ in Originalgröße. Hinweis bei zu geringer Bildauflösung.
 - **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), automatisches Speichern im Browser (IndexedDB, inkl. Bilder), Projektdatei `.bildtafel.json` mit allen Bildern.
@@ -35,6 +37,9 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 | V / B / M / A / I | Werkzeug Platzhalter / Bild / Maßstab / Annotation / Inset |
 | Doppelklick | leerer Platzhalter: Bild öffnen · sonst zwischen Platzhalter und Bild wechseln |
 | Pfeiltasten (Shift = ×10) | Platzhalter, Bild oder Annotation verschieben |
+| Strg+A | alle Platzhalter auswählen (dann gemeinsam ziehen oder mit Pfeiltasten verschieben) |
+| Shift/Strg + Klick | Platzhalter zur Auswahl hinzufügen oder entfernen |
+| Strg+Z / Strg+Y | Rückgängig / Wiederholen |
 | Entf | gewählte Annotation, Inset oder Platzhalter löschen |
 | Strg + Mausrad | Vorschau zoomen |
 

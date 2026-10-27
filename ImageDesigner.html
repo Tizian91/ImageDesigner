@@ -103,15 +103,20 @@ button.mini{padding:1px 6px;font-size:12px}
       <select data-k="figUnit"><option>cm</option><option>mm</option><option value="in">Zoll</option><option>px</option></select></div>
     <div class="btns" id="sizeBtns"></div>
     <div class="row"><label><input type="checkbox" data-k="autoH"> Höhe automatisch aus den Bildern</label></div>
+    <div class="row" title="Zeigt die Abbildung maßstabsgetreu auf einer Seite – so lässt sich abschätzen, ob Schrift und Details lesbar sind"><span>Seite (Größenvergleich)</span>
+      <select data-k="page"><option value="">keine</option><option value="A2">A2</option><option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option><option value="A6">A6</option><option value="slide169">Folie 16:9 (Breitbild)</option><option value="slide43">Folie 4:3</option><option value="custom">individuell</option></select>
+      <select data-k="pageOri" id="pageOri"><option value="p">hochkant</option><option value="l">quer</option></select></div>
+    <div class="row" id="rowPageCustom"><span>Seite Breite × Höhe (cm)</span><input type="number" step="0.1" min="1" data-k="pageW"><input type="number" step="0.1" min="1" data-k="pageH"></div>
+    <div class="row" id="rowPageOpts"><span>Seitenrand (cm) / Lage</span><input type="number" step="0.1" min="0" data-k="pageMargin"><select data-k="pageAlign"><option value="left">am Rand links</option><option value="center">mittig</option></select></div>
     <div class="row"><span>Abstand / Außenrand (mm)</span><input type="number" step="0.25" min="0" data-k="gap"><input type="number" step="0.25" min="0" data-k="margin"></div>
     <div class="sub">Platzhalter <span id="layoutMode" style="text-transform:none;font-weight:400"></span></div>
     <div id="plist"></div>
-    <div class="btns"><button id="btnAdd">+ Platzhalter</button><button id="btnOpen">Bilder öffnen…</button><button id="btnRelayout" title="Positionen wieder automatisch (Smart) anordnen">Neu anordnen</button></div>
+    <div class="btns"><button id="btnAdd">+ Platzhalter</button><button id="btnOpen">Bilder öffnen…</button><button id="btnRelayout" title="Positionen wieder automatisch (Smart) anordnen">Neu anordnen</button><button id="btnFitFig" title="Breite und Höhe der Abbildung so setzen, dass alle Platzhalter (mit Außenrand) hineinpassen">Abbildung an Platzhalter anpassen</button></div>
     <input type="file" id="file" accept=".png,.jpg,.jpeg,.tif,.tiff,.svg,.bmp,.gif,.webp,image/*" multiple hidden>
     <p class="hint">Bilder (PNG, JPG, TIFF) und Diagramme (SVG/PNG aus dem Diagramm-Designer) auf einen Platzhalter ziehen, mit Strg+V einfügen oder mehrere auf einmal auf die Fläche ziehen – leere Platzhalter werden der Reihe nach gefüllt, fehlende ergänzt. Reihenfolge mit ⠿ ziehen.</p>
     <div class="sub">Ausrichten &amp; Verteilen</div>
     <div class="btns" id="alignBtns"></div>
-    <p class="hint">Mehrere Platzhalter mit Shift oder Strg + Klick auswählen (Vorschau oder Liste) und gemeinsam verschieben. Ohne Auswahl gelten die Befehle für alle. Bezug für „gleiche Breite/Höhe“ ist der zuletzt angeklickte.</p>
+    <p class="hint">Mehrere Platzhalter mit Shift oder Strg + Klick auswählen (Vorschau oder Liste) und gemeinsam verschieben; Strg+A wählt alle aus. Ohne Auswahl gelten die Befehle für alle. Bezug für „gleiche Breite/Höhe“ ist der zuletzt angeklickte.</p>
   </details>
 
   <details>
@@ -171,6 +176,7 @@ button.mini{padding:1px 6px;font-size:12px}
     <div class="row"><span>Abstand zum Rand (pt)</span><input type="number" step="0.5" min="0" data-k="cornerPad"></div>
     <div class="sub">Annotationen (Standard für neue)</div>
     <div class="row"><span>Farbe / Linie (pt) / Schrift (pt)</span><input type="color" data-k="anColor"><input type="number" step="0.25" min="0.25" data-k="anW" style="width:56px"><input type="number" step="0.5" min="3" data-k="anSize" style="width:56px"></div>
+    <div class="row"><span>Linienstil / Enden</span><select data-k="anDash"><option value="solid">durchgezogen</option><option value="dashed">gestrichelt</option><option value="dotted">gepunktet</option><option value="dashdot">Strich-Punkt</option></select><select data-k="anCap"><option value="round">rund</option><option value="butt">eckig</option></select></div>
     <div class="sub">Insets</div>
     <div class="row"><span>Größe (Anteil der Breite)</span><input type="number" step="0.05" min="0.1" max="0.9" data-k="insSize"></div>
     <div class="row"><span>Rahmen Farbe / Breite (pt)</span><input type="color" data-k="insColor"><input type="number" step="0.25" min="0" data-k="insW"></div>
@@ -213,6 +219,7 @@ button.mini{padding:1px 6px;font-size:12px}
     <div class="row"><span>Eigene Schrift</span><input data-k="fontCustom" placeholder="z. B. Source Sans Pro" style="width:160px"></div>
     <div class="row"><span>Export-Auflösung</span><select data-k="dpi" data-num="1"><option value="150">150 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="1200">1200 dpi</option></select></div>
     <div class="row"><span>Dateiname</span><input data-k="fileName" style="width:150px"></div>
+    <div class="row" title="„Ganze Seite“ exportiert das gewählte Seitenformat (Layout → Seite) mit der Abbildung an ihrer Stelle"><span>Exportieren</span><select data-k="exportArea"><option value="figure">nur die Abbildung</option><option value="page">ganze Seite mit Abbildung</option></select></div>
     <div class="btns"><button id="btnPng" class="primary">PNG</button><button id="btnTif">TIFF (LZW)</button><button id="btnJpg">JPG</button><button id="btnSvg">SVG</button><button id="btnPdf">PDF (Drucken)</button><button id="btnWord">Für Word kopieren</button></div>
     <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet die Bilder ein, Text und Maßstab bleiben Vektoren.</p>
   </details>
@@ -246,6 +253,7 @@ button.mini{padding:1px 6px;font-size:12px}
     <button id="btnUndo" title="Rückgängig (Strg+Z)">↶</button><button id="btnRedo" title="Wiederholen (Strg+Y)">↷</button>
     <span class="sep"></span>
     <label><input type="checkbox" id="fit" checked> Einpassen</label>
+    <button id="btn100" title="Originalgröße: 1 cm der Abbildung ≈ 1 cm auf dem Bildschirm (je nach Monitor)">100 %</button>
     <label>Zoom <input type="range" id="zoom" min="10" max="800" value="100" style="width:110px"></label><span id="zoomLbl">100 %</span>
     <span class="sep"></span>
     <label><input type="checkbox" id="guides" checked> Platzhalter zeigen</label>
@@ -280,7 +288,8 @@ const DEF = {
   anColor: '#ffd400', anW: 1.5, anSize: 10,
   insSize: 0.35, insColor: '#ffffff', insW: 1, insMark: true, insLines: false,
   capOn: false, capText: '', capSize: 9, capAlign: 'justify',
-  sameMag: false, magZoom: 1,
+  sameMag: false, magZoom: 1, anDash: 'solid', anCap: 'round',
+  page: '', pageOri: 'p', pageW: 21, pageH: 29.7, pageMargin: 2.5, pageAlign: 'left', exportArea: 'figure',
   colHeads: '', rowHeads: '', headSize: 10, headBold: true, headColor: '#000000', rowRot: true
 };
 // Inhalt statt Aussehen: gehört nicht zu einem gespeicherten Stil
@@ -899,8 +908,18 @@ function insetItem(p, ins, g, hit, preview) {
   } };
 }
 const TEXT_BB = new Map();   // Annotation-ID → [x, y, w, h] des Textes (für die Auswahl)
+// Strichmuster als Vielfache der Linienbreite (für eckige Enden). Runde Enden verlängern jeden Strich um eine
+// Linienbreite – das wird abgezogen, damit Punkte rund werden und die Muster gleich aussehen.
+const ADASH = { solid: null, dashed: [4, 2.5], dotted: [1, 1.5], dashdot: [5, 2, 1, 2] };
+const ADASH_LABEL = { solid: 'durchgezogen', dashed: 'gestrichelt', dotted: 'gepunktet', dashdot: 'Strich-Punkt' };
+function dashFor(style, w, cap) {
+  const d = ADASH[style]; if (!d) return null;
+  const c = cap === 'butt' ? 0 : 1;
+  return d.map((v, i) => (i % 2 ? v + c : Math.max(0.01, v - c)) * w);
+}
 function annotOps(a, g) {
   const col = a.color || S.anColor, w = (a.w || S.anW) * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
+  const cap = a.cap || S.anCap, dash = dashFor(a.dash || S.anDash, w, cap), join = cap === 'round' ? 'round' : 'miter';
   const [p1, p2] = [P[0], P[1] || P[0]];
   if (a.type === 'arrow' || a.type === 'line') {
     let e = p2;
@@ -911,11 +930,11 @@ function annotOps(a, g) {
       const b = [p2[0] - ux * hl, p2[1] - uy * hl];
       o.push({ k: 'path', d: `M${f2(p2[0])} ${f2(p2[1])}L${f2(b[0] - uy * hw)} ${f2(b[1] + ux * hw)}L${f2(b[0] + uy * hw)} ${f2(b[1] - ux * hw)}Z`, fill: col });
     }
-    o.unshift({ k: 'path', d: `M${f2(p1[0])} ${f2(p1[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap: a.type === 'line' ? 'round' : 'butt' });
+    o.unshift({ k: 'path', d: `M${f2(p1[0])} ${f2(p1[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap, dash });
   } else if (a.type === 'rect') {
-    o.push({ k: 'rect', x: Math.min(p1[0], p2[0]), y: Math.min(p1[1], p2[1]), w: Math.abs(p2[0] - p1[0]), h: Math.abs(p2[1] - p1[1]), stroke: col, sw: w });
+    o.push({ k: 'rect', x: Math.min(p1[0], p2[0]), y: Math.min(p1[1], p2[1]), w: Math.abs(p2[0] - p1[0]), h: Math.abs(p2[1] - p1[1]), stroke: col, sw: w, cap, join, dash });
   } else if (a.type === 'ellipse') {
-    o.push({ k: 'ell', cx: (p1[0] + p2[0]) / 2, cy: (p1[1] + p2[1]) / 2, rx: Math.abs(p2[0] - p1[0]) / 2, ry: Math.abs(p2[1] - p1[1]) / 2, stroke: col, sw: w });
+    o.push({ k: 'ell', cx: (p1[0] + p2[0]) / 2, cy: (p1[1] + p2[1]) / 2, rx: Math.abs(p2[0] - p1[0]) / 2, ry: Math.abs(p2[1] - p1[1]) / 2, stroke: col, sw: w, cap, dash });
   } else if (a.type === 'text') {
     const it = textItem({ text: a.text, size: a.size || S.anSize, color: col, align: a.align || 'left', box: a.box ? 'box' : 'none' });
     if (it) { o.push(...it.draw(p1[0], p1[1])); TEXT_BB.set(a.id, [p1[0], p1[1], it.w, it.h]); }
@@ -974,7 +993,7 @@ function drawOps(ctx, ops, hi) {
     switch (o.k) {
       case 'rect':
         if (o.fill) { ctx.globalAlpha = o.fa ?? 1; ctx.fillStyle = o.fill; ctx.fillRect(o.x, o.y, o.w, o.h); ctx.globalAlpha = 1; }
-        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.setLineDash(o.dash || []); ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.setLineDash([]); }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineJoin = o.join || 'miter'; ctx.lineCap = o.cap || 'butt'; ctx.setLineDash(o.dash || []); ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.setLineDash([]); }
         break;
       case 'img': {
         const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi); if (!src) break;
@@ -984,16 +1003,17 @@ function drawOps(ctx, ops, hi) {
         break;
       }
       case 'clip': ctx.save(); ctx.beginPath(); ctx.rect(o.x, o.y, o.w, o.h); ctx.clip(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
+      case 'tr': ctx.save(); ctx.translate(o.dx, o.dy); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'path': {
         const p = new Path2D(o.d);
         if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(p); }
-        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineCap = o.cap || 'butt'; ctx.lineJoin = 'round'; ctx.stroke(p); }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineCap = o.cap || 'butt'; ctx.lineJoin = 'round'; ctx.setLineDash(o.dash || []); ctx.stroke(p); ctx.setLineDash([]); }
         break;
       }
       case 'ell':
         ctx.beginPath(); ctx.ellipse(o.cx, o.cy, Math.max(0.1, o.rx), Math.max(0.1, o.ry), 0, 0, 2 * Math.PI);
         if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
-        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.stroke(); }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineCap = o.cap || 'butt'; ctx.setLineDash(o.dash || []); ctx.stroke(); ctx.setLineDash([]); }
         break;
       case 'text':
         ctx.font = o.f.css; ctx.fillStyle = o.fill; ctx.textAlign = o.anchor === 'middle' ? 'center' : o.anchor === 'end' ? 'right' : 'left';
@@ -1004,9 +1024,16 @@ function drawOps(ctx, ops, hi) {
     }
   }
 }
+// Was exportiert wird: nur die Abbildung oder die ganze Seite mit der Abbildung an ihrer Stelle
+function exportOps() {
+  const r = buildOps(), pg = S.exportArea === 'page' ? pageRect(r.W) : null;
+  if (!pg) return r;
+  return { ...r, W: pg.w, H: pg.h, ops: [...(S.transparent ? [] : [{ k: 'rect', x: 0, y: 0, w: pg.w, h: pg.h, fill: '#ffffff' }]),
+    { k: 'tr', dx: -pg.x, dy: -pg.y, ops: [{ k: 'clip', x: 0, y: 0, w: r.W, h: r.H, ops: r.ops }] }] };
+}
 // Abbildung in voller Auflösung auf ein Canvas
 function renderCanvas(scale) {
-  const r = buildOps(), c = document.createElement('canvas');
+  const r = exportOps(), c = document.createElement('canvas');
   c.width = Math.round(r.W * scale); c.height = Math.round(r.H * scale);
   const ctx = c.getContext('2d'); ctx.scale(c.width / r.W, c.height / r.H);
   drawOps(ctx, r.ops, true);
@@ -1016,10 +1043,11 @@ function renderCanvas(scale) {
 /* ---------- Ausgabe: SVG (Bilder eingebettet, Text und Formen als Vektoren) ---------- */
 const blobURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
 async function buildSVG() {
-  const r = buildOps(), defs = [], used = new Map();
+  const r = exportOps(), defs = [], used = new Map();
   let n = 0;
   const attr = o => Object.entries(o).filter(([, v]) => v != null && v !== '').map(([k, v]) => ` ${k}="${typeof v === 'number' ? f2(v) : esc(v)}"`).join('');
-  const collect = ops => { for (const o of ops) { if (o.k === 'clip') collect(o.ops); if (o.k === 'img') { const key = o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
+  const strokeStyle = o => o.stroke ? { 'stroke-linecap': o.cap, 'stroke-linejoin': o.join, 'stroke-dasharray': o.dash ? o.dash.map(f2).join(' ') : null } : {};
+  const collect = ops => { for (const o of ops) { if (o.ops) collect(o.ops); if (o.k === 'img') { const key = o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
   collect(r.ops);
   for (const [, u] of used) {
     const im = IMG.get(u.o.id);
@@ -1029,12 +1057,13 @@ async function buildSVG() {
   }
   const out = ops => ops.map(o => {
     switch (o.k) {
-      case 'rect': return `<rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h, fill: o.fill || 'none', 'fill-opacity': o.fill && o.fa != null && o.fa < 1 ? o.fa : null, stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null })}/>`;
+      case 'rect': return `<rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h, fill: o.fill || 'none', 'fill-opacity': o.fill && o.fa != null && o.fa < 1 ? o.fa : null, stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o) })}/>`;
       case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null));
         return `<svg${attr({ x: o.x, y: o.y, width: o.w, height: o.h, viewBox: `${f2(o.sx)} ${f2(o.sy)} ${f2(o.sw)} ${f2(o.sh)}`, preserveAspectRatio: 'none', overflow: 'hidden' })}><use href="#${u.id}"/></svg>`; }
+      case 'tr': return `<g transform="translate(${f2(o.dx)} ${f2(o.dy)})">${out(o.ops)}</g>`;
       case 'clip': { const id = 'c' + n++; defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`); return `<g clip-path="url(#${id})">${out(o.ops)}</g>`; }
-      case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, 'stroke-linecap': o.cap })}/>`;
-      case 'ell': return `<ellipse${attr({ cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw })}/>`;
+      case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o), 'stroke-linejoin': o.stroke ? 'round' : null })}/>`;
+      case 'ell': return `<ellipse${attr({ cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw, ...strokeStyle(o) })}/>`;
       case 'text': return `<text${attr({ x: o.x, y: o.y, 'font-family': o.f.fam.replace(/"/g, "'"), 'font-size': o.f.px, 'font-weight': o.f.b ? 'bold' : null, 'font-style': o.f.i ? 'italic' : null, fill: o.fill, 'text-anchor': o.anchor, transform: o.rot ? `rotate(${o.rot} ${f2(o.x)} ${f2(o.y)})` : null })} xml:space="preserve">${esc(o.t)}</text>`;
     }
     return '';
@@ -1047,6 +1076,9 @@ async function buildSVG() {
 let hist = [], hpos = -1, commitT = null;
 function commit() {
   clearTimeout(commitT);
+  // Erst das Layout ausrechnen: sonst weicht der Zustand nach dem nächsten Zeichnen vom Schnappschuss ab,
+  // und „Rückgängig“ legt immer wieder denselben Schritt an, statt zurückzugehen.
+  try { applyLayout(); } catch (err) { console.error(err); }
   const s = JSON.stringify(ST);
   if (hist[hpos] === s) return;
   hist = hist.slice(0, hpos + 1); hist.push(s);
@@ -1062,6 +1094,20 @@ function updUndo() { $('#btnUndo').disabled = hpos <= 0; $('#btnRedo').disabled 
 /* ---------- Vorschau ---------- */
 const cv = $('#cv'), PAD = 28;
 let last = null, drag = null, rafPending = false;
+let VT = { x0: 0, y0: 0, ox: PAD, oy: PAD };   // Ansicht: sichtbarer Bereich (Figurkoordinaten) und Versatz auf dem Canvas
+// Seitenformate in mm (Breite × Höhe, hochkant); Folien sind immer quer
+const PAGES = { A2: [420, 594], A3: [297, 420], A4: [210, 297], A5: [148, 210], A6: [105, 148], slide169: [338.67, 190.5], slide43: [254, 190.5] };
+// Seite nur als Größenvergleich in der Vorschau: die Abbildung sitzt am Seitenrand (links) oder mittig im Satzspiegel
+function pageRect(W) {
+  if (!S.page) return null;
+  let [w, h] = S.page === 'custom' ? [S.pageW * 10, S.pageH * 10] : PAGES[S.page] || PAGES.A4;
+  if (/^A\d$/.test(S.page) && (S.pageOri === 'l') !== (w > h)) [w, h] = [h, w];
+  w *= MM; h *= MM;
+  const m = clamp(S.pageMargin * 10 * MM, 0, Math.min(w, h) / 2 - 1);
+  return { x: S.pageAlign === 'center' ? -(w - W) / 2 : -m, y: -m, w, h, m };
+}
+const cssVar = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const hexA = (c, a) => /^#[0-9a-f]{6}$/i.test(c) ? `rgba(${parseInt(c.slice(1, 3), 16)},${parseInt(c.slice(3, 5), 16)},${parseInt(c.slice(5, 7), 16)},${a})` : `rgba(128,128,128,${a})`;
 const panelById = id => ST.panels.find(p => p.id === id) || null;
 const selP = () => panelById(sel);
 function render() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; renderNow(); }); }
@@ -1069,26 +1115,56 @@ function renderNow() {
   let r;
   try { r = buildOps({ preview: true }); } catch (err) { console.error(err); $('#status').textContent = 'Fehler: ' + err.message; return; }
   last = r;
-  const view = $('#view');
-  if ($('#fit').checked) zoom = clamp(Math.min((view.clientWidth - 2 * PAD - 6) / r.W, (view.clientHeight - 2 * PAD - 6) / r.H), 0.05, 8);
+  const view = $('#view'), pg = pageRect(r.W);
+  // Arbeitsfläche: Abbildung, Seite und alle Platzhalter (auch außerhalb der Abbildung) bleiben sichtbar.
+  // Während des Ziehens bleibt die Ansicht stehen, damit nichts unter dem Zeiger springt.
+  if (!drag || VT.x1 == null) {
+    const sl = 0.08 * Math.max(r.W, r.H), b = { x0: -sl, y0: -sl, x1: r.W + sl, y1: r.H + sl };
+    const inc = (R, m = 0) => { b.x0 = Math.min(b.x0, R.x - m); b.y0 = Math.min(b.y0, R.y - m); b.x1 = Math.max(b.x1, R.x + R.w + m); b.y1 = Math.max(b.y1, R.y + R.h + m); };
+    if (pg) inc(pg, 8);
+    ST.panels.forEach(p => inc(p, sl * 0.5));
+    if ($('#fit').checked) zoom = clamp(Math.min((view.clientWidth - 2 * PAD - 6) / (b.x1 - b.x0), (view.clientHeight - 2 * PAD - 6) / (b.y1 - b.y0)), 0.05, 8);
+    VT = { ...b, ox: PAD - b.x0 * zoom, oy: PAD - b.y0 * zoom };
+  }
   $('#zoom').value = Math.round(zoom * 100); $('#zoomLbl').textContent = Math.round(zoom * 100) + ' %';
-  const dpr = window.devicePixelRatio || 1, cw = r.W * zoom + 2 * PAD, ch = r.H * zoom + 2 * PAD;
+  const dpr = window.devicePixelRatio || 1, cw = (VT.x1 - VT.x0) * zoom + 2 * PAD, ch = (VT.y1 - VT.y0) * zoom + 2 * PAD;
   cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const ctx = cv.getContext('2d');
-  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * PAD, dpr * PAD);
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 14 / zoom; ctx.shadowOffsetY = 2 / zoom;
+  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * VT.ox, dpr * VT.oy);
+  const shadow = () => { ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 14 / zoom; ctx.shadowOffsetY = 2 / zoom; };
+  if (pg) {   // Seite mit Satzspiegel
+    ctx.save(); shadow(); ctx.fillStyle = '#ffffff'; ctx.fillRect(pg.x, pg.y, pg.w, pg.h); ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 1 / zoom; ctx.setLineDash([4 / zoom, 4 / zoom]);
+    ctx.strokeRect(pg.x + pg.m, pg.y + pg.m, pg.w - 2 * pg.m, pg.h - 2 * pg.m); ctx.setLineDash([]);
+  }
+  ctx.save(); if (!pg) shadow();
   ctx.fillStyle = S.transparent ? '#ffffff' : S.bg; ctx.fillRect(0, 0, r.W, r.H); ctx.restore();
   if (S.transparent) { const q = 8 / zoom; ctx.fillStyle = '#d0d0d0'; for (let y = 0; y < r.H; y += q) for (let x = ((y / q) & 1) * q; x < r.W; x += 2 * q) ctx.fillRect(x, y, Math.min(q, r.W - x), Math.min(q, r.H - y)); }
   drawOps(ctx, r.ops, false);
+  // Alles außerhalb der Abbildung blass: wird nicht exportiert
+  // (auf der Seite weiß, daneben in der Hintergrundfarbe – so bleibt die Seite auch im Dunkelmodus weiß)
+  const X0 = VT.x0 - PAD / zoom, Y0 = VT.y0 - PAD / zoom, X1 = VT.x1 + PAD / zoom, Y1 = VT.y1 + PAD / zoom;
+  const outside = new Path2D(); outside.rect(X0, Y0, X1 - X0, Y1 - Y0); outside.rect(0, 0, r.W, r.H);
+  const dimBg = hexA(cssVar('--bg'), 0.62);
+  if (pg) {
+    ctx.save(); ctx.beginPath(); ctx.rect(pg.x, pg.y, pg.w, pg.h); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill(outside, 'evenodd'); ctx.restore();
+    const off = new Path2D(); off.rect(X0, Y0, X1 - X0, Y1 - Y0); off.rect(pg.x, pg.y, pg.w, pg.h);
+    ctx.save(); ctx.clip(off, 'evenodd'); ctx.fillStyle = dimBg; ctx.fill(outside, 'evenodd'); ctx.restore();
+  } else { ctx.fillStyle = dimBg; ctx.fill(outside, 'evenodd'); }
+  ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 1 / zoom; ctx.strokeRect(0, 0, r.W, r.H);
   drawOverlay(ctx, r);
-  status(r);
+  status(r); updPageUI();
   const fh = $('#inFigH'); if (document.activeElement !== fh) fh.value = S.figH;
   saveSoon();
 }
 function status(r) {
   const sc = (+S.dpi || 300) / 96, u = S.figUnit === 'in' ? 'Zoll' : S.figUnit, notes = [];
-  const st = [`${r2(fromPx(r.W, S.figUnit))} × ${r2(fromPx(r.H, S.figUnit))} ${u}`, `Export ${Math.round(r.W * sc)} × ${Math.round(r.H * sc)} px bei ${S.dpi} dpi`, `${ST.panels.length} Platzhalter`];
+  const pg = pageRect(r.W), exPage = pg && S.exportArea === 'page', exW = exPage ? pg.w : r.W, exH = exPage ? pg.h : r.H;
+  const st = [`${r2(fromPx(r.W, S.figUnit))} × ${r2(fromPx(r.H, S.figUnit))} ${u}`, `Export ${exPage ? 'Seite ' : ''}${Math.round(exW * sc)} × ${Math.round(exH * sc)} px bei ${S.dpi} dpi`, `${ST.panels.length} Platzhalter`];
+  const out = ST.panels.map((p, i) => p.x < -0.5 || p.y < -0.5 || p.x + p.w > r.W + 0.5 || p.y + p.h > r.H0 + 0.5 ? panelLabels()[i] || i + 1 : null).filter(Boolean);
+  if (out.length) notes.push(`außerhalb der Abbildung (wird abgeschnitten): ${out.join(', ')}`);
+  if (pg && (r.W > pg.w - 2 * pg.m + 0.5 || r.H > pg.h - 2 * pg.m + 0.5)) notes.push('Abbildung größer als der Satzspiegel der Seite');
   ST.panels.forEach((p, i) => {
     const g = geom(p); if (!g) return;
     const ppi = 96 / g.s;   // Bildpixel je Zoll im Druck
@@ -1143,7 +1219,7 @@ function drawOverlay(ctx, r) {
     }
   }
   if (drag && drag.draw) drag.draw(ctx, px, acc);
-  if (drag && drag.snaps) { ctx.strokeStyle = '#e0407a'; ctx.lineWidth = px; for (const s of drag.snaps) { ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, 0); ctx.lineTo(s.x, r.H0); } else { ctx.moveTo(0, s.y); ctx.lineTo(r.W, s.y); } ctx.stroke(); } }
+  if (drag && drag.snaps) { ctx.strokeStyle = '#e0407a'; ctx.lineWidth = px; for (const s of drag.snaps) { ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, VT.y0); ctx.lineTo(s.x, VT.y1); } else { ctx.moveTo(VT.x0, s.y); ctx.lineTo(VT.x1, s.y); } ctx.stroke(); } }
   ctx.restore();
 }
 function annotBox(a, g) {
@@ -1153,7 +1229,7 @@ function annotBox(a, g) {
 }
 
 /* ---------- Treffer ---------- */
-function figPt(e) { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left - PAD) / zoom, y: (e.clientY - b.top - PAD) / zoom }; }
+function figPt(e) { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left - VT.ox) / zoom, y: (e.clientY - b.top - VT.oy) / zoom }; }
 const inR = (pt, R, m = 0) => pt.x >= R.x - m && pt.x <= R.x + R.w + m && pt.y >= R.y - m && pt.y <= R.y + R.h + m;
 const hitPanel = pt => last && [...last.hits].reverse().find(h => inR(pt, h.R)) || null;
 const hitOf = id => last && last.hits.find(h => h.id === id);
@@ -1315,7 +1391,7 @@ cv.addEventListener('pointerdown', e => {
       });
       return;
     }
-    const a = { id: uid(), type: atool, p: [ip, ip.slice()], color: S.anColor, w: S.anW };
+    const a = { id: uid(), type: atool, p: [ip, ip.slice()], color: S.anColor, w: S.anW, dash: S.anDash, cap: S.anCap };
     p.annots.push(a); selItem = { kind: 'annot', id: a.id };
     drag = { t: 'acreate', p, a, g, pt0: pt };
     return;
@@ -1501,6 +1577,15 @@ document.addEventListener('keydown', e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
   if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  // Strg+A: alle Platzhalter auswählen – dann lässt sich die ganze Abbildung mit einem Zug (oder den Pfeiltasten) verschieben
+  if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'a') {
+    e.preventDefault();
+    if (!ST.panels.length) return;
+    if (mode !== 'layout') setMode('layout');
+    msel = new Set(ST.panels.map(p => p.id)); if (!msel.has(sel)) sel = ST.panels[0].id; selItem = null;
+    buildProps(); buildList(); render(); toast(`${ST.panels.length} Platzhalter ausgewählt – ziehen oder Pfeiltasten zum Verschieben`);
+    return;
+  }
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
   const p = selP();
   if (e.key === 'Escape') { if (drag) { drag = null; render(); } else if (selItem) select(sel); else select(null); return; }
@@ -1676,6 +1761,7 @@ function buildProps() {
     const a = selItem && selItem.kind === 'annot' && p.annots.find(x => x.id === selItem.id);
     if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : ''}</button>`).join('')}</div>`;
     if (a) h += `<div class="card"><div class="row"><span>Farbe / Linie (pt)</span><input type="color" data-b="an:color" value="${a.color || S.anColor}"><input type="number" step="0.25" min="0.25" data-b="an:w" value="${a.w || S.anW}" style="width:56px"><button class="mini" data-act="adel">✕</button></div>` +
+      (a.type !== 'text' ? `<div class="row"><span>Linienstil / Enden</span><select data-b="an:dash">${optList(ADASH_LABEL, a.dash || S.anDash)}</select><select data-b="an:cap">${optList({ round: 'rund', butt: 'eckig' }, a.cap || S.anCap)}</select></div>` : '') +
       (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea><div class="row"><span>Größe (pt)</span><input type="number" step="0.5" min="3" data-b="an:size" value="${a.size || S.anSize}" style="width:60px"><label><input type="checkbox" data-b="an:box"${a.box ? ' checked' : ''}> Kasten</label></div>` : '') + '</div>';
     h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit.</p>`;
   }
@@ -1784,6 +1870,22 @@ $$('[data-k]').forEach(el => {
   $('#sizeBtns').appendChild(b);
 });
 function refreshAll() { syncUI(); buildList(); buildProps(); updUndo(); render(); }
+function updPageUI() {
+  $('#pageOri').hidden = !/^A\d$/.test(S.page);
+  $('#rowPageCustom').hidden = S.page !== 'custom';
+  $('#rowPageOpts').hidden = !S.page;
+}
+$('#btn100').onclick = () => { $('#fit').checked = false; zoom = 1; render(); };
+// Abbildung auf die Platzhalter zuschneiden: Platzhalter an den Außenrand schieben, Breite und Höhe anpassen
+$('#btnFitFig').onclick = () => {
+  const ps = ST.panels; if (!ps.length) return;
+  toFree();
+  const hb = headBands(), m = S.margin * MM;
+  const x0 = Math.min(...ps.map(p => p.x)), y0 = Math.min(...ps.map(p => p.y)), x1 = Math.max(...ps.map(p => p.x + p.w)), y1 = Math.max(...ps.map(p => p.y + p.h));
+  for (const p of ps) { p.x += m + hb.l - x0; p.y += m + hb.t - y0; }
+  S.figW = r2(fromPx(x1 - x0 + 2 * m + hb.l, S.figUnit)); S.figH = r2(fromPx(y1 - y0 + 2 * m + hb.t, S.figUnit)); S.autoH = false;
+  commit(); refreshAll();
+};
 $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
 $('#fit').onchange = render;
 $('#guides').onchange = render;
@@ -1879,7 +1981,7 @@ const saveTif = () => busy('TIFF wird erzeugt …', async () => download(tiffBlo
 const saveSvg = () => busy('SVG wird erzeugt …', async () => download(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + (await buildSVG()).svg], { type: 'image/svg+xml' }), safeName() + '.svg'));
 async function copyForWord() {
   try {
-    const png = pngBlob(), r = buildOps();
+    const png = pngBlob(), r = exportOps();
     const html = blobURL(await png).then(b64 => new Blob([`<img src="${b64}" style="width:${f2(r.W * 0.75)}pt;height:${f2(r.H * 0.75)}pt" alt="Abbildung">`], { type: 'text/html' }));
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': png, 'text/html': html })]);
     toast('Kopiert – in Word mit Strg+V einfügen');
