@@ -1,0 +1,26 @@
+{
+  "name": "Bildtafel-Designer",
+  "short_name": "Bildtafel-Designer",
+  "description": "Bildtafeln für Publikationen gestalten: Layout, Maßstabsbalken, Labels, Insets, Annotationen; Export als PNG, TIFF, SVG, PDF oder für Word.",
+  "lang": "de",
+  "id": "./ImageDesigner.html",
+  "start_url": "./ImageDesigner.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f7",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "file_handlers": [
+    {
+      "action": "./ImageDesigner.html",
+      "accept": {
+        "image/tiff": [".tif", ".tiff"],
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/svg+xml": [".svg"]
+      }
+    }
+  ]
+}

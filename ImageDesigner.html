@@ -1,0 +1,2116 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bildtafel-Designer</title>
+<!--
+  ImageDesigner (Bildtafel-Designer) – Copyright (C) 2026 Tizian Arold
+  SPDX-License-Identifier: GPL-3.0-or-later
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU General Public License as published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version. See LICENSE or <https://www.gnu.org/licenses/>.
+-->
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<style>
+:root{--bg:#f3f4f7;--panel:#ffffff;--text:#1d2330;--muted:#687083;--border:#d9dde5;--accent:#2f6fde;--accent-soft:#e7efff}
+@media (prefers-color-scheme: dark){:root{--bg:#15171c;--panel:#1f232a;--text:#e6e8ec;--muted:#9aa3b2;--border:#353b46;--accent:#6c9cff;--accent-soft:#25324d}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;font:13px/1.4 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap}
+header h1{font-size:15px;margin:0 12px 0 0}
+header .sp{flex:1}
+main{flex:1;display:flex;min-height:0}
+aside{width:380px;min-width:260px;max-width:75vw;flex:none;overflow:auto;background:var(--panel);padding:4px 12px 30px}
+#splitter{flex:none;width:6px;cursor:col-resize;background:var(--border);touch-action:none;transition:background .15s}
+#splitter:hover,#splitter.active{background:var(--accent)}
+body.resizing{cursor:col-resize;user-select:none}
+details{border-bottom:1px solid var(--border);padding:4px 0 8px}
+summary{font-weight:600;cursor:pointer;padding:6px 0;user-select:none}
+.row{display:flex;align-items:center;gap:6px;margin:5px 0}
+.row>label:first-child,.row>span:first-child{flex:1}
+.hint{color:var(--muted);font-size:12px;margin:4px 0}
+.sub{font-weight:600;font-size:12px;color:var(--muted);margin:12px 0 2px;text-transform:uppercase;letter-spacing:.03em}
+input,select,textarea,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 6px}
+input[type=number]{width:72px}
+input[type=color]{width:38px;height:26px;padding:1px 2px}
+input[type=checkbox]{accent-color:var(--accent)}
+select{max-width:200px}
+textarea{width:100%;font-size:13px;resize:vertical;height:46px}
+button{cursor:pointer;background:var(--panel)}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.mini{padding:1px 6px;font-size:12px}
+.btns{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:5px 0 0 5px;margin-left:0}
+.seg button:last-child{border-radius:0 5px 5px 0}
+.layouts{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0}
+.layouts button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;font-size:10.5px;line-height:1.1}
+.layouts svg{width:34px;height:24px}
+.layouts svg rect{fill:currentColor;opacity:.35;stroke:currentColor;stroke-width:1}
+#plist .item{display:flex;align-items:center;gap:6px;padding:3px 4px;border:1px solid transparent;border-radius:5px;cursor:pointer}
+#plist .item:hover{border-color:var(--border)}
+#plist .item.sel{background:var(--accent-soft);border-color:var(--accent)}
+#plist .item.drag{opacity:.4}
+#plist .lbl{font-weight:700;min-width:26px}
+#plist .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#plist .thumb{width:34px;height:24px;object-fit:cover;border-radius:3px;background:var(--bg);border:1px solid var(--border)}
+.handle{flex:none;cursor:grab;color:var(--muted);user-select:none;padding:0 2px}
+.card{border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin:6px 0}
+.card .row:first-child{margin-top:2px}
+#stage{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--border)}
+.toolbar label{display:flex;align-items:center;gap:4px}
+.toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 4px}
+#view{flex:1;overflow:auto;position:relative;background:var(--bg);display:flex;min-height:0}
+#view.dropping{outline:3px dashed var(--accent);outline-offset:-6px}
+#cv{display:block;margin:auto;flex:none;touch-action:none}
+#pop{position:fixed;z-index:20;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:10px 12px;min-width:240px}
+#pop .t{font-weight:600;margin-bottom:6px}
+#tip{position:fixed;pointer-events:none;background:rgba(25,28,35,.94);color:#fff;font-size:12px;padding:4px 8px;border-radius:5px;white-space:pre;z-index:9;display:none}
+#status{padding:4px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);background:var(--panel)}
+#status b{color:#c0392b;font-weight:600}
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30}
+#toast.show{opacity:.95}
+@media (max-width:820px){main{flex-direction:column}aside{width:auto!important;max-width:none;max-height:45vh;border-bottom:1px solid var(--border)}#splitter{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bildtafel-Designer</h1>
+  <span class="hint">Layout wählen → Bilder hineinziehen → Maßstab, Labels &amp; Beschriftung → exportieren</span>
+  <span class="sp"></span>
+  <button id="hWord" class="primary" title="PNG in Originalgröße in die Zwischenablage, dann in Word Strg+V">Für Word kopieren</button>
+  <button id="hPng">PNG speichern</button>
+  <button id="hTif">TIFF speichern</button>
+</header>
+<main>
+<aside>
+  <details open>
+    <summary>Layout</summary>
+    <div id="layouts" class="layouts"></div>
+    <div class="row"><span>Raster Spalten × Zeilen</span><input type="number" id="gCols" min="1" max="12" value="2" style="width:52px"><input type="number" id="gRows" min="1" max="12" value="2" style="width:52px"><button id="btnGrid">Anwenden</button></div>
+    <div class="row"><span>Seitenverhältnis der Felder</span><select data-k="cellAspect"><option value="auto">aus den Bildern</option><option value="1">1 : 1</option><option value="1.3333">4 : 3</option><option value="1.5">3 : 2</option><option value="1.7778">16 : 9</option><option value="0.75">3 : 4</option></select></div>
+    <div class="row"><span>Breite × Höhe</span><input type="number" step="0.1" min="0.5" data-k="figW"><input type="number" step="0.1" min="0.5" data-k="figH" id="inFigH">
+      <select data-k="figUnit"><option>cm</option><option>mm</option><option value="in">Zoll</option><option>px</option></select></div>
+    <div class="btns" id="sizeBtns"></div>
+    <div class="row"><label><input type="checkbox" data-k="autoH"> Höhe automatisch aus den Bildern</label></div>
+    <div class="row"><span>Abstand / Außenrand (mm)</span><input type="number" step="0.25" min="0" data-k="gap"><input type="number" step="0.25" min="0" data-k="margin"></div>
+    <div class="sub">Platzhalter <span id="layoutMode" style="text-transform:none;font-weight:400"></span></div>
+    <div id="plist"></div>
+    <div class="btns"><button id="btnAdd">+ Platzhalter</button><button id="btnOpen">Bilder öffnen…</button><button id="btnRelayout" title="Positionen wieder automatisch (Smart) anordnen">Neu anordnen</button></div>
+    <input type="file" id="file" accept=".png,.jpg,.jpeg,.tif,.tiff,.svg,.bmp,.gif,.webp,image/*" multiple hidden>
+    <p class="hint">Bilder (PNG, JPG, TIFF) und Diagramme (SVG/PNG aus dem Diagramm-Designer) auf einen Platzhalter ziehen, mit Strg+V einfügen oder mehrere auf einmal auf die Fläche ziehen – leere Platzhalter werden der Reihe nach gefüllt, fehlende ergänzt. Reihenfolge mit ⠿ ziehen.</p>
+    <div class="sub">Ausrichten &amp; Verteilen</div>
+    <div class="btns" id="alignBtns"></div>
+    <p class="hint">Mehrere Platzhalter mit Shift oder Strg + Klick auswählen (Vorschau oder Liste) und gemeinsam verschieben. Ohne Auswahl gelten die Befehle für alle. Bezug für „gleiche Breite/Höhe“ ist der zuletzt angeklickte.</p>
+  </details>
+
+  <details>
+    <summary>Überschriften (Zeilen &amp; Spalten)</summary>
+    <div class="row"><span>Spalten (eine je Zeile)</span></div>
+    <textarea data-k="colHeads" style="height:60px" placeholder="vorher&#10;nachher"></textarea>
+    <div class="row"><span>Zeilen (eine je Zeile)</span></div>
+    <textarea data-k="rowHeads" style="height:60px" placeholder="Probe A&#10;Probe B"></textarea>
+    <div class="row"><span>Größe (pt) / Farbe</span><input type="number" step="0.5" min="3" data-k="headSize"><input type="color" data-k="headColor"><label><input type="checkbox" data-k="headBold"> fett</label></div>
+    <div class="row"><label><input type="checkbox" data-k="rowRot"> Zeilenüberschriften senkrecht</label></div>
+    <p class="hint">Spaltenüberschriften stehen über den Bildern der obersten Zeile, Zeilenüberschriften links neben dem ersten Bild jeder Zeile. Der nötige Platz wird automatisch freigehalten.</p>
+  </details>
+
+  <details open id="selBox">
+    <summary>Ausgewählter Platzhalter <span id="selName" style="font-weight:400;color:var(--muted)"></span></summary>
+    <div id="panelProps"></div>
+  </details>
+
+  <details>
+    <summary>Bildlabels (a, b, c …)</summary>
+    <div class="row"><label><input type="checkbox" data-k="lblOn"> Labels zeigen</label></div>
+    <div class="row"><span>Stil</span><select data-k="lblStyle"><option value="a">a, b, c</option><option value="A">A, B, C</option><option value="(a)">(a), (b)</option><option value="a)">a), b)</option><option value="(A)">(A), (B)</option><option value="A)">A), B)</option><option value="a.">a., b.</option><option value="i">i, ii, iii</option><option value="1">1, 2, 3</option></select></div>
+    <div class="row"><span>Größe (pt) / Farbe</span><input type="number" step="0.5" min="3" data-k="lblSize"><input type="color" data-k="lblColor"></div>
+    <div class="row"><span>Schrift</span><label><input type="checkbox" data-k="lblBold"> fett</label><label><input type="checkbox" data-k="lblItalic"> kursiv</label></div>
+    <div class="row"><span>Hinterlegung</span><select data-k="lblBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="lblBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="lblBoxAlpha" title="Deckkraft" style="width:56px"></div>
+    <div class="row"><span>Ecke</span><select data-k="lblCorner"><option value="ul">oben links</option><option value="ur">oben rechts</option><option value="ll">unten links</option><option value="lr">unten rechts</option></select></div>
+  </details>
+
+  <details>
+    <summary>Maßstabsbalken</summary>
+    <div class="row"><span>Farbe / Dicke (pt)</span><input type="color" data-k="sbColor"><input type="number" step="0.25" min="0.25" data-k="sbW"></div>
+    <div class="row"><span>Schrift (pt)</span><input type="number" step="0.5" min="3" data-k="sbSize"><label><input type="checkbox" data-k="sbBold"> fett</label></div>
+    <div class="row"><span>Beschriftung</span><select data-k="sbText"><option value="above">über dem Balken</option><option value="below">unter dem Balken</option><option value="none">keine</option></select></div>
+    <div class="row"><span>Enden</span><select data-k="sbEnds"><option value="none">glatt</option><option value="ticks">mit Endstrichen</option></select></div>
+    <div class="row"><span>Hinterlegung</span><select data-k="sbBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="sbBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="sbBoxAlpha" title="Deckkraft" style="width:56px"></div>
+    <div class="row"><span>Ecke (Standard)</span><select data-k="sbCorner"><option value="lr">unten rechts</option><option value="ll">unten links</option><option value="lc">unten Mitte</option><option value="ur">oben rechts</option><option value="ul">oben links</option></select></div>
+    <div class="row"><span>Automatische Länge (Anteil der Breite)</span><input type="number" step="0.05" min="0.05" max="0.9" data-k="sbFrac"></div>
+    <div class="row"><label><input type="checkbox" data-k="sbSame"> Gleiche Länge in allen Bildern (wenn möglich)</label></div>
+    <div class="row"><label><input type="checkbox" data-k="sameMag"> Gleiche Vergrößerung in allen kalibrierten Bildern</label></div>
+    <p class="hint">Bei gleicher Vergrößerung ist 1 µm in jedem Bild gleich lang (direkt vergleichbar), die Maßstabsbalken sind gleich. Zoomen im Werkzeug „Bild“ wirkt dann auf alle kalibrierten Bilder gemeinsam; verschieben geht einzeln.</p>
+    <p class="hint">Kalibrieren: Werkzeug „Maßstab“ (M) wählen und im Bild entlang des vorhandenen Maßstabs ziehen, dann die Länge eingeben. Bei TIFF-Dateien von REM/TEM/ImageJ wird die Pixelgröße oft automatisch aus den Metadaten gelesen. Der Balken passt sich beim Skalieren des Bildes an.</p>
+  </details>
+
+  <details>
+    <summary>Rahmen &amp; Hintergrund</summary>
+    <div class="row"><label><input type="checkbox" data-k="frameOn"> Rahmen um die Platzhalter</label></div>
+    <div class="row"><span>Farbe / Breite (pt)</span><input type="color" data-k="frameColor"><input type="number" step="0.25" min="0" data-k="frameW"></div>
+    <div class="row"><span>Hintergrund Abbildung</span><input type="color" data-k="bg"><label><input type="checkbox" data-k="transparent"> transparent</label></div>
+    <div class="row"><span>Hintergrund leerer Bildflächen</span><input type="color" data-k="panelBg"></div>
+  </details>
+
+  <details>
+    <summary>Textfelder, Annotationen &amp; Insets</summary>
+    <div class="sub">Textfelder in den Ecken</div>
+    <div class="row"><span>Größe (pt) / Farbe</span><input type="number" step="0.5" min="3" data-k="txtSize"><input type="color" data-k="txtColor"><label><input type="checkbox" data-k="txtBold"> fett</label></div>
+    <div class="row"><span>Hinterlegung</span><select data-k="txtBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="txtBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="txtBoxAlpha" style="width:56px"></div>
+    <div class="row"><span>Abstand zum Rand (pt)</span><input type="number" step="0.5" min="0" data-k="cornerPad"></div>
+    <div class="sub">Annotationen (Standard für neue)</div>
+    <div class="row"><span>Farbe / Linie (pt) / Schrift (pt)</span><input type="color" data-k="anColor"><input type="number" step="0.25" min="0.25" data-k="anW" style="width:56px"><input type="number" step="0.5" min="3" data-k="anSize" style="width:56px"></div>
+    <div class="sub">Insets</div>
+    <div class="row"><span>Größe (Anteil der Breite)</span><input type="number" step="0.05" min="0.1" max="0.9" data-k="insSize"></div>
+    <div class="row"><span>Rahmen Farbe / Breite (pt)</span><input type="color" data-k="insColor"><input type="number" step="0.25" min="0" data-k="insW"></div>
+    <div class="row"><label><input type="checkbox" data-k="insMark"> Ausschnitt im Hauptbild markieren</label><label><input type="checkbox" data-k="insLines"> Verbindungslinien</label></div>
+  </details>
+
+  <details>
+    <summary>Bildunterschrift</summary>
+    <div class="row"><label><input type="checkbox" data-k="capOn"> Bildunterschrift unter der Abbildung</label></div>
+    <textarea data-k="capText" style="height:70px" placeholder="**Abb. 1:** REM-Aufnahmen der Probe (a) vor und (b) nach der Behandlung."></textarea>
+    <div class="row"><span>Größe (pt) / Ausrichtung</span><input type="number" step="0.5" min="3" data-k="capSize"><select data-k="capAlign"><option value="left">links</option><option value="center">zentriert</option><option value="justify">Blocksatz</option></select></div>
+    <div class="btns"><button id="btnCapCopy">Text kopieren</button></div>
+    <p class="hint">**fett** und *kursiv* sind möglich. Für Word ist es oft besser, die Unterschrift als Text einzufügen („Text kopieren“).</p>
+  </details>
+
+  <details>
+    <summary>Vorlagen &amp; Stile</summary>
+    <div class="btns" id="presetBtns"></div>
+    <div class="row"><input id="presetName" placeholder="Name für eigenen Stil" style="flex:1"><button id="btnSavePreset">Speichern</button></div>
+    <div class="row"><select id="userPresets" style="flex:1;max-width:none"></select><button id="btnLoadPreset">Laden</button><button id="btnDelPreset" title="Stil löschen">✕</button></div>
+    <div id="folderBox">
+      <div class="hint" style="margin-top:10px;font-weight:600">Stil-Ordner</div>
+      <div class="row"><span id="dirName" class="hint" style="flex:1">kein Ordner gewählt</span><button id="btnDirGrant" hidden>Freigeben</button><button id="btnDirPick">Ordner wählen…</button></div>
+      <div class="row"><select id="dirStyles" style="flex:1;max-width:none"></select><button id="btnDirLoad">Laden</button><button id="btnDirRefresh" title="Liste aktualisieren">⟳</button></div>
+      <div class="row"><button id="btnDirSave">Im Ordner speichern</button><span class="hint">verwendet den Namen aus dem Feld oben</span></div>
+      <p class="hint">Liegt der Ordner auf einem Netzlaufwerk oder in OneDrive, nutzen alle dieselben Stile. „Stil exportieren“ legt automatisch eine Kopie darin ab.</p>
+    </div>
+    <p id="folderNo" class="hint" hidden>Der Stil-Ordner funktioniert nur in Edge und Chrome. Hier bitte „Stil exportieren“ und „Stil importieren“ verwenden.</p>
+    <div class="btns"><button id="btnExportStyle">Stil exportieren (.json)</button><button id="btnImportStyle">Stil importieren</button><input type="file" id="styleFile" accept=".json" hidden></div>
+    <p class="hint">Ein Stil umfasst Breite, Abstände, Schriften, Labels, Maßstab, Rahmen, Texte und Export-Einstellungen – nicht die Bilder, Überschriften und die Bildunterschrift.</p>
+  </details>
+
+  <details open>
+    <summary>Schrift &amp; Export</summary>
+    <div class="row"><span>Schriftart</span>
+      <select data-k="font">
+        <option>Arial</option><option>Helvetica</option><option>Calibri</option><option>Aptos</option><option>Segoe UI</option><option>Verdana</option>
+        <option>Times New Roman</option><option>Georgia</option><option>Cambria</option><option>Palatino Linotype</option><option>Consolas</option>
+      </select></div>
+    <div class="row"><span>Eigene Schrift</span><input data-k="fontCustom" placeholder="z. B. Source Sans Pro" style="width:160px"></div>
+    <div class="row"><span>Export-Auflösung</span><select data-k="dpi" data-num="1"><option value="150">150 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="1200">1200 dpi</option></select></div>
+    <div class="row"><span>Dateiname</span><input data-k="fileName" style="width:150px"></div>
+    <div class="btns"><button id="btnPng" class="primary">PNG</button><button id="btnTif">TIFF (LZW)</button><button id="btnJpg">JPG</button><button id="btnSvg">SVG</button><button id="btnPdf">PDF (Drucken)</button><button id="btnWord">Für Word kopieren</button></div>
+    <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet die Bilder ein, Text und Maßstab bleiben Vektoren.</p>
+  </details>
+
+  <details>
+    <summary>Projekt</summary>
+    <div class="btns"><button id="btnSaveProj">Projekt speichern (.json)</button><button id="btnLoadProj">Projekt öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
+    <p class="hint">Das Projekt wird automatisch im Browser gespeichert (inkl. Bilder). Die Projektdatei enthält alle Bilder und lässt sich weitergeben.</p>
+  </details>
+</aside>
+<div id="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
+
+<section id="stage">
+  <div class="toolbar">
+    <span class="seg" id="modes">
+      <button data-mode="layout" title="Platzhalter verschieben und skalieren – das Bild skaliert mit (V)">▣ Platzhalter</button>
+      <button data-mode="image" title="Bild im Platzhalter verschieben/skalieren, der Platzhalter bleibt (B). Mausrad = Zoom">🖼 Bild</button>
+      <button data-mode="scale" title="Maßstab nachzeichnen: entlang des Maßstabs im Bild ziehen (M)">⟷ Maßstab</button>
+      <button data-mode="annot" title="Pfeile, Linien, Formen und Text einzeichnen (A)">✎ Annotation</button>
+      <button data-mode="inset" title="Ausschnitt als vergrößertes Inset aufziehen (I)">⧉ Inset</button>
+    </span>
+    <span class="seg" id="atools" hidden>
+      <button data-at="select" title="Annotation auswählen und verschieben">↖</button>
+      <button data-at="arrow" title="Pfeil">➝</button>
+      <button data-at="line" title="Linie">／</button>
+      <button data-at="rect" title="Rechteck">▭</button>
+      <button data-at="ellipse" title="Ellipse">◯</button>
+      <button data-at="text" title="Text">T</button>
+    </span>
+    <span class="sep"></span>
+    <button id="btnUndo" title="Rückgängig (Strg+Z)">↶</button><button id="btnRedo" title="Wiederholen (Strg+Y)">↷</button>
+    <span class="sep"></span>
+    <label><input type="checkbox" id="fit" checked> Einpassen</label>
+    <label>Zoom <input type="range" id="zoom" min="10" max="800" value="100" style="width:110px"></label><span id="zoomLbl">100 %</span>
+    <span class="sep"></span>
+    <label><input type="checkbox" id="guides" checked> Platzhalter zeigen</label>
+  </div>
+  <div id="view"><canvas id="cv"></canvas></div>
+  <div id="status"></div>
+</section>
+</main>
+<div id="pop" hidden></div>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const PT = 96 / 72;                 // Figurkoordinaten sind CSS-Pixel (96 dpi); pt → px
+const MM = 96 / 25.4;
+const STORE = 'imageDesigner.v1';
+
+/* ---------- Standardwerte ---------- */
+const DEF = {
+  figW: 17, figH: 12, figUnit: 'cm', autoH: true, gap: 2, margin: 0, cellAspect: 'auto',
+  font: 'Arial', fontCustom: '', dpi: 300, fileName: 'abbildung',
+  bg: '#ffffff', transparent: false, panelBg: '#000000',
+  frameOn: false, frameColor: '#000000', frameW: 1,
+  lblOn: true, lblStyle: 'a', lblSize: 12, lblColor: '#ffffff', lblBold: true, lblItalic: false,
+  lblBox: 'none', lblBoxColor: '#000000', lblBoxAlpha: 0.6, lblCorner: 'ul',
+  sbColor: '#ffffff', sbW: 3, sbSize: 10, sbBold: true, sbText: 'above', sbEnds: 'none',
+  sbBox: 'none', sbBoxColor: '#000000', sbBoxAlpha: 0.6, sbCorner: 'lr', sbFrac: 0.25, sbSame: false,
+  txtSize: 9, txtColor: '#ffffff', txtBold: false, txtBox: 'none', txtBoxColor: '#000000', txtBoxAlpha: 0.6, cornerPad: 4,
+  anColor: '#ffd400', anW: 1.5, anSize: 10,
+  insSize: 0.35, insColor: '#ffffff', insW: 1, insMark: true, insLines: false,
+  capOn: false, capText: '', capSize: 9, capAlign: 'justify',
+  sameMag: false, magZoom: 1,
+  colHeads: '', rowHeads: '', headSize: 10, headBold: true, headColor: '#000000', rowRot: true
+};
+// Inhalt statt Aussehen: gehört nicht zu einem gespeicherten Stil
+const NON_STYLE = ['capText', 'capOn', 'fileName', 'colHeads', 'rowHeads', 'figH', 'magZoom'];
+const UNIT_PX = { cm: 96 / 2.54, mm: 96 / 25.4, in: 96, px: 1 };
+const toPx = (v, u) => v * (UNIT_PX[u] || 1);
+const fromPx = (v, u) => v / (UNIT_PX[u] || 1);
+const r2 = v => Math.round(v * 100) / 100;
+const f2 = v => +(+v).toFixed(2);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const safeName = () => (S.fileName || 'abbildung').replace(/[\\/:*?"<>|]/g, '_');
+const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : NaN; };
+
+/* ---------- Zustand ----------
+   S: Aussehen und Abbildung; L: Layout; panels: Platzhalter; imgs: Daten je Bild (Kalibrierung, Zuschnitt).
+   Alles davon ist JSON und wird für Rückgängig/Speichern komplett kopiert. Die Pixel liegen in IMG. */
+const freshAdj = () => ({ b: 0, c: 0, g: 1, inv: false });
+const newPanel = () => ({ id: uid(), x: 0, y: 0, w: 200, h: 150, img: null, zoom: 1, cx: 0.5, cy: 0.5, fit: 'cover', frame: 'g', label: '', lblColor: '', bg: '',
+  sb: { on: true, val: null, unit: 'µm', corner: '' }, texts: [], insets: [], annots: [], adj: freshAdj() });
+const freshState = () => ({ S: { ...DEF }, L: { mode: 'smart', cols: 2, rows: 1, cells: null }, panels: [newPanel(), newPanel()], imgs: {} });
+let ST = freshState();
+let S = ST.S;
+const IMG = new Map();     // id → { id, name, w, h, full (ImageBitmap), prev (Canvas ≤ 2048 px), blob, meta }
+let sel = null;            // id des ausgewählten Platzhalters (Bezug für Eigenschaften)
+let msel = new Set();      // Mehrfachauswahl (Shift/Strg + Klick) fürs Ausrichten
+let selItem = null;        // { kind: 'annot'|'inset'|'text', id }
+let mode = 'layout', atool = 'arrow';
+let zoom = 1;
+
+/* ---------- Bilder: Laden, TIFF, Metadaten ---------- */
+const bytesOf = async f => new Uint8Array(await f.arrayBuffer());
+async function inflate(u8) {
+  const s = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+// TIFF-LZW (MSB zuerst, „early change“). Einträge zeigen als (Start, Länge) in die Ausgabe.
+function lzwDecode(src) {
+  let out = new Uint8Array(Math.max(4096, src.length * 3)), op = 0;
+  const off = new Int32Array(4096), len = new Int32Array(4096);
+  let width = 9, next = 258, prev = -1, pPos = 0, pLen = 0, bit = 0;
+  const total = src.length * 8;
+  const ensure = n => { if (op + n > out.length) { const o = new Uint8Array(Math.max(out.length * 2, op + n + 4096)); o.set(out); out = o; } };
+  while (bit + width <= total) {
+    const b = bit >> 3, v = (src[b] << 16) | (src[b + 1] << 8) | src[b + 2];
+    const code = (v >>> (24 - (bit & 7) - width)) & ((1 << width) - 1);
+    bit += width;
+    if (code === 257) break;
+    if (code === 256) { width = 9; next = 258; prev = -1; continue; }
+    let o = op, l;
+    if (prev < 0) { ensure(1); out[op++] = code; l = 1; }
+    else {
+      if (code < 256) { ensure(1); out[op++] = code; l = 1; }
+      else if (code < next) { l = len[code]; ensure(l); out.copyWithin(op, off[code], off[code] + l); op += l; }
+      else { ensure(pLen + 1); out.copyWithin(op, pPos, pPos + pLen); op += pLen; out[op++] = out[o]; l = pLen + 1; }
+      if (next < 4096) { off[next] = pPos; len[next] = pLen + 1; next++; }
+    }
+    pPos = o; pLen = l; prev = code;
+    if (next >= (1 << width) - 1 && width < 12) width++;
+  }
+  return out.subarray(0, op);
+}
+function packbits(src) {
+  const out = []; let i = 0;
+  while (i < src.length) {
+    const n = (src[i] << 24) >> 24; i++;
+    if (n >= 0) { for (let k = 0; k <= n; k++) out.push(src[i++]); }
+    else if (n !== -128) { const v = src[i++]; for (let k = 0; k < 1 - n; k++) out.push(v); }
+  }
+  return Uint8Array.from(out);
+}
+const TSIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8, 16: 8 };
+// TIFF lesen (erste Seite): unkomprimiert, LZW, Deflate, PackBits; 1/8/16/32 bit; Graustufen, RGB(A), Palette; Streifen und Kacheln
+async function decodeTiff(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const le = u8[0] === 0x49;
+  if (dv.getUint16(2, le) !== 42) throw new Error(dv.getUint16(2, le) === 43 ? 'BigTIFF wird nicht unterstützt' : 'Keine TIFF-Datei');
+  const ifd = dv.getUint32(4, le), n = dv.getUint16(ifd, le), T = {};
+  for (let i = 0; i < n; i++) {
+    const e = ifd + 2 + i * 12, tag = dv.getUint16(e, le), type = dv.getUint16(e + 2, le), cnt = dv.getUint32(e + 4, le);
+    const sz = (TSIZE[type] || 1) * cnt, at = sz <= 4 ? e + 8 : dv.getUint32(e + 8, le);
+    if (at + sz > u8.length) continue;
+    const rd = k => {
+      switch (type) {
+        case 3: return dv.getUint16(at + 2 * k, le); case 8: return dv.getInt16(at + 2 * k, le);
+        case 4: return dv.getUint32(at + 4 * k, le); case 9: return dv.getInt32(at + 4 * k, le);
+        case 5: return dv.getUint32(at + 8 * k, le) / (dv.getUint32(at + 8 * k + 4, le) || 1);
+        case 10: return dv.getInt32(at + 8 * k, le) / (dv.getInt32(at + 8 * k + 4, le) || 1);
+        case 11: return dv.getFloat32(at + 4 * k, le); case 12: return dv.getFloat64(at + 8 * k, le);
+        default: return u8[at + k];
+      }
+    };
+    if (type === 2 || ((type === 7 || type === 1) && cnt > 16)) T[tag] = new TextDecoder('latin1').decode(u8.subarray(at, at + cnt)).replace(/\0+$/, '');
+    else T[tag] = cnt === 1 ? rd(0) : Array.from({ length: Math.min(cnt, 1 << 20) }, (_, k) => rd(k));
+  }
+  const arr = v => v == null ? [] : Array.isArray(v) ? v : [v];
+  const W = T[256], H = T[257], spp = T[277] || 1, bps = arr(T[258])[0] || 1, comp = T[259] || 1, photo = T[262] ?? 1;
+  const planar = T[284] || 1, pred = T[317] || 1, fmt = arr(T[339])[0] || 1;
+  if (!W || !H) throw new Error('TIFF ohne Bildgröße');
+  if (![1, 5, 8, 32946, 32773].includes(comp)) throw new Error(`TIFF-Kompression ${comp} wird nicht unterstützt (bitte als unkomprimiertes oder LZW-TIFF bzw. PNG speichern)`);
+  const bpsB = bps / 8, chunkSpp = planar === 2 ? 1 : spp;
+  const rowBytes = w => bps === 1 ? Math.ceil(w * chunkSpp / 8) : w * chunkSpp * bpsB;
+  const dec = async c => comp === 5 ? lzwDecode(c) : comp === 8 || comp === 32946 ? await inflate(c) : comp === 32773 ? packbits(c) : c;
+  const unpred = (buf, w, rows) => {
+    if (pred !== 2) return;
+    const rb = rowBytes(w);
+    if (bps === 8) for (let r = 0; r < rows; r++) for (let i = r * rb + chunkSpp; i < (r + 1) * rb; i++) buf[i] = (buf[i] + buf[i - chunkSpp]) & 255;
+    else if (bps === 16) { const d = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+      for (let r = 0; r < rows; r++) for (let i = r * rb + 2 * chunkSpp; i + 1 < (r + 1) * rb; i += 2) d.setUint16(i, (d.getUint16(i, le) + d.getUint16(i - 2 * chunkSpp, le)) & 65535, le); }
+  };
+  const planes = planar === 2 ? spp : 1, rb = rowBytes(W), data = new Uint8Array(rb * H * planes);
+  if (T[322]) {   // Kacheln
+    const tw = T[322], th = T[323], offs = arr(T[324]), cnts = arr(T[325]), ta = Math.ceil(W / tw), td = Math.ceil(H / th), trb = rowBytes(tw);
+    for (let i = 0; i < offs.length; i++) {
+      const pl = Math.floor(i / (ta * td)), k = i % (ta * td), tx = (k % ta) * tw, ty = Math.floor(k / ta) * th;
+      const buf = await dec(u8.subarray(offs[i], offs[i] + cnts[i])); unpred(buf, tw, th);
+      const cb = bps === 1 ? null : Math.min(tw, W - tx) * chunkSpp * bpsB;
+      for (let r = 0; r < th && ty + r < H; r++) {
+        if (cb == null) continue;
+        data.set(buf.subarray(r * trb, r * trb + cb), pl * rb * H + (ty + r) * rb + tx * chunkSpp * bpsB);
+      }
+    }
+  } else {
+    const offs = arr(T[273]), cnts = arr(T[279]), rps = Math.min(T[278] || H, H), per = Math.ceil(H / rps);
+    for (let i = 0; i < offs.length; i++) {
+      const pl = Math.floor(i / per), y0 = (i % per) * rps, rows = Math.min(rps, H - y0);
+      let buf = await dec(u8.subarray(offs[i], offs[i] + (cnts[i] || u8.length - offs[i])));
+      if (!(buf instanceof Uint8Array)) buf = new Uint8Array(buf);
+      buf = buf.slice(0, rows * rb); unpred(buf, W, rows);
+      data.set(buf.subarray(0, Math.min(buf.length, rows * rb)), pl * rb * H + y0 * rb);
+    }
+  }
+  // Abtastwerte lesen und auf 8 bit bringen (16/32 bit: Bereich min…max wie ImageJ)
+  const ddv = new DataView(data.buffer), N = W * H, nS = Math.min(spp, photo === 2 ? 4 : 2);
+  const sample = (p, s) => {
+    const idx = planar === 2 ? s * rb * H + Math.floor(p / W) * rb + (p % W) * bpsB : Math.floor(p / W) * rb + ((p % W) * spp + s) * bpsB;
+    if (bps === 8) return data[idx];
+    if (bps === 16) return fmt === 2 ? ddv.getInt16(idx, le) : ddv.getUint16(idx, le);
+    if (bps === 32) return fmt === 3 ? ddv.getFloat32(idx, le) : fmt === 2 ? ddv.getInt32(idx, le) : ddv.getUint32(idx, le);
+    if (bps === 64 && fmt === 3) return ddv.getFloat64(idx, le);
+    return 0;
+  };
+  const out = new ImageData(W, H), o = out.data;
+  if (bps === 1) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let v = (data[y * rb + (x >> 3)] >> (7 - (x & 7))) & 1; if (photo === 0) v = 1 - v;
+      const i = 4 * (y * W + x); o[i] = o[i + 1] = o[i + 2] = v * 255; o[i + 3] = 255;
+    }
+  } else {
+    let lo = 0, hi = 255, rangeInfo = '';
+    if (bps > 8 && photo !== 3) {
+      lo = Infinity; hi = -Infinity;
+      for (let p = 0; p < N; p++) for (let s = 0; s < Math.min(spp, photo === 2 ? 3 : 1); s++) { const v = sample(p, s); if (v < lo) lo = v; if (v > hi) hi = v; }
+      if (!(hi > lo)) hi = lo + 1;
+      rangeInfo = `${bps} bit, Bereich ${r2(lo)} … ${r2(hi)} auf 8 bit abgebildet`;
+    }
+    const sc = 255 / (hi - lo), cmap = arr(T[320]), cm = cmap.length ? cmap.length / 3 : 0;
+    for (let p = 0; p < N; p++) {
+      const i = 4 * p;
+      if (photo === 3 && cm) { const k = sample(p, 0); o[i] = cmap[k] >> 8; o[i + 1] = cmap[cm + k] >> 8; o[i + 2] = cmap[2 * cm + k] >> 8; o[i + 3] = 255; continue; }
+      if (photo === 2 && spp >= 3) {
+        for (let s = 0; s < 3; s++) o[i + s] = (sample(p, s) - lo) * sc;
+        o[i + 3] = spp >= 4 && T[338] != null ? (bps > 8 ? (sample(p, 3) - lo) * sc : sample(p, 3)) : 255;
+      } else {
+        let v = (sample(p, 0) - lo) * sc; if (photo === 0) v = 255 - v;
+        o[i] = o[i + 1] = o[i + 2] = v; o[i + 3] = nS > 1 && T[338] != null ? (bps > 8 ? (sample(p, 1) - lo) * sc : sample(p, 1)) : 255;
+      }
+    }
+    T._range = rangeInfo;
+  }
+  return { img: out, tags: T };
+}
+// Messdaten aus TIFF-Tags: FEI/Thermo (34682), Zeiss (34118), ImageJ (270 + Auflösung), große Auflösung in px/cm
+const UNIT_M = { pm: 1e-12, nm: 1e-9, 'µm': 1e-6, 'μm': 1e-6, um: 1e-6, micron: 1e-6, microns: 1e-6, mm: 1e-3, cm: 1e-2, m: 1 };
+function tiffMeta(T, H) {
+  const m = { items: [] };
+  const add = (k, v) => { if (v != null && String(v).trim()) m.items.push([k, String(v).trim()]); };
+  const fei = typeof T[34682] === 'string' ? T[34682] : '';
+  const zei = typeof T[34118] === 'string' ? T[34118] : '';
+  const desc = typeof T[270] === 'string' ? T[270] : '';
+  if (fei) {
+    const g = re => { const r = re.exec(fei); return r ? r[1] : null; };
+    const pw = parseFloat(g(/PixelWidth=([\d.eE+-]+)/));
+    if (pw > 0) { m.mpp = pw; m.src = 'FEI/Thermo-Metadaten'; }
+    const hv = parseFloat(g(/\[Beam\][\s\S]*?HV=([\d.eE+-]+)/) || g(/HV=([\d.eE+-]+)/));
+    if (hv) add('Hochspannung', fmtSI(hv, 'V'));
+    const wd = parseFloat(g(/WorkingDistance=([\d.eE+-]+)/) || g(/WD=([\d.eE+-]+)/));
+    if (wd) add('Arbeitsabstand', fmtSI(wd, 'm'));
+    add('Detektor', [g(/\[Detectors\][\s\S]*?Name=([^\r\n]+)/), g(/\[Detectors\][\s\S]*?Mode=([^\r\n]+)/)].filter(Boolean).join(' '));
+    const ry = parseInt(g(/ResolutionY=(\d+)/)), hfw = parseFloat(g(/HFW=([\d.eE+-]+)/));
+    if (hfw) add('Bildfeldbreite', fmtSI(hfw, 'm'));
+    if (ry > 0 && ry < H) m.bar = H - ry;
+    add('Datum', g(/Date=([^\r\n]+)/));
+  }
+  if (zei) {
+    const g = re => { const r = re.exec(zei); return r ? r[1].trim() : null; };
+    const ps = /Image Pixel Size\s*=\s*([\d.]+)\s*(pm|nm|µm|μm|um|mm)/.exec(zei);
+    if (ps && !m.mpp) { m.mpp = parseFloat(ps[1]) * UNIT_M[ps[2]]; m.src = 'Zeiss-Metadaten'; }
+    add('Hochspannung', g(/EHT\s*=\s*([^\r\n]+)/)); add('Arbeitsabstand', g(/\bWD\s*=\s*([^\r\n]+)/));
+    add('Detektor', g(/Signal A\s*=\s*([^\r\n]+)/)); add('Vergrößerung', g(/\bMag\s*=\s*([^\r\n]+)/)); add('Datum', g(/Date\s*:?\s*=?\s*([^\r\n]+)/));
+  }
+  if (!m.mpp && /ImageJ=/.test(desc) && T[282] > 0) {
+    const u = (/unit=([^\r\n]+)/.exec(desc) || [])[1], f = u && UNIT_M[u.replace(/\\u00B5/i, 'µ').trim()];
+    if (f) { m.mpp = f / T[282]; m.src = 'ImageJ-Kalibrierung'; }
+  }
+  if (!m.mpp && T[296] === 3 && T[282] > 1e4) { m.mpp = 0.01 / T[282]; m.src = 'TIFF-Auflösung (bitte prüfen)'; }
+  if (!m.mpp && T[296] === 2 && T[282] > 25400) { m.mpp = 0.0254 / T[282]; m.src = 'TIFF-Auflösung (bitte prüfen)'; }
+  if (T[271] || T[272]) add('Gerät', [T[271], T[272]].filter(x => typeof x === 'string').join(' '));
+  if (T._range) add('Graustufen', T._range);
+  if (desc && !/ImageJ=/.test(desc) && desc.length < 200) add('Beschreibung', desc);
+  return m;
+}
+function fmtSI(v, unit) {
+  const P = [[1e-12, 'p'], [1e-9, 'n'], [1e-6, 'µ'], [1e-3, 'm'], [1, ''], [1e3, 'k'], [1e6, 'M']];
+  let best = P[4];
+  for (const p of P) if (Math.abs(v) >= p[0] * 0.9999) best = p;
+  return `${+(v / best[0]).toPrecision(4)} ${best[1]}${unit}`.replace('.', ',');
+}
+// Infobalken (REM-Datenleiste) unten im Bild suchen: Zeilen, die fast nur aus einer Farbe bestehen, mit Text darin
+function detectBar(id) {
+  const im = IMG.get(id); if (!im) return 0;
+  const c = im.prev, ctx = c.getContext('2d', { willReadFrequently: true }), w = c.width, h = c.height;
+  const d = ctx.getImageData(0, 0, w, h).data;
+  let rows = 0, miss = 0, bgVal = null;
+  for (let y = h - 1; y > h * 0.6; y--) {
+    const hist = new Uint32Array(256);
+    for (let x = 0; x < w; x++) hist[d[4 * (y * w + x)]]++;
+    let mv = 0; for (let v = 1; v < 256; v++) if (hist[v] > hist[mv]) mv = v;
+    if (bgVal == null) bgVal = mv;
+    const ok = Math.abs(mv - bgVal) < 12 && hist[mv] / w > 0.55;
+    if (ok) { rows += 1 + miss; miss = 0; } else if (++miss > 2) break;
+  }
+  const frac = rows / h;
+  return frac > 0.025 && frac < 0.3 ? Math.round(rows * im.h / h) : 0;
+}
+
+// Hat das Bild durchsichtige Stellen (Alphakanal < 255)?
+function hasAlpha(id) {
+  const c = IMG.get(id).prev, d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+  for (let i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+  return false;
+}
+const PREV_MAX = 2048;
+function makePrev(src, w, h) {
+  const k = Math.min(1, PREV_MAX / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+// SVG (z. B. aus dem Diagramm-Designer) für Vorschau und PNG/TIFF fein rastern; das SVG selbst bleibt für den SVG-Export erhalten
+const isSvgFile = f => /\.svg$/i.test(f.name || '') || f.type === 'image/svg+xml';
+async function rasterSvg(blob) {
+  const url = URL.createObjectURL(blob.type === 'image/svg+xml' ? blob : new Blob([blob], { type: 'image/svg+xml' })), im = new Image();
+  im.src = url;
+  try { await im.decode(); } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  const w0 = im.naturalWidth || 800, h0 = im.naturalHeight || 600, k = clamp(4000 / Math.max(w0, h0), 1, 8);
+  const c = document.createElement('canvas'); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  return { full: await createImageBitmap(c), w: c.width, h: c.height, physW: w0, physH: h0 };
+}
+// dpi aus dem pHYs-Block einer PNG-Datei (der Diagramm-Designer schreibt ihn) → Größe im Druck
+function pngDpi(u8) {
+  if (u8[0] !== 0x89 || u8[1] !== 0x50) return 0;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  for (let p = 8; p + 12 <= u8.length;) {
+    const len = dv.getUint32(p), type = String.fromCharCode(u8[p + 4], u8[p + 5], u8[p + 6], u8[p + 7]);
+    if (type === 'pHYs' && u8[p + 16] === 1) return dv.getUint32(p + 8) * 0.0254;
+    if (type === 'IDAT' || type === 'IEND') break;
+    p += 12 + len;
+  }
+  return 0;
+}
+async function loadImageFile(file) {
+  const isTif = /\.tiff?$/i.test(file.name) || file.type === 'image/tiff';
+  let full, blob = file, meta = { items: [] }, w, h, extra = {};
+  if (isSvgFile(file)) {
+    const r = await rasterSvg(file);
+    ({ full, w, h } = r); extra = { kind: 'plot', physW: r.physW, physH: r.physH };
+  } else if (isTif) {
+    const u8 = await bytesOf(file), { img, tags } = await decodeTiff(u8);
+    full = await createImageBitmap(img); w = img.width; h = img.height;
+    meta = tiffMeta(tags, h);
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').putImageData(img, 0, 0);
+    blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  } else {
+    full = await createImageBitmap(file); w = full.width; h = full.height;
+    const dpi = /png/i.test(file.type) || /\.png$/i.test(file.name) ? pngDpi(await bytesOf(file.slice(0, 4096))) : 0;
+    if (dpi > 0) extra = { physW: w * 96 / dpi, physH: h * 96 / dpi, dpi: Math.round(dpi) };
+  }
+  const id = uid();
+  IMG.set(id, { id, name: file.name, w, h, full, prev: makePrev(full, w, h), blob, meta });
+  ST.imgs[id] = { name: file.name, mpp: meta.mpp || null, mppSrc: meta.src || '', crop: { t: 0, b: 0, l: 0, r: 0 }, bar: meta.bar || 0, hideBar: false, ...extra };
+  if (!ST.imgs[id].bar && extra.kind !== 'plot') ST.imgs[id].bar = detectBar(id);
+  ST.imgs[id].alpha = hasAlpha(id);
+  dbPutImg(id).catch(() => { });
+  return id;
+}
+// Wirksamer Ausschnitt des Bildes in Bildpixeln (Zuschnitt + ausgeblendeter Infobalken)
+function srcRect(id) {
+  const im = IMG.get(id), d = ST.imgs[id]; if (!im) return null;
+  const c = (d && d.crop) || {}, bar = d && d.hideBar ? d.bar || 0 : 0;
+  const l = clamp(c.l || 0, 0, im.w - 1), t = clamp(c.t || 0, 0, im.h - 1);
+  const w = Math.max(1, im.w - l - clamp(c.r || 0, 0, im.w)), h = Math.max(1, im.h - t - Math.max(c.b || 0, bar));
+  return { x: l, y: t, w, h };
+}
+
+/* ---------- Helligkeit, Kontrast, Gamma (Tabelle je Kanal) ---------- */
+const adjActive = a => a && (a.b || a.c || a.g !== 1 || a.inv);
+function lut(a) {
+  const k = 2 ** ((a.c || 0) / 50), off = (a.b || 0) * 1.28, g = a.g || 1, t = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) {
+    let x = clamp((v - 128) * k + 128 + off, 0, 255);
+    x = 255 * (x / 255) ** (1 / g);
+    t[v] = a.inv ? 255 - x : x;
+  }
+  return t;
+}
+const adjCache = new Map();
+// Quelle zum Zeichnen: Vorschau (≤ 2048 px) oder volle Auflösung, ggf. mit Anpassung
+function imgSource(id, adj, hi) {
+  const im = IMG.get(id); if (!im) return null;
+  const base = hi ? im.full : im.prev;
+  if (!adjActive(adj)) return base;
+  const key = id + (hi ? 'H' : 'P') + JSON.stringify(adj);
+  if (adjCache.has(key)) return adjCache.get(key);
+  const c = document.createElement('canvas'); c.width = base.width; c.height = base.height;
+  const x = c.getContext('2d'); x.drawImage(base, 0, 0);
+  const id_ = x.getImageData(0, 0, c.width, c.height), d = id_.data, t = lut(adj);
+  for (let i = 0; i < d.length; i += 4) { d[i] = t[d[i]]; d[i + 1] = t[d[i + 1]]; d[i + 2] = t[d[i + 2]]; }
+  x.putImageData(id_, 0, 0);
+  for (const k of adjCache.keys()) if (k.startsWith(id + (hi ? 'H' : 'P'))) adjCache.delete(k);
+  if (!hi) adjCache.set(key, c);
+  return c;
+}
+// Automatischer Kontrast: 0,5-%- und 99,5-%-Quantil der Helligkeit auf Schwarz/Weiß
+function autoAdj(id) {
+  const im = IMG.get(id), c = im.prev, d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+  const h = new Uint32Array(256); let n = 0;
+  for (let i = 0; i < d.length; i += 16) { h[(d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0]++; n++; }
+  const q = p => { let s = 0; for (let v = 0; v < 256; v++) { s += h[v]; if (s >= p * n) return v; } return 255; };
+  const lo = q(0.005), hi = Math.max(lo + 1, q(0.995)), k = 255 / (hi - lo);
+  return { b: clamp(Math.round(-((lo + hi) / 2 - 128) * k / 1.28), -100, 100), c: clamp(Math.round(50 * Math.log2(k)), -100, 100), g: 1, inv: false };
+}
+
+/* ---------- Layout ---------- */
+// Vorlagen: Spalten × Zeilen und Zellen [Spalte, Zeile, Breite, Höhe] in Rastereinheiten
+const PRESETS = [
+  ['1', 'Einzeln', 1, 1, [[0, 0, 1, 1]]],
+  ['2h', '2 neben', 2, 1], ['2v', '2 unter', 1, 2], ['3h', '3 Reihe', 3, 1], ['3v', '3 unter', 1, 3],
+  ['4h', '4 Reihe', 4, 1], ['2x2', '2 × 2', 2, 2], ['3x2', '3 × 2', 3, 2], ['2x3', '2 × 3', 2, 3], ['3x3', '3 × 3', 3, 3],
+  ['L1R2', '1 + 2', 2, 2, [[0, 0, 1, 2], [1, 0, 1, 1], [1, 1, 1, 1]]],
+  ['T1B2', '1 / 2', 2, 2, [[0, 0, 2, 1], [0, 1, 1, 1], [1, 1, 1, 1]]],
+  ['T2B1', '2 / 1', 2, 2, [[0, 0, 1, 1], [1, 0, 1, 1], [0, 1, 2, 1]]],
+  ['T1B3', '1 / 3', 3, 2, [[0, 0, 3, 1], [0, 1, 1, 1], [1, 1, 1, 1], [2, 1, 1, 1]]],
+  ['L1R3', '1 + 3', 3, 3, [[0, 0, 2, 3], [2, 0, 1, 1], [2, 1, 1, 1], [2, 2, 1, 1]]]
+];
+const gridCells = (cols, rows) => { const c = []; for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) c.push([k, r, 1, 1]); return c; };
+const figWpx = () => Math.max(40, toPx(S.figW, S.figUnit));
+const aspectOf = p => { const r = p.img && srcRect(p.img); return r ? r.w / r.h : null; };
+function defaultAspect() {
+  if (S.cellAspect !== 'auto') return +S.cellAspect || 4 / 3;
+  const a = ST.panels.map(aspectOf).filter(Boolean);
+  return a.length ? median(a) : 4 / 3;
+}
+// Positionen aus dem Layout berechnen (außer im freien Modus); bei „Höhe automatisch“ auch die Höhe
+// Platz für Spalten- (oben) und Zeilenüberschriften (links)
+function headBands() {
+  const f = font(S.headSize, S.headBold), lh = f.px * 1.25, gp = f.px * 0.35;
+  const split = s => String(s || '').split('\n').map(x => x.trim());
+  const cols = S.colHeads.trim() ? split(S.colHeads) : [], rows = S.rowHeads.trim() ? split(S.rowHeads) : [];
+  const l = rows.length ? (S.rowRot ? lh : Math.max(...rows.map(r => tw(r, f)))) + gp : 0;
+  return { t: cols.length ? lh + gp : 0, l, f, lh, gp, cols, rows };
+}
+function applyLayout() {
+  const L = ST.L, ps = ST.panels, n = ps.length, W = figWpx(), g = S.gap * MM, m = S.margin * MM, hb = headBands();
+  const ox = m + hb.l, oy = m + hb.t, inner = W - ox - m;
+  let H = toPx(S.figH, S.figUnit);
+  if (!n) return;
+  if (L.mode === 'free') {
+    const mx = Math.min(...ps.map(p => p.x)), my = Math.min(...ps.map(p => p.y));
+    if (hb.l && mx < ox - 0.5) ps.forEach(p => { p.x += ox - mx; });
+    if (hb.t && my < oy - 0.5) ps.forEach(p => { p.y += oy - my; });
+    if (S.autoH) H = Math.max(...ps.map(p => p.y + p.h)) + m;
+  } else if (L.mode === 'smart' && n <= 12) {
+    const a = ps.map(p => aspectOf(p) || defaultAspect());
+    let best = null;
+    for (let mask = 0; mask < 1 << (n - 1); mask++) {
+      const rows = []; let cur = [0];
+      for (let i = 1; i < n; i++) { if (mask & (1 << (i - 1))) { rows.push(cur); cur = [i]; } else cur.push(i); }
+      rows.push(cur);
+      const hs = rows.map(r => (inner - (r.length - 1) * g) / r.reduce((s, i) => s + a[i], 0));
+      if (hs.some(h => !(h > 4))) continue;
+      const tot = hs.reduce((s, h) => s + h, 0) + (rows.length - 1) * g + oy + m;
+      const ks = rows.map(r => r.length);
+      const target = S.autoH ? W * (L.ratio || 0.75) : H;
+      const score = Math.abs(Math.log(tot / target)) + 0.08 * (Math.max(...ks) - Math.min(...ks));
+      if (!best || score < best.score) best = { score, rows, hs, tot };
+    }
+    if (best) {
+      const fixed = oy + m + (best.rows.length - 1) * g, f = S.autoH ? 1 : (H - fixed) / (best.tot - fixed);
+      let y = oy;
+      best.rows.forEach((r, k) => {
+        const h = best.hs[k] * f; let x = ox;
+        r.forEach((i, j) => {
+          const w = j === r.length - 1 ? W - m - x : best.hs[k] * a[i];
+          Object.assign(ps[i], { x, y, w, h }); x += w + g;
+        });
+        y += h + g;
+      });
+      if (S.autoH) H = best.tot;
+    }
+  } else {
+    let cols = L.cols || 1, rows = L.rows || 1, cells = L.cells || gridCells(cols, rows);
+    if (L.mode === 'smart' || n > cells.length) { if (L.mode === 'smart') cols = Math.ceil(Math.sqrt(n)); rows = Math.ceil(n / cols); cells = gridCells(cols, rows); }
+    const cw = (inner - (cols - 1) * g) / cols;
+    const ch = S.autoH ? cw / defaultAspect() : (H - oy - m - (rows - 1) * g) / rows;
+    if (S.autoH) H = oy + m + rows * ch + (rows - 1) * g;
+    ps.forEach((p, i) => {
+      const [c, r, cs, rs] = cells[i];
+      Object.assign(p, { x: ox + c * (cw + g), y: oy + r * (ch + g), w: cs * cw + (cs - 1) * g, h: rs * ch + (rs - 1) * g });
+    });
+  }
+  S.figH = r2(fromPx(Math.max(20, H), S.figUnit));
+}
+function setPreset(id) {
+  const pr = PRESETS.find(p => p[0] === id); if (!pr) return;
+  const [, , cols, rows, cells] = pr, need = (cells || gridCells(cols, rows)).length;
+  ST.L = { ...ST.L, mode: 'cells', cols, rows, cells: cells || gridCells(cols, rows) };
+  while (ST.panels.length < need) ST.panels.push(newPanel());
+  for (let i = ST.panels.length - 1; i >= need; i--) if (!ST.panels[i].img) ST.panels.splice(i, 1);
+}
+
+/* ---------- Schrift und Text ---------- */
+const mctx = document.createElement('canvas').getContext('2d');
+function famCSS() { const f = (S.fontCustom || '').trim() || S.font; return f.includes(',') ? f : `"${f}", sans-serif`; }
+function font(pt, b, i) { const px = pt * PT, fam = famCSS(); return { css: `${i ? 'italic ' : ''}${b ? 'bold ' : ''}${px.toFixed(2)}px ${fam}`, px, fam, b: !!b, i: !!i }; }
+const tw = (s, f) => { mctx.font = f.css; return mctx.measureText(s).width; };
+const metr = f => { mctx.font = f.css; const m = mctx.measureText('Hg'); return { asc: m.fontBoundingBoxAscent ?? f.px * 0.8, desc: m.fontBoundingBoxDescent ?? f.px * 0.2 }; };
+const tight = (s, f) => { mctx.font = f.css; const m = mctx.measureText(s); return { w: m.width, asc: m.actualBoundingBoxAscent, desc: m.actualBoundingBoxDescent }; };
+// Inline-Markdown: **fett**, *kursiv*
+function parseInline(str) {
+  return String(str).split(/\n/).map(line => {
+    const segs = []; let b = false, it = false, buf = '';
+    const push = () => { if (buf) { segs.push({ t: buf, b, i: it }); buf = ''; } };
+    for (let k = 0; k < line.length; k++) {
+      const ch = line[k];
+      if (ch === '\\' && /[*\\]/.test(line[k + 1] || '')) { buf += line[++k]; continue; }
+      if (ch === '*' && line[k + 1] === '*') { push(); b = !b; k++; continue; }
+      if (ch === '*') { push(); it = !it; continue; }
+      buf += ch;
+    }
+    push(); return segs;
+  });
+}
+// Umbrochener Textblock: Zeilen mit Wörtern {t, f, w, x}
+function textBlock(text, pt, bold, maxW, align) {
+  const lines = [], lh = pt * PT * 1.2;
+  for (const segs of parseInline(text)) {
+    const toks = [];
+    for (const sg of segs) { const f = font(pt, sg.b || bold, sg.i); for (const p of sg.t.split(/(\s+)/)) if (p) toks.push({ t: /^\s+$/.test(p) ? ' ' : p, sp: /^\s+$/.test(p), f, w: tw(/^\s+$/.test(p) ? ' ' : p, f) }); }
+    let line = [], lw = 0;
+    const flush = last => { while (line.length && line[line.length - 1].sp) lw -= line.pop().w; lines.push({ toks: line, w: lw, last }); line = []; lw = 0; };
+    for (const t of toks) { if (!t.sp && line.length && lw + t.w > maxW + 0.01) flush(false); if (t.sp && !line.length) continue; line.push(t); lw += t.w; }
+    flush(true);
+  }
+  return { lines, lh, h: lines.length * lh, w: Math.max(0, ...lines.map(l => l.w)), align, maxW };
+}
+function blockOps(blk, x0, y0, color, width) {
+  const ops = [], W = width ?? blk.w;
+  blk.lines.forEach((ln, k) => {
+    const m = metr(ln.toks[0] ? ln.toks[0].f : font(10)), base = y0 + k * blk.lh + (blk.lh - m.asc - m.desc) / 2 + m.asc;
+    let x = blk.align === 'right' ? x0 + W - ln.w : blk.align === 'center' ? x0 + (W - ln.w) / 2 : x0, extra = 0;
+    if (blk.align === 'justify' && !ln.last) { const n = ln.toks.filter(t => t.sp).length; if (n) extra = (W - ln.w) / n; }
+    for (const t of ln.toks) { if (!t.sp) ops.push({ k: 'text', x, y: base, t: t.t, f: t.f, fill: color }); x += t.w + (t.sp ? extra : 0); }
+  });
+  return ops;
+}
+
+/* ---------- Bildlabels ---------- */
+const ROMAN = n => { const r = [[10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]; let s = ''; for (const [v, c] of r) while (n >= v) { s += c; n -= v; } return s; };
+const letters = n => { let s = ''; n++; while (n > 0) { n--; s = String.fromCharCode(97 + n % 26) + s; n = Math.floor(n / 26); } return s; };
+function labelText(i) {
+  const st = S.lblStyle, a = letters(i);
+  return { a, A: a.toUpperCase(), '(a)': `(${a})`, 'a)': `${a})`, '(A)': `(${a.toUpperCase()})`, 'A)': `${a.toUpperCase()})`, 'a.': `${a}.`, i: ROMAN(i + 1), 1: String(i + 1) }[st] ?? a;
+}
+function panelLabels() {
+  let k = 0;
+  return ST.panels.map(p => p.label === '-' ? '' : p.label ? p.label : labelText(k++));
+}
+
+/* ---------- Geometrie eines Bildes im Platzhalter ----------
+   zoom = 1 heißt: das Bild füllt den Platzhalter gerade (cover); cx/cy = Bildmitte relativ zum Platzhalter.
+   Wird der Platzhalter größer, wächst das Bild mit – der Platzhalter ist die Maske. */
+// Grundmaßstab: „Füllen“ (cover) oder „Einpassen“ (contain, ganzes Bild sichtbar – z. B. für Diagramme)
+const baseScale = (p, sr) => (p.fit === 'contain' ? Math.min : Math.max)(p.w / sr.w, p.h / sr.h);
+// Gleiche Vergrößerung: alle kalibrierten Bilder bekommen denselben Maßstab (Meter je Figurpixel).
+// Bezug ist das Bild, das am wenigsten vergrößert werden muss, um seinen Platzhalter zu füllen.
+const magOn = p => !!(S.sameMag && p.img && ST.imgs[p.img] && ST.imgs[p.img].mpp > 0);
+function commonT() {
+  let t = Infinity;
+  for (const q of ST.panels) if (magOn(q)) { const sr = srcRect(q.img); if (sr) t = Math.min(t, ST.imgs[q.img].mpp / baseScale(q, sr)); }
+  return t;
+}
+function geom(p) {
+  const sr = p.img && srcRect(p.img); if (!sr) return null;
+  const s = magOn(p) ? ST.imgs[p.img].mpp / commonT() * (S.magZoom || 1) : baseScale(p, sr) * p.zoom;
+  const x0 = p.x + p.cx * p.w - sr.w * s / 2, y0 = p.y + p.cy * p.h - sr.h * s / 2;
+  return { sr, s, x0, y0, w: sr.w * s, h: sr.h * s, toFig: (ix, iy) => [x0 + (ix - sr.x) * s, y0 + (iy - sr.y) * s], toImg: (fx, fy) => [sr.x + (fx - x0) / s, sr.y + (fy - y0) / s] };
+}
+
+/* ---------- Maßstabsbalken ---------- */
+const SB_UNITS = [['nm', 1e-9], ['µm', 1e-6], ['mm', 1e-3], ['m', 1]];
+function niceLen(m) {   // Länge in Metern → schöner Wert 1-2-5 und passende Einheit
+  const e = Math.floor(Math.log10(m)), b = m / 10 ** e, n = (b >= 5 ? 5 : b >= 2 ? 2 : 1) * 10 ** e;
+  return n;
+}
+function lenLabel(meters) {
+  let u = SB_UNITS[0];
+  for (const x of SB_UNITS) if (meters >= x[1] * 0.9999) u = x;
+  if (meters < 1e-9) u = ['pm', 1e-12];
+  const v = +(meters / u[1]).toPrecision(6);
+  return `${String(v).replace('.', ',')} ${u[0]}`;
+}
+// Gemeinsame Länge für alle Bilder (Option „gleiche Länge“): die kleinste automatische
+function sharedLen() {
+  if (!S.sbSame && !S.sameMag) return null;
+  const ls = ST.panels.map(p => { const g = geom(p), d = p.img && ST.imgs[p.img]; return g && d && d.mpp && p.sb.on && !p.sb.val ? niceLen(S.sbFrac * p.w / g.s * d.mpp) : null; }).filter(Boolean);
+  return ls.length ? Math.min(...ls) : null;
+}
+
+/* ---------- Zeichenliste: reine Funktion von ST zu Grundelementen in Figurpixeln ----------
+   rect, img (Quellausschnitt → Ziel), clip (Gruppe mit Rechteck-Maske), path (SVG-Pfad), ell, text.
+   Dieselbe Liste wird auf Canvas (Vorschau, PNG, TIFF, JPG) und als SVG ausgegeben. */
+const REF_ASC = f => tight('Hbdfl(', f).asc;
+function boxRect(x, y, w, h, color, alpha) { return { k: 'rect', x, y, w, h, fill: color, fa: alpha }; }
+function labelItem(text, color) {
+  const f = font(S.lblSize, S.lblBold, S.lblItalic), t = tight(text, f), asc = REF_ASC(f), desc = Math.max(0, t.desc);
+  const bp = S.lblBox === 'box' ? f.px * 0.22 : 0, w = t.w + 2 * bp, h = asc + desc + 2 * bp;
+  return { w, h, draw: (x, y) => [...(bp ? [boxRect(x, y, w, h, S.lblBoxColor, S.lblBoxAlpha)] : []), { k: 'text', x: x + bp, y: y + bp + asc, t: text, f, fill: color || S.lblColor }] };
+}
+// Spaltenüberschriften über der obersten Zeile, Zeilenüberschriften links neben dem ersten Bild jeder Zeile
+function headOps() {
+  const hb = headBands(), ops = [];
+  if (!hb.cols.length && !hb.rows.length) return ops;
+  const tol = S.gap * MM / 2 + 2, rows = [], mt = metr(hb.f);
+  for (const p of ST.panels.slice().sort((a, b) => a.y - b.y)) { const r = rows.find(r => Math.abs(r[0].y - p.y) < tol); if (r) r.push(p); else rows.push([p]); }
+  rows.forEach(r => r.sort((a, b) => a.x - b.x));
+  if (rows.length) rows[0].forEach((p, i) => { const t = hb.cols[i]; if (t) ops.push({ k: 'text', x: p.x + p.w / 2, y: p.y - hb.gp - mt.desc, t, f: hb.f, fill: S.headColor, anchor: 'middle' }); });
+  rows.forEach((r, i) => {
+    const t = hb.rows[i], p = r[0]; if (!t) return;
+    if (S.rowRot) ops.push({ k: 'text', x: p.x - hb.gp - mt.desc, y: p.y + p.h / 2, t, f: hb.f, fill: S.headColor, anchor: 'middle', rot: -90 });
+    else ops.push({ k: 'text', x: p.x - hb.gp, y: p.y + p.h / 2 + (mt.asc - mt.desc) / 2, t, f: hb.f, fill: S.headColor, anchor: 'end' });
+  });
+  return ops;
+}
+function textItem(tx) {
+  if (!tx.text || !tx.text.trim()) return null;
+  const blk = textBlock(tx.text, tx.size || S.txtSize, S.txtBold, 1e9, tx.align || 'left'), box = (tx.box || S.txtBox) === 'box';
+  const bp = box ? (tx.size || S.txtSize) * PT * 0.25 : 0, w = blk.w + 2 * bp, h = blk.h + 2 * bp;
+  return { w, h, draw: (x, y) => [...(box ? [boxRect(x, y, w, h, S.txtBoxColor, S.txtBoxAlpha)] : []), ...blockOps(blk, x + bp, y + bp, tx.color || S.txtColor, blk.w)] };
+}
+function sbInfo(p, g, shared) {
+  const d = p.img && ST.imgs[p.img];
+  if (!g || !d || !d.mpp || !p.sb.on) return null;
+  const uf = (SB_UNITS.find(u => u[0] === p.sb.unit) || SB_UNITS[1])[1];
+  const meters = p.sb.val > 0 ? p.sb.val * uf : shared || niceLen(S.sbFrac * p.w / g.s * d.mpp);
+  return { meters, len: meters / d.mpp * g.s, label: lenLabel(meters) };
+}
+function sbItem(info) {
+  if (!info) return null;
+  const f = font(S.sbSize, S.sbBold), t = tight(info.label, f), asc = REF_ASC(f), desc = Math.max(0, tight('g', f).desc * 0.2, t.desc);
+  const tb = S.sbW * PT, txt = S.sbText !== 'none', textH = txt ? asc + desc : 0, gapT = txt ? f.px * 0.25 : 0;
+  const th = S.sbEnds === 'ticks' ? tb * 3 : tb, ex = (th - tb) / 2, bw = Math.max(info.len, txt ? t.w : 0);
+  const bp = S.sbBox === 'box' ? f.px * 0.3 : 0, w = bw + 2 * bp, h = textH + gapT + th + 2 * bp;
+  return { w, h, draw: (x, y) => {
+    const o = [], ix = x + bp, iy = y + bp, above = S.sbText !== 'below';
+    if (bp) o.push(boxRect(x, y, w, h, S.sbBoxColor, S.sbBoxAlpha));
+    const barY = above ? iy + textH + gapT + ex : iy + ex, bx = ix + (bw - info.len) / 2;
+    o.push({ k: 'rect', x: bx, y: barY, w: info.len, h: tb, fill: S.sbColor });
+    if (ex) { const sw = Math.max(tb * 0.5, 0.5 * PT); o.push({ k: 'rect', x: bx, y: barY - ex, w: sw, h: th, fill: S.sbColor }, { k: 'rect', x: bx + info.len - sw, y: barY - ex, w: sw, h: th, fill: S.sbColor }); }
+    if (txt) o.push({ k: 'text', x: ix + bw / 2, y: above ? iy + asc : barY + tb + ex + gapT + asc, t: info.label, f, fill: S.sbColor, anchor: 'middle' });
+    return o;
+  } };
+}
+function insetAspect(p, ins) {
+  if (ins.src === 'region' && ins.region) return ins.region.w / ins.region.h;
+  const r = ins.img && srcRect(ins.img); return r ? r.w / r.h : 4 / 3;
+}
+function insetItem(p, ins, g, hit, preview) {
+  if (ins.src === 'region' && !g) return null;
+  const a = insetAspect(p, ins); let w = (ins.size || S.insSize) * p.w, h = w / a;
+  if (h > 0.85 * p.h) { h = 0.85 * p.h; w = h * a; }
+  const col = ins.color || S.insColor, sw = (ins.lw ?? S.insW) * PT;
+  return { w, h, draw: (x, y) => {
+    const o = [];
+    hit.insets.push({ id: ins.id, x, y, w, h });
+    if (ins.src === 'region') {
+      const r = ins.region;
+      o.push({ k: 'img', id: p.img, adj: p.adj, sx: r.x, sy: r.y, sw: r.w, sh: r.h, x, y, w, h });
+      if (S.insMark) {
+        const [ax, ay] = g.toFig(r.x, r.y), [bx, by] = g.toFig(r.x + r.w, r.y + r.h);
+        o.unshift({ k: 'rect', x: ax, y: ay, w: bx - ax, h: by - ay, stroke: col, sw });
+        if (S.insLines) {
+          const dx = (x + w / 2) - (ax + bx) / 2, dy = (y + h / 2) - (ay + by) / 2;
+          const pairs = dx * dy > 0 ? [[[bx, ay], [x + w, y]], [[ax, by], [x, y + h]]] : [[[ax, ay], [x, y]], [[bx, by], [x + w, y + h]]];
+          o.unshift({ k: 'path', d: pairs.map(([a, b]) => `M${f2(a[0])} ${f2(a[1])}L${f2(b[0])} ${f2(b[1])}`).join(''), stroke: col, sw: sw * 0.75 });
+        }
+      }
+    } else if (ins.img && IMG.has(ins.img)) {
+      const sr = srcRect(ins.img);
+      o.push({ k: 'img', id: ins.img, adj: ins.adj || null, sx: sr.x, sy: sr.y, sw: sr.w, sh: sr.h, x, y, w, h });
+    } else if (preview) o.push({ k: 'rect', x, y, w, h, fill: '#808080', fa: 0.45 }, { k: 'text', x: x + w / 2, y: y + h / 2 + 4, t: 'Bild hierher', f: font(8), fill: '#ffffff', anchor: 'middle' });
+    if (sw > 0) o.push({ k: 'rect', x: x + sw / 2, y: y + sw / 2, w: w - sw, h: h - sw, stroke: col, sw });
+    return o;
+  } };
+}
+const TEXT_BB = new Map();   // Annotation-ID → [x, y, w, h] des Textes (für die Auswahl)
+function annotOps(a, g) {
+  const col = a.color || S.anColor, w = (a.w || S.anW) * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
+  const [p1, p2] = [P[0], P[1] || P[0]];
+  if (a.type === 'arrow' || a.type === 'line') {
+    let e = p2;
+    if (a.type === 'arrow') {
+      const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+      const hl = Math.min(L, (4 + 2.5 * (a.w || S.anW)) * PT), hw = hl * 0.42;
+      e = [p2[0] - ux * hl * 0.8, p2[1] - uy * hl * 0.8];
+      const b = [p2[0] - ux * hl, p2[1] - uy * hl];
+      o.push({ k: 'path', d: `M${f2(p2[0])} ${f2(p2[1])}L${f2(b[0] - uy * hw)} ${f2(b[1] + ux * hw)}L${f2(b[0] + uy * hw)} ${f2(b[1] - ux * hw)}Z`, fill: col });
+    }
+    o.unshift({ k: 'path', d: `M${f2(p1[0])} ${f2(p1[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap: a.type === 'line' ? 'round' : 'butt' });
+  } else if (a.type === 'rect') {
+    o.push({ k: 'rect', x: Math.min(p1[0], p2[0]), y: Math.min(p1[1], p2[1]), w: Math.abs(p2[0] - p1[0]), h: Math.abs(p2[1] - p1[1]), stroke: col, sw: w });
+  } else if (a.type === 'ellipse') {
+    o.push({ k: 'ell', cx: (p1[0] + p2[0]) / 2, cy: (p1[1] + p2[1]) / 2, rx: Math.abs(p2[0] - p1[0]) / 2, ry: Math.abs(p2[1] - p1[1]) / 2, stroke: col, sw: w });
+  } else if (a.type === 'text') {
+    const it = textItem({ text: a.text, size: a.size || S.anSize, color: col, align: a.align || 'left', box: a.box ? 'box' : 'none' });
+    if (it) { o.push(...it.draw(p1[0], p1[1])); TEXT_BB.set(a.id, [p1[0], p1[1], it.w, it.h]); }
+  }
+  return o;
+}
+function buildOps(o = {}) {
+  applyLayout();
+  const W = figWpx(), H0 = toPx(S.figH, S.figUnit), ops = [], hits = [], m = S.margin * MM;
+  let H = H0, cap = null;
+  if (S.capOn && S.capText.trim()) { cap = textBlock(S.capText, S.capSize, false, W - 2 * m, S.capAlign); H = H0 + S.capSize * PT * 0.8 + cap.h + m; }
+  if (!S.transparent) ops.push({ k: 'rect', x: 0, y: 0, w: W, h: H, fill: S.bg });
+  const labels = panelLabels(), shared = sharedLen();
+  ST.panels.forEach((p, i) => {
+    const R = { x: p.x, y: p.y, w: p.w, h: p.h }, g = geom(p), hit = { id: p.id, R, g, insets: [] }, inner = [];
+    hits.push(hit);
+    if (g) {
+      if (p.bg !== 'none') inner.push({ k: 'rect', ...R, fill: p.bg || S.panelBg });
+      inner.push({ k: 'img', id: p.img, adj: p.adj, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h });
+      for (const a of p.annots) inner.push(...annotOps(a, g));
+    }
+    const C = { ul: [], uc: [], ur: [], ll: [], lc: [], lr: [] };
+    const lc = S.lblCorner;
+    if (S.lblOn && labels[i]) C[lc].push(labelItem(labels[i], p.lblColor));
+    const sbc = p.sb.corner || S.sbCorner, sb = sbItem(sbInfo(p, g, shared));
+    hit.sb = sb ? { corner: sbc } : null;
+    if (sbc[0] === 'l') C[sbc].push(sb);
+    for (const ins of p.insets) C[ins.corner || 'ur'].push(insetItem(p, ins, g, hit, o.preview));
+    for (const tx of p.texts) C[tx.corner || 'ur'].push(textItem(tx));
+    if (sbc[0] === 'u') C[sbc].push(sb);
+    // Ecken füllen: oben von oben nach unten, unten von unten nach oben
+    const pad = S.cornerPad * PT, sp = pad * 0.6;
+    for (const c of Object.keys(C)) {
+      let y = c[0] === 'u' ? R.y + pad : R.y + R.h - pad;
+      for (const it of C[c]) {
+        if (!it) continue;
+        const x = c[1] === 'l' ? R.x + pad : c[1] === 'r' ? R.x + R.w - pad - it.w : R.x + (R.w - it.w) / 2;
+        inner.push(...it.draw(x, c[0] === 'u' ? y : y - it.h));
+        y += (c[0] === 'u' ? 1 : -1) * (it.h + sp);
+      }
+    }
+    if (inner.length) ops.push({ k: 'clip', ...R, ops: inner });
+    if (p.frame === 'on' || (p.frame === 'g' && S.frameOn)) {
+      const fw = (p.frameW ?? S.frameW) * PT;
+      if (fw > 0) ops.push({ k: 'rect', x: R.x + fw / 2, y: R.y + fw / 2, w: R.w - fw, h: R.h - fw, stroke: p.frameColor || S.frameColor, sw: fw });
+    }
+  });
+  ops.push(...headOps());
+  if (cap) ops.push(...blockOps(cap, m, H0 + S.capSize * PT * 0.8, '#000000', W - 2 * m));
+  return { ops, W, H, H0, hits };
+}
+
+/* ---------- Ausgabe: Canvas ---------- */
+function drawOps(ctx, ops, hi) {
+  for (const o of ops) {
+    switch (o.k) {
+      case 'rect':
+        if (o.fill) { ctx.globalAlpha = o.fa ?? 1; ctx.fillStyle = o.fill; ctx.fillRect(o.x, o.y, o.w, o.h); ctx.globalAlpha = 1; }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.setLineDash(o.dash || []); ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.setLineDash([]); }
+        break;
+      case 'img': {
+        const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi); if (!src) break;
+        const kx = src.width / im.w, ky = src.height / im.h;
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(src, o.sx * kx, o.sy * ky, o.sw * kx, o.sh * ky, o.x, o.y, o.w, o.h);
+        break;
+      }
+      case 'clip': ctx.save(); ctx.beginPath(); ctx.rect(o.x, o.y, o.w, o.h); ctx.clip(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
+      case 'path': {
+        const p = new Path2D(o.d);
+        if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(p); }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineCap = o.cap || 'butt'; ctx.lineJoin = 'round'; ctx.stroke(p); }
+        break;
+      }
+      case 'ell':
+        ctx.beginPath(); ctx.ellipse(o.cx, o.cy, Math.max(0.1, o.rx), Math.max(0.1, o.ry), 0, 0, 2 * Math.PI);
+        if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
+        if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.stroke(); }
+        break;
+      case 'text':
+        ctx.font = o.f.css; ctx.fillStyle = o.fill; ctx.textAlign = o.anchor === 'middle' ? 'center' : o.anchor === 'end' ? 'right' : 'left';
+        ctx.textBaseline = 'alphabetic';
+        if (o.rot) { ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot * Math.PI / 180); ctx.fillText(o.t, 0, 0); ctx.restore(); }
+        else ctx.fillText(o.t, o.x, o.y);
+        break;
+    }
+  }
+}
+// Abbildung in voller Auflösung auf ein Canvas
+function renderCanvas(scale) {
+  const r = buildOps(), c = document.createElement('canvas');
+  c.width = Math.round(r.W * scale); c.height = Math.round(r.H * scale);
+  const ctx = c.getContext('2d'); ctx.scale(c.width / r.W, c.height / r.H);
+  drawOps(ctx, r.ops, true);
+  return { canvas: c, ...r };
+}
+
+/* ---------- Ausgabe: SVG (Bilder eingebettet, Text und Formen als Vektoren) ---------- */
+const blobURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+async function buildSVG() {
+  const r = buildOps(), defs = [], used = new Map();
+  let n = 0;
+  const attr = o => Object.entries(o).filter(([, v]) => v != null && v !== '').map(([k, v]) => ` ${k}="${typeof v === 'number' ? f2(v) : esc(v)}"`).join('');
+  const collect = ops => { for (const o of ops) { if (o.k === 'clip') collect(o.ops); if (o.k === 'img') { const key = o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
+  collect(r.ops);
+  for (const [, u] of used) {
+    const im = IMG.get(u.o.id);
+    let blob = im.blob;
+    if (adjActive(u.o.adj)) blob = await new Promise(res => imgSource(u.o.id, u.o.adj, true).toBlob(res, 'image/png'));
+    defs.push(`<image id="${u.id}" width="${im.w}" height="${im.h}" preserveAspectRatio="none" href="${await blobURL(blob)}"/>`);
+  }
+  const out = ops => ops.map(o => {
+    switch (o.k) {
+      case 'rect': return `<rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h, fill: o.fill || 'none', 'fill-opacity': o.fill && o.fa != null && o.fa < 1 ? o.fa : null, stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null })}/>`;
+      case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null));
+        return `<svg${attr({ x: o.x, y: o.y, width: o.w, height: o.h, viewBox: `${f2(o.sx)} ${f2(o.sy)} ${f2(o.sw)} ${f2(o.sh)}`, preserveAspectRatio: 'none', overflow: 'hidden' })}><use href="#${u.id}"/></svg>`; }
+      case 'clip': { const id = 'c' + n++; defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`); return `<g clip-path="url(#${id})">${out(o.ops)}</g>`; }
+      case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, 'stroke-linecap': o.cap })}/>`;
+      case 'ell': return `<ellipse${attr({ cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw })}/>`;
+      case 'text': return `<text${attr({ x: o.x, y: o.y, 'font-family': o.f.fam.replace(/"/g, "'"), 'font-size': o.f.px, 'font-weight': o.f.b ? 'bold' : null, 'font-style': o.f.i ? 'italic' : null, fill: o.fill, 'text-anchor': o.anchor, transform: o.rot ? `rotate(${o.rot} ${f2(o.x)} ${f2(o.y)})` : null })} xml:space="preserve">${esc(o.t)}</text>`;
+    }
+    return '';
+  }).join('');
+  const body = out(r.ops);
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${f2(r.W * 0.75)}pt" height="${f2(r.H * 0.75)}pt" viewBox="0 0 ${f2(r.W)} ${f2(r.H)}"><defs>${defs.join('')}</defs>${body}</svg>`, W: r.W, H: r.H };
+}
+
+/* ---------- Rückgängig / Wiederholen (Schnappschüsse des Zustands; Pixel bleiben in IMG) ---------- */
+let hist = [], hpos = -1, commitT = null;
+function commit() {
+  clearTimeout(commitT);
+  const s = JSON.stringify(ST);
+  if (hist[hpos] === s) return;
+  hist = hist.slice(0, hpos + 1); hist.push(s);
+  if (hist.length > 150) hist.shift();
+  hpos = hist.length - 1; updUndo(); saveSoon();
+}
+const commitSoon = () => { clearTimeout(commitT); commitT = setTimeout(commit, 450); };
+function restoreSnap(s) { ST = JSON.parse(s); S = ST.S; if (!ST.panels.some(p => p.id === sel)) sel = null; selItem = null; msel = new Set(sel ? [sel] : []); refreshAll(); }
+function undo() { commit(); if (hpos > 0) restoreSnap(hist[--hpos]); updUndo(); }
+function redo() { if (hpos < hist.length - 1) restoreSnap(hist[++hpos]); updUndo(); }
+function updUndo() { $('#btnUndo').disabled = hpos <= 0; $('#btnRedo').disabled = hpos >= hist.length - 1; }
+
+/* ---------- Vorschau ---------- */
+const cv = $('#cv'), PAD = 28;
+let last = null, drag = null, rafPending = false;
+const panelById = id => ST.panels.find(p => p.id === id) || null;
+const selP = () => panelById(sel);
+function render() { if (rafPending) return; rafPending = true; requestAnimationFrame(() => { rafPending = false; renderNow(); }); }
+function renderNow() {
+  let r;
+  try { r = buildOps({ preview: true }); } catch (err) { console.error(err); $('#status').textContent = 'Fehler: ' + err.message; return; }
+  last = r;
+  const view = $('#view');
+  if ($('#fit').checked) zoom = clamp(Math.min((view.clientWidth - 2 * PAD - 6) / r.W, (view.clientHeight - 2 * PAD - 6) / r.H), 0.05, 8);
+  $('#zoom').value = Math.round(zoom * 100); $('#zoomLbl').textContent = Math.round(zoom * 100) + ' %';
+  const dpr = window.devicePixelRatio || 1, cw = r.W * zoom + 2 * PAD, ch = r.H * zoom + 2 * PAD;
+  cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, dpr * PAD, dpr * PAD);
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 14 / zoom; ctx.shadowOffsetY = 2 / zoom;
+  ctx.fillStyle = S.transparent ? '#ffffff' : S.bg; ctx.fillRect(0, 0, r.W, r.H); ctx.restore();
+  if (S.transparent) { const q = 8 / zoom; ctx.fillStyle = '#d0d0d0'; for (let y = 0; y < r.H; y += q) for (let x = ((y / q) & 1) * q; x < r.W; x += 2 * q) ctx.fillRect(x, y, Math.min(q, r.W - x), Math.min(q, r.H - y)); }
+  drawOps(ctx, r.ops, false);
+  drawOverlay(ctx, r);
+  status(r);
+  const fh = $('#inFigH'); if (document.activeElement !== fh) fh.value = S.figH;
+  saveSoon();
+}
+function status(r) {
+  const sc = (+S.dpi || 300) / 96, u = S.figUnit === 'in' ? 'Zoll' : S.figUnit, notes = [];
+  const st = [`${r2(fromPx(r.W, S.figUnit))} × ${r2(fromPx(r.H, S.figUnit))} ${u}`, `Export ${Math.round(r.W * sc)} × ${Math.round(r.H * sc)} px bei ${S.dpi} dpi`, `${ST.panels.length} Platzhalter`];
+  ST.panels.forEach((p, i) => {
+    const g = geom(p); if (!g) return;
+    const ppi = 96 / g.s;   // Bildpixel je Zoll im Druck
+    if (ppi < Math.min(300, +S.dpi || 300) * 0.5 && !isGraphic(p.img)) notes.push(`geringe Auflösung ${panelLabels()[i] || i + 1}: ${Math.round(ppi)} ppi`);
+  });
+  if (S.sameMag) {
+    const un = ST.panels.map((p, i) => p.img && !magOn(p) && !isGraphic(p.img) ? panelLabels()[i] || i + 1 : null).filter(Boolean);
+    if (un.length) notes.push('gleiche Vergrößerung: nicht kalibriert ' + un.join(', '));
+  }
+  const hint = { layout: 'Platzhalter ziehen/skalieren (Bild skaliert mit) · Doppelklick: Bild bearbeiten', image: 'Bild verschieben · Ecken ziehen oder Mausrad = Bild skalieren, der Platzhalter bleibt als Maske',
+    scale: 'Entlang des Maßstabs im Bild ziehen (waagerecht; Alt = frei), dann Länge eingeben', annot: 'Ziehen zum Zeichnen · Text: klicken · ↖ zum Auswählen/Verschieben · Entf löscht',
+    inset: 'Ausschnitt im Bild aufziehen → vergrößertes Inset · Rahmen verschieben' }[mode];
+  $('#status').innerHTML = esc(st.join(' · ')) + (notes.length ? ' · <b>' + esc(notes.join(' · ')) + '</b>' : '') + ' · ' + esc(hint);
+}
+// Diagramm oder Grafik (SVG, PNG mit Druck-dpi, transparente PNG) statt Aufnahme: keine Kalibrierungs-/Auflösungshinweise
+const isGraphic = id => { const d = ST.imgs[id] || {}; return d.kind === 'plot' || d.dpi >= 150 || !!d.alpha; };
+const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+function handlePos(R, h) {
+  const x = h.includes('w') ? R.x : h.includes('e') ? R.x + R.w : R.x + R.w / 2;
+  const y = h.includes('n') ? R.y : h.includes('s') ? R.y + R.h : R.y + R.h / 2;
+  return [x, y];
+}
+function drawOverlay(ctx, r) {
+  const px = 1 / zoom, acc = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#2f6fde';
+  ctx.save();
+  for (const h of r.hits) {
+    const p = panelById(h.id), R = h.R;
+    if (!h.g) {
+      ctx.fillStyle = 'rgba(128,128,128,.14)'; ctx.fillRect(R.x, R.y, R.w, R.h);
+      ctx.fillStyle = 'rgba(90,90,90,.9)'; ctx.font = `${12 * px}px "Segoe UI", sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText('Bild hierher ziehen', R.x + R.w / 2, R.y + R.h / 2);
+      ctx.fillText('oder doppelklicken', R.x + R.w / 2, R.y + R.h / 2 + 16 * px);
+    }
+    if ($('#guides').checked || !h.g) { ctx.strokeStyle = 'rgba(47,111,222,.55)'; ctx.lineWidth = px; ctx.setLineDash([4 * px, 3 * px]); ctx.strokeRect(R.x, R.y, R.w, R.h); ctx.setLineDash([]); }
+    if (h.id !== sel) {
+      if (msel.has(h.id)) { ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.setLineDash([6 * px, 3 * px]); ctx.strokeRect(R.x, R.y, R.w, R.h); ctx.setLineDash([]); }
+      continue;
+    }
+    ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.strokeRect(R.x, R.y, R.w, R.h);
+    if (mode === 'layout') for (const hd of HANDLES) { const [x, y] = handlePos(R, hd); ctx.fillStyle = '#fff'; ctx.fillRect(x - 4 * px, y - 4 * px, 8 * px, 8 * px); ctx.strokeRect(x - 4 * px, y - 4 * px, 8 * px, 8 * px); }
+    if (mode === 'image' && h.g) {   // ganzes Bild blass zeigen: so sieht man, was die Maske abschneidet
+      const g = h.g;
+      ctx.globalAlpha = 0.3; drawOps(ctx, [{ k: 'img', id: p.img, adj: p.adj, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h }], false); ctx.globalAlpha = 1;
+      ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip(); drawOps(ctx, last.ops.filter(o => o.k === 'clip' && o.x === R.x && o.y === R.y), false); ctx.restore();
+      ctx.setLineDash([5 * px, 4 * px]); ctx.strokeRect(g.x0, g.y0, g.w, g.h); ctx.setLineDash([]); ctx.strokeRect(R.x, R.y, R.w, R.h);
+      for (const [x, y] of [[g.x0, g.y0], [g.x0 + g.w, g.y0], [g.x0, g.y0 + g.h], [g.x0 + g.w, g.y0 + g.h]]) { ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(x, y, 5 * px, 0, 7); ctx.fill(); }
+    }
+    if (mode === 'layout' || mode === 'inset') for (const ir of h.insets) { ctx.strokeStyle = acc; ctx.setLineDash([3 * px, 3 * px]); ctx.strokeRect(ir.x, ir.y, ir.w, ir.h); ctx.setLineDash([]); }
+    if (selItem && selItem.kind === 'annot' && h.g) {
+      const a = p.annots.find(x => x.id === selItem.id);
+      if (a) { const b = annotBox(a, h.g); ctx.strokeStyle = acc; ctx.lineWidth = px; ctx.setLineDash([3 * px, 3 * px]); ctx.strokeRect(b[0] - 3 * px, b[1] - 3 * px, b[2] + 6 * px, b[3] + 6 * px); ctx.setLineDash([]); }
+    }
+  }
+  if (drag && drag.draw) drag.draw(ctx, px, acc);
+  if (drag && drag.snaps) { ctx.strokeStyle = '#e0407a'; ctx.lineWidth = px; for (const s of drag.snaps) { ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, 0); ctx.lineTo(s.x, r.H0); } else { ctx.moveTo(0, s.y); ctx.lineTo(r.W, s.y); } ctx.stroke(); } }
+  ctx.restore();
+}
+function annotBox(a, g) {
+  if (a.type === 'text' && TEXT_BB.has(a.id)) return TEXT_BB.get(a.id);
+  const P = a.p.map(q => g.toFig(q[0], q[1])), xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+}
+
+/* ---------- Treffer ---------- */
+function figPt(e) { const b = cv.getBoundingClientRect(); return { x: (e.clientX - b.left - PAD) / zoom, y: (e.clientY - b.top - PAD) / zoom }; }
+const inR = (pt, R, m = 0) => pt.x >= R.x - m && pt.x <= R.x + R.w + m && pt.y >= R.y - m && pt.y <= R.y + R.h + m;
+const hitPanel = pt => last && [...last.hits].reverse().find(h => inR(pt, h.R)) || null;
+const hitOf = id => last && last.hits.find(h => h.id === id);
+function hitInset(pt) {
+  for (const h of [...(last ? last.hits : [])].reverse()) for (const ir of h.insets) if (inR(pt, ir)) return { h, ir };
+  return null;
+}
+function segDist(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy, t = L ? clamp(((p.x - a[0]) * dx + (p.y - a[1]) * dy) / L, 0, 1) : 0;
+  return Math.hypot(p.x - a[0] - t * dx, p.y - a[1] - t * dy);
+}
+function hitAnnot(pt) {
+  const tol = 6 / zoom;
+  for (const h of [...last.hits].reverse()) {
+    if (!h.g || !inR(pt, h.R)) continue;
+    const p = panelById(h.id);
+    for (const a of [...p.annots].reverse()) {
+      const P = a.p.map(q => h.g.toFig(q[0], q[1])), b = annotBox(a, h.g);
+      if ((a.type === 'arrow' || a.type === 'line') && segDist(pt, P[0], P[1]) < tol + (a.w || S.anW) * PT) return { p, a };
+      if (a.type !== 'arrow' && a.type !== 'line' && inR(pt, { x: b[0], y: b[1], w: b[2], h: b[3] }, tol)) return { p, a };
+    }
+  }
+  return null;
+}
+// Einrasten an Abbildungsrand, Außenrand und Kanten der anderen Platzhalter (mit Abstand)
+function snapTargets(skip) {
+  const W = figWpx(), H = toPx(S.figH, S.figUnit), m = S.margin * MM, g = S.gap * MM, xs = [0, m, W - m, W, W / 2], ys = [0, m, H - m, H, H / 2];
+  const sk = skip instanceof Set ? skip : new Set([skip]);
+  for (const p of ST.panels) if (!sk.has(p.id)) { xs.push(p.x, p.x + p.w, p.x - g, p.x + p.w + g); ys.push(p.y, p.y + p.h, p.y - g, p.y + p.h + g); }
+  return { xs, ys };
+}
+function snap1(vals, targets, tol) {   // bester Versatz, damit einer der Werte auf einem Ziel liegt
+  let best = null;
+  for (const v of vals) for (const t of targets) { const d = t - v; if (Math.abs(d) <= tol && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, at: t }; }
+  return best;
+}
+
+/* ---------- Kleines Eingabefenster ---------- */
+let popDone = null;
+function popup(title, html, at, onOk) {
+  closePop();
+  const pop = $('#pop');
+  pop.innerHTML = `<div class="t">${esc(title)}</div>${html}<div class="btns" style="justify-content:flex-end;margin-top:8px"><button data-x="0">Abbrechen</button><button data-x="1" class="primary">OK</button></div>`;
+  pop.hidden = false;
+  const r = pop.getBoundingClientRect();
+  pop.style.left = clamp(at.x + 12, 8, innerWidth - r.width - 8) + 'px'; pop.style.top = clamp(at.y + 12, 8, innerHeight - r.height - 8) + 'px';
+  popDone = ok => { const f = popDone; popDone = null; pop.hidden = true; if (ok && f) onOk(pop); };
+  pop.querySelectorAll('[data-x]').forEach(b => b.onclick = () => popDone && popDone(b.dataset.x === '1'));
+  pop.onkeydown = e => { if (e.key === 'Enter' && !(e.target.tagName === 'TEXTAREA' && !e.ctrlKey)) { e.preventDefault(); popDone && popDone(true); } if (e.key === 'Escape') popDone && popDone(false); };
+  const first = pop.querySelector('input,textarea,select'); if (first) { first.focus(); first.select && first.select(); }
+}
+function closePop() { if (popDone) { popDone = null; $('#pop').hidden = true; } }
+const unitSel = cur => `<select>${SB_UNITS.map(u => `<option${u[0] === cur ? ' selected' : ''}>${u[0]}</option>`).join('')}</select>`;
+
+/* ---------- Werkzeuge ---------- */
+function setMode(m) {
+  mode = m; drag = null; closePop();
+  $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $('#atools').hidden = m !== 'annot';
+  cv.style.cursor = { layout: 'default', image: 'grab', scale: 'crosshair', annot: 'crosshair', inset: 'crosshair' }[m];
+  render();
+}
+function setAtool(t) { atool = t; $$('#atools button').forEach(b => b.classList.toggle('on', b.dataset.at === t)); }
+$$('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$$('#atools button').forEach(b => b.onclick = () => setAtool(b.dataset.at));
+function select(id, item = null) { const ch = sel !== id; sel = id; selItem = item; msel = new Set(id ? [id] : []); if (ch) buildProps(); else refreshItemProps(); buildList(); render(); }
+function toggleMulti(id) {
+  if (msel.has(id)) { msel.delete(id); if (sel === id) sel = [...msel].pop() || null; }
+  else { msel.add(id); sel = id; }
+  selItem = null; buildProps(); buildList(); render();
+}
+// Ausrichten und Verteilen: Auswahl (≥ 2) oder alle Platzhalter; schaltet auf freie Anordnung
+function arrange(kind) {
+  const ps = msel.size > 1 ? ST.panels.filter(p => msel.has(p.id)) : ST.panels.slice();
+  if (ps.length < 2) { toast('Dafür werden mindestens zwei Platzhalter gebraucht'); return; }
+  toFree();
+  const ref = ps.includes(selP()) ? selP() : ps[0], g = S.gap * MM;
+  const x0 = Math.min(...ps.map(p => p.x)), x1 = Math.max(...ps.map(p => p.x + p.w)), y0 = Math.min(...ps.map(p => p.y)), y1 = Math.max(...ps.map(p => p.y + p.h));
+  const seq = (key, len, start, space) => { let v = start; for (const p of ps.slice().sort((a, b) => a[key] - b[key])) { p[key] = v; v += p[len] + space; } };
+  const sumW = ps.reduce((s, p) => s + p.w, 0), sumH = ps.reduce((s, p) => s + p.h, 0);
+  switch (kind) {
+    case 'left': ps.forEach(p => { p.x = x0; }); break;
+    case 'hcenter': ps.forEach(p => { p.x = (x0 + x1 - p.w) / 2; }); break;
+    case 'right': ps.forEach(p => { p.x = x1 - p.w; }); break;
+    case 'top': ps.forEach(p => { p.y = y0; }); break;
+    case 'vcenter': ps.forEach(p => { p.y = (y0 + y1 - p.h) / 2; }); break;
+    case 'bottom': ps.forEach(p => { p.y = y1 - p.h; }); break;
+    case 'hdist': seq('x', 'w', x0, (x1 - x0 - sumW) / (ps.length - 1)); break;
+    case 'vdist': seq('y', 'h', y0, (y1 - y0 - sumH) / (ps.length - 1)); break;
+    case 'hgap': seq('x', 'w', x0, g); break;
+    case 'vgap': seq('y', 'h', y0, g); break;
+    case 'sameW': ps.forEach(p => { p.w = ref.w; }); break;
+    case 'sameH': ps.forEach(p => { p.h = ref.h; }); break;
+    case 'same': ps.forEach(p => { p.w = ref.w; p.h = ref.h; }); break;
+  }
+  commit(); refreshAll();
+}
+// Bild um einen Punkt (Figurkoordinaten) zoomen; der Bildpunkt unter dem Zeiger bleibt stehen
+function zoomAt(p, fx, fy, f) {
+  if (magOn(p)) { const mz = S.magZoom || 1, nz = clamp(mz * f, 0.2, 50); f = nz / mz; S.magZoom = nz; }   // wirkt auf alle kalibrierten Bilder
+  else { const nz = clamp(p.zoom * f, 0.05, 50); f = nz / p.zoom; p.zoom = nz; }
+  const cx = p.x + p.cx * p.w, cy = p.y + p.cy * p.h;
+  p.cx = (fx + (cx - fx) * f - p.x) / p.w; p.cy = (fy + (cy - fy) * f - p.y) / p.h;
+}
+function toFree() { if (ST.L.mode !== 'free') { ST.L.mode = 'free'; ST.S.autoH = false; syncUI(); } }
+
+cv.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  closePop();
+  const pt = figPt(e), tol = 7 / zoom;
+  try { cv.setPointerCapture(e.pointerId); } catch { }
+  const sp = selP(), sh = sp && hitOf(sp.id);
+  if (mode === 'layout') {
+    if (sp && sh) for (const hd of HANDLES) { const [x, y] = handlePos(sh.R, hd); if (Math.abs(pt.x - x) < tol && Math.abs(pt.y - y) < tol) { drag = { t: 'resize', p: sp, hd, R0: { ...sh.R }, pt0: pt }; return; } }
+    const hi = hitInset(pt);
+    if (hi) { select(hi.h.id, { kind: 'inset', id: hi.ir.id }); drag = { t: 'inset', p: selP(), ir: { ...hi.ir }, pt0: pt, R: hi.h.R }; return; }
+    const h = hitPanel(pt);
+    if (h && (e.shiftKey || e.ctrlKey || e.metaKey)) { toggleMulti(h.id); return; }
+    if (h) {
+      if (msel.has(h.id) && msel.size > 1) { sel = h.id; selItem = null; buildProps(); buildList(); } else select(h.id);
+      const group = ST.panels.filter(q => msel.has(q.id) && q.id !== h.id).map(q => ({ q, x: q.x, y: q.y }));
+      drag = { t: 'move', p: selP(), R0: { ...h.R }, pt0: pt, group };
+    }
+    else select(null);
+    return;
+  }
+  if (mode === 'image') {
+    if (sp && sh && sh.g) { const g = sh.g, cs = [[g.x0, g.y0], [g.x0 + g.w, g.y0], [g.x0, g.y0 + g.h], [g.x0 + g.w, g.y0 + g.h]];
+      for (let k = 0; k < 4; k++) if (Math.hypot(pt.x - cs[k][0], pt.y - cs[k][1]) < tol * 1.3) { const an = cs[3 - k]; drag = { t: 'iscale', p: sp, an, d0: Math.hypot(pt.x - an[0], pt.y - an[1]), z0: sp.zoom, mz0: S.magZoom, cx0: sp.cx, cy0: sp.cy }; return; } }
+    const h = hitPanel(pt);
+    if (h) { select(h.id); if (h.g) { drag = { t: 'pan', p: selP(), pt0: pt, cx0: selP().cx, cy0: selP().cy }; cv.style.cursor = 'grabbing'; } }
+    else select(null);
+    return;
+  }
+  const h = hitPanel(pt);
+  if (mode === 'annot' && atool === 'select') {
+    const ha = hitAnnot(pt);
+    if (ha) { select(ha.p.id, { kind: 'annot', id: ha.a.id }); drag = { t: 'amove', p: ha.p, a: ha.a, g: hitOf(ha.p.id).g, pt0: pt, p0: ha.a.p.map(q => q.slice()) }; }
+    else if (h) select(h.id); else select(null);
+    return;
+  }
+  if (!h) { select(null); return; }
+  if (h.id !== sel) select(h.id);
+  const p = selP(), g = h.g;
+  if (!g) { toast('Zuerst ein Bild in den Platzhalter ziehen'); return; }
+  const ip = g.toImg(pt.x, pt.y);
+  if (mode === 'scale') { drag = { t: 'measure', p, g, a: pt, b: pt, draw: (ctx, px, acc) => {
+    ctx.strokeStyle = '#ff2d55'; ctx.lineWidth = 2 * px; ctx.beginPath(); ctx.moveTo(drag.a.x, drag.a.y); ctx.lineTo(drag.b.x, drag.b.y); ctx.stroke();
+    for (const q of [drag.a, drag.b]) { ctx.beginPath(); ctx.moveTo(q.x, q.y - 6 * px); ctx.lineTo(q.x, q.y + 6 * px); ctx.stroke(); }
+    ctx.fillStyle = '#ff2d55'; ctx.font = `${12 * px}px "Segoe UI"`; ctx.textAlign = 'center';
+    ctx.fillText(`${r2(Math.hypot(drag.b.x - drag.a.x, drag.b.y - drag.a.y) / g.s)} px`, (drag.a.x + drag.b.x) / 2, Math.min(drag.a.y, drag.b.y) - 8 * px); } };
+    return; }
+  if (mode === 'annot') {
+    if (atool === 'text') {
+      popup('Text einfügen', '<textarea rows="3" placeholder="Text (Strg+Enter = OK)"></textarea>', { x: e.clientX, y: e.clientY }, pop => {
+        const t = pop.querySelector('textarea').value; if (!t.trim()) return;
+        const a = { id: uid(), type: 'text', p: [ip], text: t, color: S.anColor, size: S.anSize, w: S.anW };
+        p.annots.push(a); selItem = { kind: 'annot', id: a.id }; commit(); buildProps(); render();
+      });
+      return;
+    }
+    const a = { id: uid(), type: atool, p: [ip, ip.slice()], color: S.anColor, w: S.anW };
+    p.annots.push(a); selItem = { kind: 'annot', id: a.id };
+    drag = { t: 'acreate', p, a, g, pt0: pt };
+    return;
+  }
+  if (mode === 'inset') {
+    const ins = p.insets.find(i => i.src === 'region' && i.region && (() => { const [ax, ay] = g.toFig(i.region.x, i.region.y), [bx, by] = g.toFig(i.region.x + i.region.w, i.region.y + i.region.h); return inR(pt, { x: ax, y: ay, w: bx - ax, h: by - ay }); })());
+    if (ins) { selItem = { kind: 'inset', id: ins.id }; drag = { t: 'rmove', p, ins, g, pt0: pt, r0: { ...ins.region } }; buildProps(); return; }
+    drag = { t: 'rcreate', p, g, a: pt, b: pt, draw: (ctx, px) => { ctx.strokeStyle = S.insColor === '#ffffff' ? '#ffd400' : S.insColor; ctx.lineWidth = 1.5 * px; ctx.setLineDash([4 * px, 3 * px]);
+      ctx.strokeRect(Math.min(drag.a.x, drag.b.x), Math.min(drag.a.y, drag.b.y), Math.abs(drag.b.x - drag.a.x), Math.abs(drag.b.y - drag.a.y)); ctx.setLineDash([]); } };
+  }
+});
+cv.addEventListener('pointermove', e => {
+  const pt = figPt(e);
+  if (!drag) { hover(pt); return; }
+  const d = drag, dx = pt.x - (d.pt0 ? d.pt0.x : 0), dy = pt.y - (d.pt0 ? d.pt0.y : 0), tol = 6 / zoom;
+  d.moved = d.moved || Math.hypot(dx, dy) * zoom > 2;
+  if (!d.moved) return;
+  const p = d.p;
+  switch (d.t) {
+    case 'move': {
+      toFree();
+      let x = d.R0.x + dx, y = d.R0.y + dy;
+      const T = e.altKey ? null : snapTargets(new Set([p.id, ...d.group.map(o => o.q.id)])), sx = T && snap1([x, x + p.w], T.xs, tol), sy = T && snap1([y, y + p.h], T.ys, tol);
+      if (sx) x += sx.d; if (sy) y += sy.d;
+      d.snaps = [sx && { x: sx.at }, sy && { y: sy.at }].filter(Boolean);
+      p.x = x; p.y = y;
+      for (const o of d.group) { o.q.x = o.x + x - d.R0.x; o.q.y = o.y + y - d.R0.y; }
+      break;
+    }
+    case 'resize': {
+      toFree();
+      let { x, y, w, h } = d.R0;
+      const T = e.altKey ? null : snapTargets(p.id); d.snaps = [];
+      if (d.hd.includes('e')) { let r = x + w + dx; const s = T && snap1([r], T.xs, tol); if (s) { r += s.d; d.snaps.push({ x: s.at }); } w = r - x; }
+      if (d.hd.includes('w')) { let l = x + dx; const s = T && snap1([l], T.xs, tol); if (s) { l += s.d; d.snaps.push({ x: s.at }); } w = x + w - l; x = l; }
+      if (d.hd.includes('s')) { let b = y + h + dy; const s = T && snap1([b], T.ys, tol); if (s) { b += s.d; d.snaps.push({ y: s.at }); } h = b - y; }
+      if (d.hd.includes('n')) { let t = y + dy; const s = T && snap1([t], T.ys, tol); if (s) { t += s.d; d.snaps.push({ y: s.at }); } h = y + h - t; y = t; }
+      if (e.shiftKey && d.hd.length === 2) { const a = d.R0.w / d.R0.h; if (w / h > a) w = h * a; else h = w / a; if (d.hd.includes('w')) x = d.R0.x + d.R0.w - w; if (d.hd.includes('n')) y = d.R0.y + d.R0.h - h; }
+      if (w > 10 && h > 10) Object.assign(p, { x, y, w, h });
+      break;
+    }
+    case 'inset': d.draw = (ctx, px, acc) => { ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.strokeRect(d.ir.x + pt.x - d.pt0.x, d.ir.y + pt.y - d.pt0.y, d.ir.w, d.ir.h); }; break;
+    case 'pan': p.cx = d.cx0 + dx / p.w; p.cy = d.cy0 + dy / p.h; break;
+    case 'iscale': {
+      const f = Math.hypot(pt.x - d.an[0], pt.y - d.an[1]) / d.d0;
+      Object.assign(p, { zoom: d.z0, cx: d.cx0, cy: d.cy0 }); S.magZoom = d.mz0; zoomAt(p, d.an[0], d.an[1], f); break;
+    }
+    case 'measure': d.b = e.altKey ? pt : { x: pt.x, y: d.a.y }; break;
+    case 'acreate': {
+      let q = pt;
+      if (e.shiftKey) {
+        if (d.a.type === 'rect' || d.a.type === 'ellipse') { const s = Math.max(Math.abs(dx), Math.abs(dy)); q = { x: d.pt0.x + Math.sign(dx) * s, y: d.pt0.y + Math.sign(dy) * s }; }
+        else { const ang = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4, L = Math.hypot(dx, dy); q = { x: d.pt0.x + Math.cos(ang) * L, y: d.pt0.y + Math.sin(ang) * L }; }
+      }
+      d.a.p[1] = d.g.toImg(q.x, q.y); break;
+    }
+    case 'amove': d.a.p = d.p0.map(q => [q[0] + dx / d.g.s, q[1] + dy / d.g.s]); break;
+    case 'rcreate': d.b = pt; break;
+    case 'rmove': d.ins.region = { ...d.r0, x: d.r0.x + dx / d.g.s, y: d.r0.y + dy / d.g.s }; break;
+  }
+  render();
+  if (['move', 'resize', 'pan', 'iscale'].includes(d.t)) refreshNumbers();
+});
+cv.addEventListener('pointerup', e => {
+  const d = drag; drag = null;
+  if (mode === 'image') cv.style.cursor = 'grab';
+  if (!d) return;
+  const p = d.p, pt = figPt(e);
+  if (d.t === 'acreate' && !d.moved) { p.annots = p.annots.filter(a => a !== d.a); selItem = null; render(); return; }
+  if (d.t === 'inset' && d.moved) {
+    const ins = p.insets.find(i => i.id === d.ir.id), R = d.R, cx = d.ir.x + d.ir.w / 2 + pt.x - d.pt0.x, cy = d.ir.y + d.ir.h / 2 + pt.y - d.pt0.y;
+    ins.corner = (cy < R.y + R.h / 2 ? 'u' : 'l') + (cx < R.x + R.w / 3 ? 'l' : cx > R.x + 2 * R.w / 3 ? 'r' : 'c');
+  }
+  if (d.t === 'measure' && d.moved) {
+    const pxLen = Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y) / d.g.s;
+    popup('Maßstab kalibrieren', `<div class="hint">Gezeichnete Strecke: ${r2(pxLen)} Bildpixel</div><div class="row"><span>entspricht</span><input type="number" step="any" min="0" style="width:90px">${unitSel('µm')}</div>
+      <div class="row"><label><input type="checkbox"> auch für alle anderen Bilder gleicher Größe</label></div>`, { x: e.clientX, y: e.clientY }, pop => {
+      const v = parseFloat(pop.querySelector('input[type=number]').value.replace(',', '.')), u = pop.querySelector('select').value;
+      if (!(v > 0)) { toast('Bitte eine Länge eingeben'); return; }
+      const mpp = v * SB_UNITS.find(x => x[0] === u)[1] / pxLen, all = pop.querySelector('input[type=checkbox]').checked, me = IMG.get(p.img);
+      for (const [id, d2] of Object.entries(ST.imgs)) if (id === p.img || (all && IMG.get(id) && IMG.get(id).w === me.w && IMG.get(id).h === me.h)) { d2.mpp = mpp; d2.mppSrc = 'nachgezeichnet'; }
+      p.sb.on = true; commit(); buildProps(); render(); toast(`Kalibriert: ${fmtSI(mpp, 'm')} je Pixel`);
+    });
+    render(); return;
+  }
+  if (d.t === 'rcreate' && d.moved) {
+    const [ax, ay] = d.g.toImg(Math.min(d.a.x, d.b.x), Math.min(d.a.y, d.b.y)), [bx, by] = d.g.toImg(Math.max(d.a.x, d.b.x), Math.max(d.a.y, d.b.y));
+    if (bx - ax > 2 && by - ay > 2) {
+      const R = hitOf(p.id).R, cx = (Math.min(d.a.x, d.b.x) + Math.max(d.a.x, d.b.x)) / 2, cy = (d.a.y + d.b.y) / 2;
+      const corner = (cy < R.y + R.h / 2 ? 'l' : 'u') + (cx < R.x + R.w / 2 ? 'r' : 'l');   // gegenüberliegende Ecke
+      const ins = { id: uid(), src: 'region', region: { x: ax, y: ay, w: bx - ax, h: by - ay }, corner, size: S.insSize };
+      p.insets.push(ins); selItem = { kind: 'inset', id: ins.id }; buildProps();
+    }
+  }
+  if (d.moved || d.t === 'rcreate') { commit(); buildList(); refreshItemProps(); }
+  render();
+});
+function hover(pt) {
+  if (mode !== 'layout') return;
+  const sp = selP(), sh = sp && hitOf(sp.id), tol = 7 / zoom;
+  let cur = 'default';
+  if (sh) for (const hd of HANDLES) { const [x, y] = handlePos(sh.R, hd); if (Math.abs(pt.x - x) < tol && Math.abs(pt.y - y) < tol) cur = { n: 'ns', s: 'ns', e: 'ew', w: 'ew', nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw' }[hd] + '-resize'; }
+  if (cur === 'default' && (hitInset(pt) || hitPanel(pt))) cur = 'move';
+  cv.style.cursor = cur;
+}
+cv.addEventListener('wheel', e => {
+  if (e.ctrlKey) { e.preventDefault(); $('#fit').checked = false; zoom = clamp(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), 0.05, 8); render(); return; }
+  if (mode !== 'image') return;
+  const pt = figPt(e), h = hitPanel(pt); if (!h || !h.g) return;
+  e.preventDefault();
+  if (h.id !== sel) select(h.id);
+  zoomAt(selP(), pt.x, pt.y, Math.exp(-e.deltaY * 0.0015)); commitSoon(); render(); refreshNumbers();
+}, { passive: false });
+cv.addEventListener('dblclick', e => {
+  const pt = figPt(e), hi = hitInset(pt);
+  if (hi) { select(hi.h.id, { kind: 'inset', id: hi.ir.id }); const ins = selP().insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') pickFiles(false, f => loadInto(f, selP(), ins)); return; }
+  const h = hitPanel(pt); if (!h) return;
+  select(h.id);
+  if (!h.g) pickFiles(true, f => loadInto(f, selP()));
+  else if (mode === 'layout') setMode('image');
+  else if (mode === 'image') setMode('layout');
+});
+
+/* ---------- Bilder laden und zuordnen ---------- */
+let pickCb = null;
+function pickFiles(multi, cb) { const f = $('#file'); f.multiple = multi; pickCb = cb; f.click(); }
+$('#file').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length && pickCb) pickCb(fs); pickCb = null; };
+$('#btnOpen').onclick = () => pickFiles(true, f => loadInto(f, null));
+const IMG_RE = /\.(png|jpe?g|tiff?|svg|bmp|gif|webp)$/i;
+// Strg+V: Bild aus der Zwischenablage (z. B. „Bild kopieren“ im Diagramm-Designer) in den gewählten leeren Platzhalter oder einen neuen
+document.addEventListener('paste', e => {
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const files = [];
+  for (const it of e.clipboardData.items) if (it.kind === 'file' && it.type.startsWith('image/')) { const f = it.getAsFile(); if (f) files.push(new File([f], f.name && f.name !== 'image.png' ? f.name : 'eingefuegt.' + (it.type.includes('svg') ? 'svg' : 'png'), { type: it.type })); }
+  if (!files.length) { const t = e.clipboardData.getData('text/plain'); if (/^\s*(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(t)) files.push(new File([t], 'eingefuegt.svg', { type: 'image/svg+xml' })); }
+  if (!files.length) return;
+  e.preventDefault();
+  const p = selP();
+  loadInto(files.slice(0, 1), p && !p.img ? p : null);
+});
+// Dateien in einen Platzhalter (bzw. ein Inset); weitere Dateien füllen leere Platzhalter, fehlende werden ergänzt
+async function loadInto(files, target, inset) {
+  files = files.filter(f => IMG_RE.test(f.name) || f.type.startsWith('image/'));
+  if (!files.length) { toast('Keine unterstützte Bilddatei (PNG, JPG, TIFF)'); return; }
+  $('#status').textContent = 'Lade ' + files.map(f => f.name).join(', ') + ' …';
+  let k = 0;
+  for (const f of files) {
+    let id;
+    try { id = await loadImageFile(f); } catch (err) { console.error(err); toast(`${f.name}: ${err.message || 'konnte nicht gelesen werden'}`); continue; }
+    if (inset && k === 0) { inset.src = 'image'; inset.img = id; k++; continue; }
+    let p = k === 0 && target ? target : null;
+    if (!p) { const start = target ? ST.panels.indexOf(target) : 0; p = ST.panels.slice(start).find(q => !q.img && q !== target) || ST.panels.find(q => !q.img); }
+    if (!p) { p = newPanel(); ST.panels.push(p); if (ST.L.mode === 'free') { const last = ST.panels[ST.panels.length - 2]; Object.assign(p, last ? { x: last.x + 20, y: last.y + 20, w: last.w, h: last.h } : { x: 10, y: 10, w: 200, h: 150 }); } }
+    const plot = ST.imgs[id].kind === 'plot' || ST.imgs[id].dpi >= 150;   // Diagramm (SVG oder PNG mit Druck-dpi): ganz zeigen, heller Grund, dunkles Label
+    Object.assign(p, { img: id, zoom: 1, cx: 0.5, cy: 0.5, annots: [], adj: freshAdj(), fit: plot ? 'contain' : 'cover' });
+    // Durchsichtige Stellen zeigen den Abbildungshintergrund statt der (schwarzen) Bildfläche
+    if (plot || ST.imgs[id].alpha) Object.assign(p, { bg: ST.imgs[id].alpha ? 'none' : '#ffffff', lblColor: '#000000' });
+    else if ((p.bg === '#ffffff' || p.bg === 'none') && p.lblColor === '#000000') Object.assign(p, { bg: '', lblColor: '' });
+    p.insets = p.insets.filter(i => i.src !== 'region');
+    if (k === 0) sel = p.id;
+    k++;
+    const m = ST.imgs[id];
+    if (m.mpp) toast(`${f.name}: Pixelgröße ${fmtSI(m.mpp, 'm')} aus ${m.mppSrc}`);
+  }
+  commit(); refreshAll();
+}
+const view = $('#view');
+['dragenter', 'dragover'].forEach(ev => view.addEventListener(ev, e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); view.classList.add('dropping'); } }));
+view.addEventListener('dragleave', e => { if (e.target === view) view.classList.remove('dropping'); });
+view.addEventListener('drop', e => {
+  e.preventDefault(); view.classList.remove('dropping');
+  const fs = [...e.dataTransfer.files]; if (!fs.length) return;
+  const pt = figPt(e), hi = hitInset(pt);
+  if (hi) { const p = panelById(hi.h.id), ins = p.insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') { sel = p.id; loadInto(fs, p, ins); return; } }
+  const h = hitPanel(pt);
+  loadInto(fs, h ? panelById(h.id) : null);
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
+
+/* ---------- Tastatur ---------- */
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+  if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const p = selP();
+  if (e.key === 'Escape') { if (drag) { drag = null; render(); } else if (selItem) select(sel); else select(null); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && p) {
+    e.preventDefault();
+    if (selItem && selItem.kind === 'annot') p.annots = p.annots.filter(a => a.id !== selItem.id);
+    else if (selItem && selItem.kind === 'inset') p.insets = p.insets.filter(a => a.id !== selItem.id);
+    else if (msel.size > 1) { ST.panels = ST.panels.filter(q => !msel.has(q.id)); sel = null; msel = new Set(); commit(); refreshAll(); return; }
+    else { removePanel(p); return; }
+    selItem = null; commit(); buildProps(); render(); return;
+  }
+  if (e.key.startsWith('Arrow') && p) {
+    e.preventDefault();
+    const st = e.shiftKey ? 10 : 1, dx = { ArrowLeft: -st, ArrowRight: st }[e.key] || 0, dy = { ArrowUp: -st, ArrowDown: st }[e.key] || 0;
+    if (mode === 'image' && p.img) { p.cx += dx / p.w; p.cy += dy / p.h; }
+    else if (selItem && selItem.kind === 'annot' && p.img) { const a = p.annots.find(x => x.id === selItem.id), g = geom(p); if (a) a.p = a.p.map(q => [q[0] + dx / g.s, q[1] + dy / g.s]); }
+    else { toFree(); for (const q of ST.panels) if (q === p || msel.has(q.id)) { q.x += dx / zoom; q.y += dy / zoom; } }
+    commitSoon(); render(); refreshNumbers(); return;
+  }
+  const m = { v: 'layout', b: 'image', m: 'scale', a: 'annot', i: 'inset' }[e.key.toLowerCase()];
+  if (m) setMode(m);
+});
+
+/* ---------- Seitenleiste: Layout ---------- */
+function layoutIcon(cols, rows, cells) {
+  const W = 34, H = 24, g = 2, cw = (W - 2 - (cols - 1) * g) / cols, ch = (H - 2 - (rows - 1) * g) / rows;
+  return `<svg viewBox="0 0 ${W} ${H}">${(cells || gridCells(cols, rows)).map(([c, r, cs, rs]) => `<rect x="${1 + c * (cw + g)}" y="${1 + r * (ch + g)}" width="${cs * cw + (cs - 1) * g}" height="${rs * ch + (rs - 1) * g}" rx="1"/>`).join('')}</svg>`;
+}
+(() => {
+  const box = $('#layouts');
+  const smart = document.createElement('button');
+  smart.innerHTML = `<svg viewBox="0 0 34 24"><rect x="1" y="1" width="19" height="10" rx="1"/><rect x="22" y="1" width="11" height="10" rx="1"/><rect x="1" y="13" width="10" height="10" rx="1"/><rect x="13" y="13" width="20" height="10" rx="1"/></svg><span>Smart</span>`;
+  smart.title = 'Ordnet die Bilder in Zeilen so an, dass sie ohne Beschnitt die Breite füllen (nach ihren Seitenverhältnissen)';
+  smart.onclick = () => { ST.L.mode = 'smart'; S.autoH = true; commit(); refreshAll(); };
+  smart.dataset.lay = 'smart'; box.appendChild(smart);
+  for (const [id, label, cols, rows, cells] of PRESETS) {
+    const b = document.createElement('button'); b.dataset.lay = id; b.title = label;
+    b.innerHTML = layoutIcon(cols, rows, cells) + `<span>${label}</span>`;
+    b.onclick = () => { setPreset(id); ST.L.preset = id; commit(); refreshAll(); };
+    box.appendChild(b);
+  }
+})();
+(() => {
+  const I = (d, r) => `<svg viewBox="0 0 16 16" width="16" height="16" style="vertical-align:-3px;fill:currentColor;fill-opacity:.55;stroke:currentColor;stroke-width:1.2">${r}<path d="${d}" fill="none"/></svg>`;
+  const R = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" stroke="none"/>`;
+  const A = [
+    ['left', 'links ausrichten', I('M1.5 1v14', R(3, 3, 10, 3) + R(3, 9, 6, 3))],
+    ['hcenter', 'horizontal zentrieren', I('M8 1v14', R(2, 3, 12, 3) + R(5, 9, 6, 3))],
+    ['right', 'rechts ausrichten', I('M14.5 1v14', R(3, 3, 10, 3) + R(7, 9, 6, 3))],
+    ['top', 'oben ausrichten', I('M1 1.5h14', R(3, 3, 3, 10) + R(9, 3, 3, 6))],
+    ['vcenter', 'vertikal zentrieren', I('M1 8h14', R(3, 2, 3, 12) + R(9, 5, 3, 6))],
+    ['bottom', 'unten ausrichten', I('M1 14.5h14', R(3, 3, 3, 10) + R(9, 7, 3, 6))],
+    ['hdist', 'horizontal gleichmäßig verteilen (äußere bleiben)', I('M1 2v12M15 2v12', R(3, 5, 3, 6) + R(10, 5, 3, 6))],
+    ['vdist', 'vertikal gleichmäßig verteilen (äußere bleiben)', I('M2 1h12M2 15h12', R(5, 3, 6, 3) + R(5, 10, 6, 3))],
+    ['hgap', 'nebeneinander mit eingestelltem Abstand', I('', R(1, 5, 4, 6) + R(6, 5, 4, 6) + R(11, 5, 4, 6))],
+    ['vgap', 'untereinander mit eingestelltem Abstand', I('', R(5, 1, 6, 4) + R(5, 6, 6, 4) + R(5, 11, 6, 4))],
+    ['sameW', 'gleiche Breite wie der zuletzt angeklickte', 'gl. Breite'],
+    ['sameH', 'gleiche Höhe wie der zuletzt angeklickte', 'gl. Höhe'],
+    ['same', 'gleiche Größe wie der zuletzt angeklickte', 'gl. Größe']
+  ];
+  for (const [k, t, h] of A) { const b = document.createElement('button'); b.className = 'mini'; b.title = t; b.innerHTML = h; b.onclick = () => arrange(k); $('#alignBtns').appendChild(b); }
+})();
+$('#btnGrid').onclick = () => {
+  const c = clamp(+$('#gCols').value || 1, 1, 12), r = clamp(+$('#gRows').value || 1, 1, 12);
+  ST.L = { ...ST.L, mode: 'cells', cols: c, rows: r, cells: gridCells(c, r), preset: '' };
+  while (ST.panels.length < c * r) ST.panels.push(newPanel());
+  for (let i = ST.panels.length - 1; i >= c * r; i--) if (!ST.panels[i].img) ST.panels.splice(i, 1);
+  commit(); refreshAll();
+};
+$('#btnAdd').onclick = () => {
+  const p = newPanel();
+  if (ST.L.mode === 'free') { const W = figWpx(); Object.assign(p, { x: W * 0.35, y: 10, w: W * 0.3, h: W * 0.225 }); }
+  ST.panels.push(p); sel = p.id; commit(); refreshAll();
+};
+$('#btnRelayout').onclick = () => { ST.L.mode = 'smart'; S.autoH = true; commit(); refreshAll(); };
+function removePanel(p) { ST.panels = ST.panels.filter(q => q !== p); if (sel === p.id) { sel = null; selItem = null; } commit(); refreshAll(); }
+const thumbs = new Map();
+function thumb(id) {
+  if (!thumbs.has(id)) { const im = IMG.get(id); if (!im) return ''; const c = makePrev(im.prev, im.prev.width, im.prev.height), k = 68 / Math.max(c.width, c.height), t = document.createElement('canvas');
+    t.width = Math.max(1, c.width * k); t.height = Math.max(1, c.height * k); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); thumbs.set(id, t.toDataURL('image/jpeg', 0.7)); }
+  return thumbs.get(id);
+}
+function buildList() {
+  const box = $('#plist'), labels = panelLabels();
+  box.innerHTML = '';
+  ST.panels.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'item' + (p.id === sel || msel.has(p.id) ? ' sel' : ''); d.dataset.id = p.id;
+    const nm = p.img ? (ST.imgs[p.img] || {}).name || IMG.get(p.img)?.name || 'Bild' : '(leer)';
+    d.innerHTML = `<span class="handle" draggable="true" title="Ziehen zum Umsortieren">⠿</span><span class="lbl">${esc(labels[i] || '–')}</span>` +
+      (p.img ? `<img class="thumb" src="${thumb(p.img)}" alt="">` : '<span class="thumb"></span>') + `<span class="nm" title="${esc(nm)}">${esc(nm)}</span>` +
+      `<button class="mini" data-a="up" title="nach vorn">▲</button><button class="mini" data-a="down" title="nach hinten">▼</button><button class="mini" data-a="del" title="Platzhalter entfernen">✕</button>`;
+    d.onclick = e => {
+      const a = e.target.dataset.a;
+      if (a === 'del') { removePanel(p); return; }
+      if (a === 'up' || a === 'down') { const j = i + (a === 'up' ? -1 : 1); if (j < 0 || j >= ST.panels.length) return; movePanel(i, j); return; }
+      if (e.shiftKey || e.ctrlKey || e.metaKey) toggleMulti(p.id); else select(p.id);
+    };
+    box.appendChild(d);
+  });
+  const m = ST.L.mode;
+  $('#layoutMode').textContent = m === 'free' ? '(frei angeordnet)' : m === 'smart' ? '(Smart)' : `(Raster ${ST.L.cols} × ${ST.L.rows})`;
+  $$('#layouts button').forEach(b => b.classList.toggle('on', m === 'smart' ? b.dataset.lay === 'smart' : m === 'cells' && b.dataset.lay === ST.L.preset));
+}
+// In automatischen Layouts wandert der Platzhalter mit; frei angeordnet ändert sich nur die Reihenfolge (Labels)
+function movePanel(i, j) { const [p] = ST.panels.splice(i, 1); ST.panels.splice(j, 0, p); commit(); buildList(); render(); }
+(() => {
+  const list = $('#plist'); let dragEl = null;
+  list.addEventListener('dragstart', e => { const row = e.target.closest('.item'); if (!row || !e.target.classList.contains('handle')) return; dragEl = row; row.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', row.dataset.id); } catch { } });
+  list.addEventListener('dragover', e => { if (!dragEl) return; e.preventDefault(); const row = e.target.closest('.item'); if (!row || row === dragEl) return; const r = row.getBoundingClientRect(); list.insertBefore(dragEl, e.clientY < r.top + r.height / 2 ? row : row.nextSibling); });
+  list.addEventListener('dragend', () => {
+    if (!dragEl) return; dragEl.classList.remove('drag'); dragEl = null;
+    const order = [...list.children].map(c => c.dataset.id);
+    ST.panels.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)); commit(); buildList(); render();
+  });
+})();
+
+/* ---------- Seitenleiste: ausgewählter Platzhalter ---------- */
+const CORNERS = { ul: 'oben links', uc: 'oben Mitte', ur: 'oben rechts', ll: 'unten links', lc: 'unten Mitte', lr: 'unten rechts' };
+const optList = (o, cur) => Object.entries(o).map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const ANAME = { arrow: 'Pfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text' };
+function buildProps() {
+  const box = $('#panelProps'), p = selP();
+  $('#selName').textContent = p ? `(${panelLabels()[ST.panels.indexOf(p)] || ST.panels.indexOf(p) + 1})` : '';
+  if (!p) { box.innerHTML = '<p class="hint">Einen Platzhalter in der Vorschau oder in der Liste anklicken.</p>'; return; }
+  const u = S.figUnit, d = p.img ? ST.imgs[p.img] : null, im = p.img ? IMG.get(p.img) : null, num = v => r2(fromPx(v, u));
+  let h = `<div class="row"><span>X / Y (${u === 'in' ? 'Zoll' : u})</span><input type="number" step="0.1" data-b="p:x" data-u="1" value="${num(p.x)}"><input type="number" step="0.1" data-b="p:y" data-u="1" value="${num(p.y)}"></div>
+    <div class="row"><span>Breite / Höhe</span><input type="number" step="0.1" min="0.1" data-b="p:w" data-u="1" value="${num(p.w)}"><input type="number" step="0.1" min="0.1" data-b="p:h" data-u="1" value="${num(p.h)}"></div>
+    <div class="row"><span>Label</span><input data-b="p:label" value="${esc(p.label)}" placeholder="automatisch (- = keins)" style="width:130px"><select data-b="p:lblColor" title="Labelfarbe">${optList({ '': 'Farbe wie eingestellt', '#000000': 'schwarz', '#ffffff': 'weiß' }, p.lblColor || '')}</select></div>
+    <div class="row"><span>Rahmen</span><select data-b="p:frame">${optList({ g: 'wie eingestellt', on: 'an', off: 'aus' }, p.frame)}</select></div>
+    <div class="row"><span>Hintergrund der Bildfläche</span><select data-b="p:bg" title="sichtbar bei Transparenz oder wenn das Bild die Fläche nicht füllt">${optList({ '': 'wie eingestellt', none: 'durchsichtig', '#ffffff': 'weiß', '#000000': 'schwarz' }, ['', 'none', '#ffffff', '#000000'].includes(p.bg) ? p.bg : '')}</select></div>
+    <div class="sub">Bild</div>`;
+  if (!im) h += `<div class="btns"><button data-act="load">Bild laden…</button></div><p class="hint">Oder eine Datei auf den Platzhalter ziehen.</p>`;
+  else {
+    const z = Math.round(p.zoom * 100);
+    h += `<div class="hint" title="${esc(im.name)}">${esc(im.name)} · ${im.w} × ${im.h} px</div>
+      <div class="btns"><button data-act="load">Ersetzen…</button><button data-act="cover" class="${p.fit !== 'contain' ? 'on' : ''}" title="Platzhalter ganz füllen (Überstand wird abgeschnitten)">Füllen</button><button data-act="contain" class="${p.fit === 'contain' ? 'on' : ''}" title="Ganzes Bild zeigen – gut für Diagramme">Einpassen</button>${d.physW ? `<button data-act="orig" title="Platzhalter auf die Originalgröße des Diagramms setzen (${r2(fromPx(d.physW, 'cm'))} × ${r2(fromPx(d.physH, 'cm'))} cm), damit Schriftgrößen erhalten bleiben">Originalgröße</button>` : ''}<button data-act="rot">↻ 90°</button><button data-act="rotl">↺ 90°</button><button data-act="unload">Entfernen</button></div>
+      <div class="row"><span>Zoom (%)</span><input type="number" step="5" min="5" data-b="p:zoom" data-pct="1" value="${z}"></div>
+      <div class="sub">Helligkeit &amp; Kontrast</div>
+      <div class="row"><span>Helligkeit</span><input type="range" min="-100" max="100" data-b="p:adj.b" value="${p.adj.b}" style="flex:1.4"><output>${p.adj.b}</output></div>
+      <div class="row"><span>Kontrast</span><input type="range" min="-100" max="100" data-b="p:adj.c" value="${p.adj.c}" style="flex:1.4"><output>${p.adj.c}</output></div>
+      <div class="row"><span>Gamma</span><input type="range" min="0.2" max="3" step="0.05" data-b="p:adj.g" value="${p.adj.g}" style="flex:1.4"><output>${p.adj.g}</output></div>
+      <div class="row"><label><input type="checkbox" data-b="p:adj.inv"${p.adj.inv ? ' checked' : ''}> invertieren</label></div>
+      <div class="btns"><button data-act="auto">Auto-Kontrast</button><button data-act="adj0">Zurücksetzen</button><button data-act="adjAll" title="Diese Einstellung auf alle Bilder übertragen">Auf alle</button></div>`;
+    const meta = im.meta && im.meta.items.length ? im.meta.items : [];
+    h += `<div class="sub">Metadaten &amp; Zuschnitt</div>`;
+    if (meta.length) h += `<div class="hint">${meta.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>')}</div><div class="btns"><button data-act="metaText">Messdaten als Textfeld</button></div>`;
+    h += `<div class="row"><label><input type="checkbox" data-b="img:hideBar"${d.hideBar ? ' checked' : ''}> Infobalken unten ausblenden</label><input type="number" min="0" data-b="img:bar" value="${d.bar || 0}" title="Höhe in Bildpixeln" style="width:64px"><span class="hint">px</span></div>
+      <div class="row"><span>Zuschnitt O / U / L / R (px)</span>${['t', 'b', 'l', 'r'].map(k => `<input type="number" min="0" data-b="img:crop.${k}" value="${d.crop[k] || 0}" style="width:52px">`).join('')}</div>
+      <p class="hint">${d.bar ? 'Infobalken erkannt' + (im.meta && im.meta.bar ? ' (aus den Metadaten)' : ' (geschätzt – Höhe ggf. anpassen)') + '. ' : 'Kein Infobalken erkannt – Höhe bei Bedarf eintragen. '}Ausgeblendetes wird nicht exportiert.</p>
+      <div class="sub">Maßstab</div>
+      <div class="row"><span>Pixelgröße</span><input type="number" step="any" min="0" id="mppVal" value="${d.mpp ? +(d.mpp / mppUnit(d.mpp)[1]).toPrecision(6) : ''}" placeholder="unbekannt" style="width:90px"><select id="mppUnit">${SB_UNITS.map(x => `<option${d.mpp && mppUnit(d.mpp)[0] === x[0] ? ' selected' : ''}>${x[0]}</option>`).join('')}</select><span class="hint">/ px</span></div>
+      <div class="hint">${d.mpp ? 'Quelle: ' + esc(d.mppSrc || 'eingegeben') : 'Nicht kalibriert: Werkzeug „⟷ Maßstab“ wählen und im Bild entlang eines bekannten Maßstabs ziehen.'}</div>
+      <div class="btns"><button data-act="calib">Maßstab nachzeichnen</button>${d.mpp ? '<button data-act="mppAll">Kalibrierung auf alle Bilder</button><button data-act="mpp0">Löschen</button>' : ''}</div>
+      <div class="row"><label><input type="checkbox" data-b="p:sb.on"${p.sb.on ? ' checked' : ''}> Maßstabsbalken zeigen</label></div>
+      <div class="row"><span>Länge</span><input type="number" step="any" min="0" data-b="p:sb.val" value="${p.sb.val ?? ''}" placeholder="auto" style="width:72px"><select data-b="p:sb.unit">${optList(Object.fromEntries(SB_UNITS.map(x => [x[0], x[0]])), p.sb.unit)}</select></div>
+      <div class="row"><span>Ecke</span><select data-b="p:sb.corner">${optList({ '': 'Standard', ...CORNERS }, p.sb.corner)}</select></div>`;
+  }
+  h += `<div class="sub">Textfelder</div>`;
+  p.texts.forEach((t, i) => {
+    h += `<div class="card"><div class="row"><select data-b="tx${i}:corner">${optList(CORNERS, t.corner)}</select><span class="seg">${['left', 'center', 'right'].map(a => `<button class="mini${(t.align || 'left') === a ? ' on' : ''}" data-act="talign" data-i="${i}" data-v="${a}" title="${{ left: 'linksbündig', center: 'zentriert', right: 'rechtsbündig' }[a]}">${{ left: '⇤', center: '↔', right: '⇥' }[a]}</button>`).join('')}</span><span style="flex:1"></span><button class="mini" data-act="tdel" data-i="${i}">✕</button></div>
+      <textarea data-b="tx${i}:text" placeholder="Text (mehrzeilig möglich)">${esc(t.text)}</textarea>
+      <div class="row"><span>Farbe / Größe (pt)</span><input type="color" data-b="tx${i}:color" value="${t.color || S.txtColor}"><input type="number" step="0.5" min="3" data-b="tx${i}:size" value="${t.size || ''}" placeholder="${S.txtSize}" style="width:60px"></div></div>`;
+  });
+  h += `<div class="btns"><button data-act="tadd">+ Textfeld</button></div><div class="sub">Insets</div>`;
+  p.insets.forEach((t, i) => {
+    const s = selItem && selItem.id === t.id ? ' style="border-color:var(--accent)"' : '';
+    h += `<div class="card"${s}><div class="row"><b>${t.src === 'region' ? 'Ausschnitt' : 'Eigenes Bild'}</b><select data-b="in${i}:corner">${optList(CORNERS, t.corner)}</select><span style="flex:1"></span>${t.src !== 'region' ? `<button class="mini" data-act="iload" data-i="${i}">Bild…</button>` : ''}<button class="mini" data-act="idel" data-i="${i}">✕</button></div>
+      <div class="row"><span>Größe / Rahmen (pt)</span><input type="number" step="0.05" min="0.05" max="0.95" data-b="in${i}:size" value="${t.size || S.insSize}" style="width:60px"><input type="color" data-b="in${i}:color" value="${t.color || S.insColor}"><input type="number" step="0.25" min="0" data-b="in${i}:lw" value="${t.lw ?? ''}" placeholder="${S.insW}" style="width:56px"></div></div>`;
+  });
+  h += `<div class="btns"><button data-act="iadd">+ Inset mit eigenem Bild</button><button data-act="iregion">+ Ausschnitt-Inset (Werkzeug)</button></div>`;
+  if (im) {
+    h += `<div class="sub">Annotationen</div>`;
+    const a = selItem && selItem.kind === 'annot' && p.annots.find(x => x.id === selItem.id);
+    if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : ''}</button>`).join('')}</div>`;
+    if (a) h += `<div class="card"><div class="row"><span>Farbe / Linie (pt)</span><input type="color" data-b="an:color" value="${a.color || S.anColor}"><input type="number" step="0.25" min="0.25" data-b="an:w" value="${a.w || S.anW}" style="width:56px"><button class="mini" data-act="adel">✕</button></div>` +
+      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea><div class="row"><span>Größe (pt)</span><input type="number" step="0.5" min="3" data-b="an:size" value="${a.size || S.anSize}" style="width:60px"><label><input type="checkbox" data-b="an:box"${a.box ? ' checked' : ''}> Kasten</label></div>` : '') + '</div>';
+    h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit.</p>`;
+  }
+  h += `<div class="btns" style="margin-top:10px"><button data-act="dup">Duplizieren</button><button data-act="pdel">Platzhalter entfernen</button></div>`;
+  box.innerHTML = h;
+  bindProps(box, p);
+}
+const mppUnit = m => { let u = SB_UNITS[0]; for (const x of SB_UNITS) if (m >= x[1] * 0.9999) u = x; return u; };
+function bindProps(box, p) {
+  const obj = scope => scope === 'p' ? p : scope === 'img' ? ST.imgs[p.img] : scope === 'an' ? p.annots.find(x => selItem && x.id === selItem.id)
+    : scope.startsWith('tx') ? p.texts[+scope.slice(2)] : scope.startsWith('in') ? p.insets[+scope.slice(2)] : null;
+  box.querySelectorAll('[data-b]').forEach(el => {
+    const ev = el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(ev, () => {
+      const [scope, path] = el.dataset.b.split(':'), o = obj(scope); if (!o) return;
+      let v = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.type === 'range') ? parseFloat(el.value) : el.value;
+      if (typeof v === 'number' && isNaN(v)) v = null;
+      if (el.dataset.u) { if (v == null || v <= 0 && /:[wh]$/.test(el.dataset.b)) return; v = toPx(v, S.figUnit); toFree(); }
+      if (el.dataset.pct) { if (!(v > 0)) return; v /= 100; }
+      const ks = path.split('.'), lastK = ks.pop(), tgt = ks.reduce((a, k) => a[k], o);
+      tgt[lastK] = v;
+      if (el.nextElementSibling && el.nextElementSibling.tagName === 'OUTPUT') el.nextElementSibling.textContent = v;
+      if (scope === 'img' && path === 'bar') ST.imgs[p.img].hideBar = v > 0 && ST.imgs[p.img].hideBar;
+      if (path === 'label' || path === 'corner') buildList();
+      commitSoon(); render();
+    });
+  });
+  const mv = box.querySelector('#mppVal'), mu = box.querySelector('#mppUnit');
+  if (mv) { const f = () => { const v = parseFloat(mv.value); const d = ST.imgs[p.img]; d.mpp = v > 0 ? v * SB_UNITS.find(x => x[0] === mu.value)[1] : null; d.mppSrc = 'eingegeben'; commitSoon(); render(); }; mv.oninput = f; mu.onchange = f; }
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => propAction(b.dataset.act, p, b));
+}
+async function propAction(a, p, b) {
+  const i = +b.dataset.i, d = p.img && ST.imgs[p.img];
+  switch (a) {
+    case 'load': pickFiles(true, f => loadInto(f, p)); return;
+    case 'unload': p.img = null; p.annots = []; p.insets = p.insets.filter(x => x.src !== 'region'); break;
+    case 'cover': Object.assign(p, { fit: 'cover', zoom: 1, cx: 0.5, cy: 0.5 }); break;
+    case 'contain': Object.assign(p, { fit: 'contain', zoom: 1, cx: 0.5, cy: 0.5 }); break;
+    case 'orig': { const d2 = ST.imgs[p.img]; toFree(); Object.assign(p, { w: d2.physW, h: d2.physH, fit: 'contain', zoom: 1, cx: 0.5, cy: 0.5 }); break; }
+    case 'rot': case 'rotl': await rotateImg(p, a === 'rot' ? 1 : -1); return;
+    case 'auto': p.adj = autoAdj(p.img); break;
+    case 'adj0': p.adj = freshAdj(); break;
+    case 'adjAll': for (const q of ST.panels) q.adj = { ...p.adj }; toast('Auf alle Bilder übertragen'); break;
+    case 'metaText': {
+      const im = IMG.get(p.img), get = k => (im.meta.items.find(x => x[0] === k) || [])[1];
+      const t = [get('Hochspannung'), get('Detektor'), get('Vergrößerung'), get('Arbeitsabstand') && 'WD ' + get('Arbeitsabstand')].filter(Boolean).join(' · ');
+      p.texts.push({ id: uid(), corner: 'ur', align: 'right', text: t || im.meta.items.map(x => x[1]).join(' · ') }); break;
+    }
+    case 'calib': setMode('scale'); toast('Im Bild entlang des vorhandenen Maßstabs ziehen'); return;
+    case 'mppAll': for (const k of Object.keys(ST.imgs)) { ST.imgs[k].mpp = d.mpp; ST.imgs[k].mppSrc = 'übertragen'; } toast('Kalibrierung auf alle Bilder übertragen'); break;
+    case 'mpp0': d.mpp = null; d.mppSrc = ''; break;
+    case 'tadd': p.texts.push({ id: uid(), corner: p.texts.length ? 'll' : 'ur', align: 'left', text: '' }); break;
+    case 'talign': p.texts[i].align = b.dataset.v; break;
+    case 'tdel': p.texts.splice(i, 1); break;
+    case 'iadd': { const ins = { id: uid(), src: 'image', img: null, corner: 'ur', size: S.insSize }; p.insets.push(ins); selItem = { kind: 'inset', id: ins.id }; pickFiles(false, f => loadInto(f, p, ins)); break; }
+    case 'iregion': setMode('inset'); toast('Im Bild einen Ausschnitt aufziehen'); return;
+    case 'iload': pickFiles(false, f => loadInto(f, p, p.insets[i])); return;
+    case 'idel': p.insets.splice(i, 1); break;
+    case 'asel': selItem = { kind: 'annot', id: b.dataset.id }; break;
+    case 'adel': p.annots = p.annots.filter(x => !selItem || x.id !== selItem.id); selItem = null; break;
+    case 'dup': { const q = JSON.parse(JSON.stringify(p)); q.id = uid(); q.x += 15; q.y += 15; ST.panels.splice(ST.panels.indexOf(p) + 1, 0, q); sel = q.id; break; }
+    case 'pdel': removePanel(p); return;
+  }
+  commit(); refreshAll();
+}
+async function rotateImg(p, dir) {
+  const im = IMG.get(p.img), c = document.createElement('canvas'); c.width = im.h; c.height = im.w;
+  const x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(dir * Math.PI / 2); x.drawImage(im.full, -im.w / 2, -im.h / 2);
+  const blob = await new Promise(r => c.toBlob(r, 'image/png')), full = await createImageBitmap(c), id = uid();
+  IMG.set(id, { ...im, id, w: im.h, h: im.w, full, prev: makePrev(full, im.h, im.w), blob });
+  ST.imgs[id] = { ...ST.imgs[p.img], crop: { t: 0, b: 0, l: 0, r: 0 }, hideBar: false, bar: 0 };
+  Object.assign(p, { img: id, annots: [], zoom: 1, cx: 0.5, cy: 0.5 }); p.insets = p.insets.filter(i => i.src !== 'region');
+  dbPutImg(id).catch(() => { });
+  commit(); refreshAll();
+}
+const refreshItemProps = () => buildProps();
+function refreshNumbers() {
+  const p = selP(); if (!p) return;
+  $$('#panelProps [data-u]').forEach(el => { if (document.activeElement !== el) el.value = r2(fromPx(p[el.dataset.b.split(':')[1]], S.figUnit)); });
+  const z = $('#panelProps [data-pct]'); if (z && document.activeElement !== z) z.value = Math.round(p.zoom * 100);
+}
+
+/* ---------- Globale Einstellungen ---------- */
+function syncUI() {
+  $$('[data-k]').forEach(el => { if (document.activeElement === el) return; const v = S[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
+  $('#gCols').value = ST.L.cols || 2; $('#gRows').value = ST.L.rows || 2;
+}
+function scaleFree(f, fy = f) { if (ST.L.mode !== 'free') return; for (const p of ST.panels) { p.x *= f; p.w *= f; p.y *= fy; p.h *= fy; } }
+$$('[data-k]').forEach(el => {
+  const h = () => {
+    const k = el.dataset.k;
+    let v = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.dataset.num) ? parseFloat(el.value) : el.value;
+    if (typeof v === 'number' && isNaN(v)) return;
+    if (k === 'figUnit') { S.figW = r2(fromPx(toPx(S.figW, S.figUnit), v)); S.figH = r2(fromPx(toPx(S.figH, S.figUnit), v)); S.figUnit = v; syncUI(); buildProps(); }
+    else if (k === 'figW') { if (!(v > 0)) return; scaleFree(v / S.figW); S.figW = v; }
+    else if (k === 'figH') { if (!(v > 0)) return; S.autoH = false; scaleFree(1, v / S.figH); S.figH = v; ST.L.ratio = v / S.figW; syncUI(); }
+    else if (k === 'autoH') { S.autoH = v; if (v) ST.L.ratio = S.figH / S.figW; }
+    else S[k] = v;
+    commitSoon(); render();
+  };
+  el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', h);
+});
+[['8,5 cm (1 Spalte)', 8.5], ['12 cm', 12], ['17,5 cm (2 Spalten)', 17.5], ['Folie 25,4 cm', 25.4]].forEach(([l, w]) => {
+  const b = document.createElement('button'); b.textContent = l;
+  b.onclick = () => { const nw = r2(fromPx(toPx(w, 'cm'), S.figUnit)); scaleFree(nw / S.figW); S.figW = nw; commit(); refreshAll(); };
+  $('#sizeBtns').appendChild(b);
+});
+function refreshAll() { syncUI(); buildList(); buildProps(); updUndo(); render(); }
+$('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
+$('#fit').onchange = render;
+$('#guides').onchange = render;
+$('#zoom').oninput = e => { $('#fit').checked = false; zoom = e.target.value / 100; render(); };
+window.addEventListener('resize', () => { if ($('#fit').checked) render(); });
+$('#btnCapCopy').onclick = () => copyText(S.capText.replace(/\*\*|\*/g, ''), 'Bildunterschrift kopiert');
+
+/* ---------- Export ---------- */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(bytes) { let c = 0xffffffff; for (const b of bytes) c = CRC[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function setPngDpi(png, dpi) {
+  const ppm = Math.round(dpi / 0.0254), chunk = new Uint8Array(21), dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9); chunk.set([0x70, 0x48, 0x59, 0x73], 4); dv.setUint32(8, ppm); dv.setUint32(12, ppm); chunk[16] = 1;
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+  const out = new Uint8Array(png.length + 21); out.set(png.subarray(0, 33)); out.set(chunk, 33); out.set(png.subarray(33), 54);
+  return out;
+}
+const dpiScale = () => (+S.dpi || 300) / 96;
+const toBlob = (c, type, q) => new Promise(r => c.toBlob(r, type, q));
+async function pngBlob() {
+  const { canvas } = renderCanvas(dpiScale());
+  return new Blob([setPngDpi(new Uint8Array(await (await toBlob(canvas, 'image/png')).arrayBuffer()), +S.dpi || 300)], { type: 'image/png' });
+}
+async function jpgBlob() {
+  const { canvas } = renderCanvas(dpiScale()), c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height;
+  const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(canvas, 0, 0);
+  const u = new Uint8Array(await (await toBlob(c, 'image/jpeg', 0.95)).arrayBuffer()), dpi = +S.dpi || 300;
+  if (u[2] === 0xFF && u[3] === 0xE0 && String.fromCharCode(u[6], u[7], u[8], u[9]) === 'JFIF') { u[13] = 1; u[14] = dpi >> 8; u[15] = dpi & 255; u[16] = dpi >> 8; u[17] = dpi & 255; }
+  return new Blob([u], { type: 'image/jpeg' });
+}
+// TIFF mit LZW (wie von Verlagen gewünscht); Codebreite wechselt wie bei libtiff („early change“)
+const LZW_T = new Int32Array(4096 * 256), LZW_G = new Int32Array(4096 * 256); let lzwGen = 0;
+function lzwEncode(data) {
+  let out = new Uint8Array(Math.max(1024, data.length >> 1)), op = 0, buf = 0, nb = 0;
+  const put = (code, w) => {
+    buf = (buf << w) | code; nb += w;
+    while (nb >= 8) { if (op >= out.length) { const o = new Uint8Array(out.length * 2); o.set(out); out = o; } out[op++] = (buf >>> (nb - 8)) & 255; nb -= 8; }
+    buf &= (1 << nb) - 1;
+  };
+  let w = 9, next = 258; lzwGen++;
+  put(256, 9);
+  let pre = data[0];
+  for (let i = 1; i < data.length; i++) {
+    const c = data[i], k = (pre << 8) | c;
+    if (LZW_G[k] === lzwGen) { pre = LZW_T[k]; continue; }
+    put(pre, w);
+    LZW_T[k] = next; LZW_G[k] = lzwGen; next++;
+    if (next >= 1 << w && w < 12) w++;
+    if (next >= 4094) { put(256, w); w = 9; next = 258; lzwGen++; }
+    pre = c;
+  }
+  put(pre, w); next++; if (next >= 1 << w && w < 12) w++;
+  put(257, w);
+  if (nb > 0) { if (op >= out.length) { const o = new Uint8Array(out.length + 4); o.set(out); out = o; } out[op++] = (buf << (8 - nb)) & 255; }
+  return out.subarray(0, op);
+}
+function tiffBlob() {
+  const { canvas } = renderCanvas(dpiScale()), W = canvas.width, H = canvas.height, dpi = +S.dpi || 300;
+  const rgba = canvas.getContext('2d').getImageData(0, 0, W, H).data, spp = S.transparent ? 4 : 3, rb = W * spp;
+  const rps = Math.max(1, Math.floor(65536 / rb)), strips = [];
+  for (let y = 0; y < H; y += rps) {
+    const n = Math.min(rps, H - y), raw = new Uint8Array(n * rb);
+    for (let i = 0, j = y * W * 4; i < raw.length; j += 4) { raw[i++] = rgba[j]; raw[i++] = rgba[j + 1]; raw[i++] = rgba[j + 2]; if (spp === 4) raw[i++] = rgba[j + 3]; }
+    strips.push(lzwEncode(raw));
+  }
+  const tags = [[256, 4, [W]], [257, 4, [H]], [258, 3, Array(spp).fill(8)], [259, 3, [5]], [262, 3, [2]], [273, 4, strips.map(() => 0)], [277, 3, [spp]], [278, 4, [rps]],
+    [279, 4, strips.map(s => s.length)], [282, 5, [dpi]], [283, 5, [dpi]], [284, 3, [1]], [296, 3, [2]], ...(spp === 4 ? [[338, 3, [2]]] : [])];
+  const dataLen = strips.reduce((s, x) => s + x.length + (x.length & 1), 0);
+  let extra = 0; for (const [, t, v] of tags) { const sz = (t === 5 ? 8 : t === 4 ? 4 : 2) * v.length; if (sz > 4) extra += sz + (sz & 1); }
+  const ifdOff = 8 + dataLen + extra, total = ifdOff + 2 + tags.length * 12 + 4, u8 = new Uint8Array(total), dv = new DataView(u8.buffer);
+  u8.set([0x49, 0x49]); dv.setUint16(2, 42, true); dv.setUint32(4, ifdOff, true);
+  let pos = 8; const offs = [];
+  for (const s of strips) { offs.push(pos); u8.set(s, pos); pos += s.length + (s.length & 1); }
+  tags.find(t => t[0] === 273)[2] = offs;
+  dv.setUint16(ifdOff, tags.length, true);
+  tags.forEach(([tag, type, v], i) => {
+    const e = ifdOff + 2 + i * 12, sz = (type === 5 ? 8 : type === 4 ? 4 : 2) * v.length;
+    dv.setUint16(e, tag, true); dv.setUint16(e + 2, type, true); dv.setUint32(e + 4, v.length, true);
+    let at = e + 8;
+    if (sz > 4) { dv.setUint32(e + 8, pos, true); at = pos; pos += sz + (sz & 1); }
+    v.forEach((x, k) => { if (type === 5) { dv.setUint32(at + 8 * k, x, true); dv.setUint32(at + 8 * k + 4, 1, true); } else if (type === 4) dv.setUint32(at + 4 * k, x, true); else dv.setUint16(at + 2 * k, x, true); });
+  });
+  return new Blob([u8], { type: 'image/tiff' });
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+const busy = async (msg, fn) => { $('#status').textContent = msg; await new Promise(r => setTimeout(r, 20)); try { await fn(); } catch (err) { console.error(err); toast('Export fehlgeschlagen: ' + (err.message || err)); } finally { render(); } };
+const savePng = () => busy('PNG wird erzeugt …', async () => download(await pngBlob(), safeName() + '.png'));
+const saveJpg = () => busy('JPG wird erzeugt …', async () => download(await jpgBlob(), safeName() + '.jpg'));
+const saveTif = () => busy('TIFF wird erzeugt …', async () => download(tiffBlob(), safeName() + '.tif'));
+const saveSvg = () => busy('SVG wird erzeugt …', async () => download(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + (await buildSVG()).svg], { type: 'image/svg+xml' }), safeName() + '.svg'));
+async function copyForWord() {
+  try {
+    const png = pngBlob(), r = buildOps();
+    const html = blobURL(await png).then(b64 => new Blob([`<img src="${b64}" style="width:${f2(r.W * 0.75)}pt;height:${f2(r.H * 0.75)}pt" alt="Abbildung">`], { type: 'text/html' }));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': png, 'text/html': html })]);
+    toast('Kopiert – in Word mit Strg+V einfügen');
+  } catch (err) { console.error(err); toast('Kopieren nicht möglich – bitte „PNG speichern“ verwenden'); }
+}
+function printPdf() {
+  const w = window.open('', '_blank');
+  if (!w) { toast('Popup wurde blockiert – bitte Popups erlauben'); return; }
+  w.document.write('<p style="font:14px sans-serif">PDF wird vorbereitet …</p>');
+  buildSVG().then(({ svg, W, H }) => {
+    const wmm = f2(W * 25.4 / 96), hmm = f2(H * 25.4 / 96);
+    w.document.open();
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(safeName())}</title><style>@page{size:${wmm}mm ${hmm}mm;margin:0}html,body{margin:0;padding:0}svg{display:block;width:${wmm}mm;height:${hmm}mm}</style></head><body>${svg}</body></html>`);
+    w.document.close(); setTimeout(() => { w.focus(); w.print(); }, 600);
+  });
+}
+async function copyText(text, msg) { try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast('Kopieren nicht möglich'); } }
+$('#btnPng').onclick = $('#hPng').onclick = savePng;
+$('#btnTif').onclick = $('#hTif').onclick = saveTif;
+$('#btnJpg').onclick = saveJpg;
+$('#btnSvg').onclick = saveSvg;
+$('#btnPdf').onclick = printPdf;
+$('#btnWord').onclick = $('#hWord').onclick = copyForWord;
+
+/* ---------- Vorlagen und Stile ---------- */
+const DARK = { lblColor: '#ffffff', sbColor: '#ffffff', txtColor: '#ffffff', insColor: '#ffffff', lblBox: 'none', sbBox: 'none', txtBox: 'none', panelBg: '#000000' };
+const STYLES = {
+  'Dunkle Bilder (weiße Schrift)': DARK,
+  'Helle Bilder (schwarze Schrift)': { ...DARK, lblColor: '#000000', sbColor: '#000000', txtColor: '#000000', insColor: '#000000', panelBg: '#ffffff' },
+  'Gemischt (Kästen)': { lblColor: '#000000', lblBox: 'box', lblBoxColor: '#ffffff', lblBoxAlpha: 0.85, sbColor: '#000000', sbBox: 'box', sbBoxColor: '#ffffff', sbBoxAlpha: 0.85,
+    txtColor: '#000000', txtBox: 'box', txtBoxColor: '#ffffff', txtBoxAlpha: 0.85, insColor: '#ffffff' },
+  'Zeitschrift 1-spaltig (8,5 cm)': { figW: 8.5, figUnit: 'cm', font: 'Arial', fontCustom: '', gap: 1, margin: 0, lblSize: 9, sbSize: 7, sbW: 2, txtSize: 7, anSize: 7, anW: 1, headSize: 8, capSize: 8, frameW: 0.5, insW: 0.75, dpi: 600 },
+  'Zeitschrift 2-spaltig (17,5 cm)': { figW: 17.5, figUnit: 'cm', font: 'Arial', fontCustom: '', gap: 1.5, margin: 0, lblSize: 10, sbSize: 8, sbW: 2.5, txtSize: 8, anSize: 8, anW: 1.25, headSize: 9, capSize: 9, frameW: 0.75, insW: 1, dpi: 600 },
+  'Präsentation (Folie)': { figW: 25.4, figUnit: 'cm', font: 'Segoe UI', fontCustom: '', gap: 3, lblSize: 18, sbSize: 14, sbW: 4, txtSize: 14, anSize: 14, anW: 2.5, headSize: 16, capSize: 14, dpi: 150 }
+};
+const HEX_RE = /^#[0-9a-f]{6}$/i, FONT_RE = /^[\p{L}\p{N} ,'"._-]{0,100}$/u;
+const selectOptions = k => { const el = document.querySelector(`select[data-k="${k}"]`); return el ? [...el.options].map(o => o.value) : null; };
+// Nur bekannte Einstellungen mit passendem Typ und gültigen Auswahlwerten übernehmen
+function sanitizeStyle(o) {
+  const out = {};
+  if (!o || typeof o !== 'object') return out;
+  for (const k of Object.keys(DEF)) {
+    if (NON_STYLE.includes(k) || !(k in o)) continue;
+    const d = DEF[k], v = o[k], opts = k === 'font' ? null : selectOptions(k);
+    if (typeof d === 'boolean') { if (typeof v === 'boolean') out[k] = v; }
+    else if (typeof d === 'number') { if (typeof v === 'number' && isFinite(v) && v >= -1 && v <= 10000 && (!opts || opts.includes(String(v)))) out[k] = v; }
+    else if (typeof v !== 'string') continue;
+    else if (HEX_RE.test(d)) { if (HEX_RE.test(v)) out[k] = v; }
+    else if (opts) { if (opts.includes(v)) out[k] = v; }
+    else if (FONT_RE.test(v)) out[k] = v;
+  }
+  return out;
+}
+function styleOnly() { const o = { ...S }; NON_STYLE.forEach(k => delete o[k]); return o; }
+function applyStyle(o, name) {
+  const st = sanitizeStyle(o);
+  if (st.figW != null) { const nw = toPx(st.figW, st.figUnit || S.figUnit), ow = toPx(S.figW, S.figUnit); if (nw > 0 && ow > 0) scaleFree(nw / ow); }
+  if (st.figUnit && st.figW == null) { S.figW = r2(fromPx(toPx(S.figW, S.figUnit), st.figUnit)); S.figH = r2(fromPx(toPx(S.figH, S.figUnit), st.figUnit)); }
+  else if (st.figUnit && st.figUnit !== S.figUnit) S.figH = r2(fromPx(toPx(S.figH, S.figUnit), st.figUnit));
+  Object.assign(S, st);
+  commit(); refreshAll();
+  if (name) toast(`Stil „${name}“ angewendet`);
+}
+Object.keys(STYLES).forEach(name => {
+  const b = document.createElement('button'); b.textContent = name;
+  b.onclick = () => applyStyle(STYLES[name], name);
+  $('#presetBtns').appendChild(b);
+});
+function getUserPresets() { try { return JSON.parse(localStorage.getItem(STORE + '.presets')) || {}; } catch { return {}; } }
+function setUserPresets(p) { try { localStorage.setItem(STORE + '.presets', JSON.stringify(p)); } catch { toast('Speichern im Browser nicht möglich'); } }
+function refreshUserPresets() {
+  const names = Object.keys(getUserPresets());
+  $('#userPresets').innerHTML = names.length ? names.map(n => `<option>${esc(n)}</option>`).join('') : '<option value="">(keine eigenen Stile)</option>';
+}
+$('#btnSavePreset').onclick = () => {
+  const name = $('#presetName').value.trim(); if (!name) { toast('Bitte einen Namen eingeben'); return; }
+  const p = getUserPresets(); p[name] = styleOnly(); setUserPresets(p); refreshUserPresets();
+  $('#userPresets').value = name; toast(`Stil „${name}“ gespeichert`);
+};
+$('#btnLoadPreset').onclick = () => { const n = $('#userPresets').value, p = getUserPresets()[n]; if (p) applyStyle(p, n); };
+$('#btnDelPreset').onclick = () => { const n = $('#userPresets').value, p = getUserPresets(); if (n && p[n] && confirm(`Stil „${n}“ löschen?`)) { delete p[n]; setUserPresets(p); refreshUserPresets(); } };
+$('#btnExportStyle').onclick = async () => {
+  const name = $('#presetName').value.trim() || safeName() + '-stil';
+  download(new Blob([JSON.stringify(styleOnly(), null, 2)], { type: 'application/json' }), name.replace(/[\\/:*?"<>|]/g, '_') + '.json');
+  if (dirOK) { try { if (await writeToDir(name)) toast(`Exportiert, Kopie in „${dirHandle.name}“ abgelegt`); } catch { toast('Kopie im Stil-Ordner fehlgeschlagen'); } }
+};
+$('#btnImportStyle').onclick = () => $('#styleFile').click();
+$('#styleFile').onchange = e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  f.text().then(t => { try { applyStyle(JSON.parse(t), f.name.replace(/\.json$/i, '')); } catch { toast('Ungültige JSON-Datei'); } });
+};
+// Stil-Ordner (File System Access API, nur Edge/Chrome); der Ordner-Zugriff wird in IndexedDB gemerkt
+let dirHandle = null, dirOK = false;
+function updateDirUI() {
+  $('#dirName').textContent = dirHandle ? '📁 ' + dirHandle.name + (dirOK ? '' : ' (Freigabe nötig)') : 'kein Ordner gewählt';
+  $('#btnDirGrant').hidden = !dirHandle || dirOK;
+  ['#btnDirLoad', '#btnDirRefresh', '#btnDirSave', '#dirStyles'].forEach(s => { $(s).disabled = !dirOK; });
+}
+async function listDir() {
+  const names = [];
+  try { for await (const [name, h] of dirHandle.entries()) if (h.kind === 'file' && /\.json$/i.test(name)) names.push(name); }
+  catch { dirOK = false; updateDirUI(); toast('Stil-Ordner ist nicht lesbar'); return; }
+  names.sort((a, b) => a.localeCompare(b, 'de'));
+  const sel = $('#dirStyles'), prev = sel.value;
+  sel.innerHTML = names.length ? names.map(n => `<option value="${esc(n)}">${esc(n.replace(/\.json$/i, ''))}</option>`).join('') : '<option value="">(keine Stile im Ordner)</option>';
+  if (names.includes(prev)) sel.value = prev;
+}
+async function writeToDir(name) {
+  const file = name.replace(/[\\/:*?"<>|]/g, '_').trim() + '.json';
+  let exists = true;
+  try { await dirHandle.getFileHandle(file); } catch { exists = false; }
+  if (exists && !confirm(`„${file}“ gibt es im Stil-Ordner schon. Überschreiben?`)) return false;
+  const w = await (await dirHandle.getFileHandle(file, { create: true })).createWritable();
+  await w.write(JSON.stringify(styleOnly(), null, 2)); await w.close();
+  await listDir(); $('#dirStyles').value = file;
+  return true;
+}
+async function dirInit() {
+  if (!('showDirectoryPicker' in window)) { $('#folderBox').hidden = true; $('#folderNo').hidden = false; return; }
+  try { dirHandle = (await db.get('kv', 'styleDir')) || null; } catch { dirHandle = null; }
+  if (dirHandle) { try { dirOK = (await dirHandle.queryPermission({ mode: 'readwrite' })) === 'granted'; } catch { dirOK = false; } }
+  updateDirUI();
+  if (dirOK) listDir();
+}
+$('#btnDirPick').onclick = async () => {
+  try {
+    dirHandle = await window.showDirectoryPicker({ id: 'bildtafelStile', mode: 'readwrite' });
+    dirOK = true;
+    try { await db.put('kv', 'styleDir', dirHandle); } catch { }
+    updateDirUI(); listDir();
+  } catch (e) { if (e.name !== 'AbortError') toast('Ordner konnte nicht geöffnet werden'); }
+};
+$('#btnDirGrant').onclick = async () => {
+  try { dirOK = (await dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted'; } catch { dirOK = false; }
+  updateDirUI(); if (dirOK) listDir();
+};
+$('#btnDirRefresh').onclick = listDir;
+$('#btnDirLoad').onclick = async () => {
+  const n = $('#dirStyles').value; if (!n) return;
+  try { applyStyle(JSON.parse(await (await (await dirHandle.getFileHandle(n)).getFile()).text()), n.replace(/\.json$/i, '')); }
+  catch { toast('Stil konnte nicht gelesen werden'); }
+};
+$('#dirStyles').addEventListener('dblclick', () => $('#btnDirLoad').click());
+$('#btnDirSave').onclick = async () => {
+  const name = $('#presetName').value.trim();
+  if (!name) { toast('Bitte oben einen Namen für den Stil eingeben'); $('#presetName').focus(); return; }
+  try { if (await writeToDir(name)) toast(`Stil in „${dirHandle.name}“ gespeichert`); }
+  catch { toast('Speichern im Stil-Ordner fehlgeschlagen'); }
+};
+
+/* ---------- Speichern: Zustand und Bilder in IndexedDB, Projektdatei als JSON ---------- */
+const db = (() => {
+  let p;
+  const open = () => p || (p = new Promise((res, rej) => {
+    const r = indexedDB.open('imageDesigner', 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('imgs'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = async (store, mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(store, mode), q = fn(t.objectStore(store)); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); };
+  return { get: (s, k) => tx(s, 'readonly', o => o.get(k)), put: (s, k, v) => tx(s, 'readwrite', o => o.put(v, k)), del: (s, k) => tx(s, 'readwrite', o => o.delete(k)), keys: s => tx(s, 'readonly', o => o.getAllKeys()) };
+})();
+async function dbPutImg(id) { const im = IMG.get(id); await db.put('imgs', id, { blob: im.blob, name: im.name, meta: im.meta }); }
+let saveT = null;
+function saveSoon() { clearTimeout(saveT); saveT = setTimeout(() => db.put('kv', 'state', JSON.stringify(ST)).catch(() => { }), 600); }
+const usedImgs = st => new Set(st.panels.flatMap(p => [p.img, ...p.insets.map(i => i.img)]).filter(Boolean));
+async function addImage(id, rec) {
+  const svg = rec.blob.type === 'image/svg+xml' || /\.svg$/i.test(rec.name || '');
+  const r = svg ? await rasterSvg(rec.blob) : { full: await createImageBitmap(rec.blob) };
+  const full = r.full;
+  IMG.set(id, { id, name: rec.name, w: full.width, h: full.height, full, prev: makePrev(full, full.width, full.height), blob: rec.blob, meta: rec.meta || { items: [] } });
+}
+function sanitize(st) {
+  const f = freshState();
+  if (!st || !Array.isArray(st.panels)) return f;
+  st.S = { ...DEF, ...(st.S || {}) }; st.L = { ...f.L, ...(st.L || {}) }; st.imgs = st.imgs || {};
+  st.panels = st.panels.map(p => { const q = { ...newPanel(), ...p }; q.sb = { ...newPanel().sb, ...(p.sb || {}) }; q.adj = { ...freshAdj(), ...(p.adj || {}) }; return q; });
+  return st;
+}
+async function restore() {
+  let st = null;
+  try { st = JSON.parse(await db.get('kv', 'state')); } catch { }
+  ST = sanitize(st); S = ST.S;
+  const need = usedImgs(ST);
+  for (const id of need) { try { const rec = await db.get('imgs', id); if (rec) await addImage(id, rec); } catch (err) { console.error(err); } }
+  for (const id of need) if (IMG.has(id) && ST.imgs[id] && ST.imgs[id].alpha == null) ST.imgs[id].alpha = hasAlpha(id);
+  for (const p of ST.panels) { if (p.img && ST.imgs[p.img] && ST.imgs[p.img].alpha && !p.bg) p.bg = 'none';
+    if (p.img && !IMG.has(p.img)) p.img = null; p.insets = p.insets.filter(i => i.src === 'region' ? p.img : true); for (const i of p.insets) if (i.img && !IMG.has(i.img)) i.img = null; }
+  try { for (const k of await db.keys('imgs')) if (!need.has(k)) db.del('imgs', k); } catch { }
+}
+$('#btnSaveProj').onclick = () => busy('Projekt wird gespeichert …', async () => {
+  const images = {};
+  for (const id of usedImgs(ST)) { const im = IMG.get(id); if (im) images[id] = { name: im.name, meta: im.meta, data: await blobURL(im.blob) }; }
+  download(new Blob([JSON.stringify({ app: 'ImageDesigner', version: 1, state: ST, images })], { type: 'application/json' }), safeName() + '.bildtafel.json');
+});
+$('#btnLoadProj').onclick = () => $('#projFile').click();
+$('#projFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const o = JSON.parse(await f.text());
+    if (!o || o.app !== 'ImageDesigner') throw new Error('keine Projektdatei des Bildtafel-Designers');
+    for (const [id, rec] of Object.entries(o.images || {})) { if (!/^data:image\//.test(rec.data)) continue; const blob = await (await fetch(rec.data)).blob(); await addImage(id, { ...rec, blob }); dbPutImg(id).catch(() => { }); }
+    ST = sanitize(o.state); S = ST.S; sel = null; selItem = null; commit(); refreshAll(); toast(`${f.name} geöffnet`);
+  } catch (err) { console.error(err); toast('Projekt konnte nicht geöffnet werden: ' + err.message); }
+};
+$('#btnReset').onclick = () => { if (!confirm('Neues, leeres Projekt beginnen? (Rückgängig ist möglich)')) return; const keepS = { ...S }; ST = freshState(); ST.S = { ...keepS, capText: '', capOn: false }; S = ST.S; sel = null; selItem = null; commit(); refreshAll(); };
+
+/* ---------- Seitenleiste verbreitern ---------- */
+(() => {
+  const aside = $('aside'), sp = $('#splitter'), KEY = STORE + '.asideW';
+  const setW = w => { aside.style.width = Math.max(260, Math.min(window.innerWidth * 0.75, w)) + 'px'; };
+  try { const w = +localStorage.getItem(KEY); if (w) setW(w); } catch { }
+  let start = null;
+  sp.addEventListener('pointerdown', e => { sp.setPointerCapture(e.pointerId); start = { x: e.clientX, w: aside.getBoundingClientRect().width }; sp.classList.add('active'); document.body.classList.add('resizing'); });
+  sp.addEventListener('pointermove', e => { if (start) setW(start.w + e.clientX - start.x); });
+  const end = () => { if (!start) return; start = null; sp.classList.remove('active'); document.body.classList.remove('resizing'); try { localStorage.setItem(KEY, Math.round(aside.getBoundingClientRect().width)); } catch { } render(); };
+  sp.addEventListener('pointerup', end); sp.addEventListener('pointercancel', end);
+  sp.addEventListener('dblclick', () => { aside.style.width = ''; try { localStorage.removeItem(KEY); } catch { } render(); });
+})();
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+
+(async () => {
+  await restore().catch(err => console.error(err));
+  refreshUserPresets(); dirInit();
+  setMode('layout'); setAtool('arrow');
+  commit(); refreshAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+  if ('launchQueue' in window) launchQueue.setConsumer(async p => { if (p.files && p.files.length) loadInto(await Promise.all(p.files.map(f => f.getFile())), null); });
+})();
+</script>
+</body>
+</html>
