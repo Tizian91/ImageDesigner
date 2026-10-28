@@ -70,9 +70,9 @@ button.mini{padding:1px 6px;font-size:12px}
 .toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--border)}
 .toolbar label{display:flex;align-items:center;gap:4px}
 .toolbar .sep{width:1px;height:22px;background:var(--border);margin:0 4px}
-#view{flex:1;overflow:auto;position:relative;background:var(--bg);display:flex;min-height:0}
+#view{flex:1;overflow:hidden;position:relative;background:var(--bg);min-height:0}
 #view.dropping{outline:3px dashed var(--accent);outline-offset:-6px}
-#cv{display:block;margin:auto;flex:none;touch-action:none}
+#cv{display:block;position:absolute;left:0;top:0;touch-action:none}
 #pop{position:fixed;z-index:20;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:10px 12px;min-width:240px}
 #pop .t{font-weight:600;margin-bottom:6px}
 #tip{position:fixed;pointer-events:none;background:rgba(25,28,35,.94);color:#fff;font-size:12px;padding:4px 8px;border-radius:5px;white-space:pre;z-index:9;display:none}
@@ -103,6 +103,7 @@ button.mini{padding:1px 6px;font-size:12px}
       <select data-k="figUnit"><option>cm</option><option>mm</option><option value="in">Zoll</option><option>px</option></select></div>
     <div class="btns" id="sizeBtns"></div>
     <div class="row"><label><input type="checkbox" data-k="autoH"> Höhe automatisch aus den Bildern</label></div>
+    <div class="row" id="rowScaleFree"><label><input type="checkbox" data-k="scaleWithFig"> Platzhalter beim Ändern der Größe mitskalieren</label></div>
     <div class="row" title="Zeigt die Abbildung maßstabsgetreu auf einer Seite – so lässt sich abschätzen, ob Schrift und Details lesbar sind"><span>Seite (Größenvergleich)</span>
       <select data-k="page"><option value="">keine</option><option value="A2">A2</option><option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option><option value="A6">A6</option><option value="slide169">Folie 16:9 (Breitbild)</option><option value="slide43">Folie 4:3</option><option value="custom">individuell</option></select>
       <select data-k="pageOri" id="pageOri"><option value="p">hochkant</option><option value="l">quer</option></select></div>
@@ -113,7 +114,7 @@ button.mini{padding:1px 6px;font-size:12px}
     <div id="plist"></div>
     <div class="btns"><button id="btnAdd">+ Platzhalter</button><button id="btnOpen">Bilder öffnen…</button><button id="btnRelayout" title="Positionen wieder automatisch (Smart) anordnen">Neu anordnen</button><button id="btnFitFig" title="Breite und Höhe der Abbildung so setzen, dass alle Platzhalter (mit Außenrand) hineinpassen">Abbildung an Platzhalter anpassen</button></div>
     <input type="file" id="file" accept=".png,.jpg,.jpeg,.tif,.tiff,.svg,.bmp,.gif,.webp,image/*" multiple hidden>
-    <p class="hint">Bilder (PNG, JPG, TIFF) und Diagramme (SVG/PNG aus dem Diagramm-Designer) auf einen Platzhalter ziehen, mit Strg+V einfügen oder mehrere auf einmal auf die Fläche ziehen – leere Platzhalter werden der Reihe nach gefüllt, fehlende ergänzt. Reihenfolge mit ⠿ ziehen.</p>
+    <p class="hint">Bei „Frei“: auf leerer Fläche Rahmen aufziehen oder Bilder dorthin ziehen, zum Schluss „Abbildung an Platzhalter anpassen“. Bilder (PNG, JPG, TIFF) und Diagramme (SVG/PNG aus dem Diagramm-Designer) auf einen Platzhalter ziehen, mit Strg+V einfügen oder mehrere auf einmal auf die Fläche ziehen – leere Platzhalter werden der Reihe nach gefüllt, fehlende ergänzt. Reihenfolge mit ⠿ ziehen.</p>
     <div class="sub">Ausrichten &amp; Verteilen</div>
     <div class="btns" id="alignBtns"></div>
     <p class="hint">Mehrere Platzhalter mit Shift oder Strg + Klick auswählen (Vorschau oder Liste) und gemeinsam verschieben; Strg+A wählt alle aus. Ohne Auswahl gelten die Befehle für alle. Bezug für „gleiche Breite/Höhe“ ist der zuletzt angeklickte.</p>
@@ -254,7 +255,7 @@ button.mini{padding:1px 6px;font-size:12px}
     <span class="sep"></span>
     <label><input type="checkbox" id="fit" checked> Einpassen</label>
     <button id="btn100" title="Originalgröße: 1 cm der Abbildung ≈ 1 cm auf dem Bildschirm (je nach Monitor)">100 %</button>
-    <label>Zoom <input type="range" id="zoom" min="10" max="800" value="100" style="width:110px"></label><span id="zoomLbl">100 %</span>
+    <label title="Strg + Mausrad zoomt auf den Mauszeiger. Verschieben: Mausrad (Shift = waagerecht), mittlere Maustaste oder Leertaste + Ziehen">Zoom <input type="range" id="zoom" min="10" max="800" value="100" style="width:110px"></label><span id="zoomLbl" title="Strg + Mausrad zoomt auf den Mauszeiger">100 %</span>
     <span class="sep"></span>
     <label><input type="checkbox" id="guides" checked> Platzhalter zeigen</label>
   </div>
@@ -289,7 +290,7 @@ const DEF = {
   insSize: 0.35, insColor: '#ffffff', insW: 1, insMark: true, insLines: false,
   capOn: false, capText: '', capSize: 9, capAlign: 'justify',
   sameMag: false, magZoom: 1, anDash: 'solid', anCap: 'round',
-  page: '', pageOri: 'p', pageW: 21, pageH: 29.7, pageMargin: 2.5, pageAlign: 'left', exportArea: 'figure',
+  scaleWithFig: false, page: '', pageOri: 'p', pageW: 21, pageH: 29.7, pageMargin: 2.5, pageAlign: 'left', exportArea: 'figure',
   colHeads: '', rowHeads: '', headSize: 10, headBold: true, headColor: '#000000', rowRot: true
 };
 // Inhalt statt Aussehen: gehört nicht zu einem gespeicherten Stil
@@ -1094,7 +1095,9 @@ function updUndo() { $('#btnUndo').disabled = hpos <= 0; $('#btnRedo').disabled 
 /* ---------- Vorschau ---------- */
 const cv = $('#cv'), PAD = 28;
 let last = null, drag = null, rafPending = false;
-let VT = { x0: 0, y0: 0, ox: PAD, oy: PAD };   // Ansicht: sichtbarer Bereich (Figurkoordinaten) und Versatz auf dem Canvas
+// Ansicht: Lage des Figur-Nullpunkts auf dem Canvas (ox, oy in CSS-Pixeln) und der sichtbare Bereich (x0…y1, Figurkoordinaten).
+// Der Canvas ist immer so groß wie das Vorschaufenster; verschoben und gezoomt wird über ox/oy und zoom.
+let VT = { ox: PAD, oy: PAD, x0: 0, y0: 0, x1: 1, y1: 1 };
 // Seitenformate in mm (Breite × Höhe, hochkant); Folien sind immer quer
 const PAGES = { A2: [420, 594], A3: [297, 420], A4: [210, 297], A5: [148, 210], A6: [105, 148], slide169: [338.67, 190.5], slide43: [254, 190.5] };
 // Seite nur als Größenvergleich in der Vorschau: die Abbildung sitzt am Seitenrand (links) oder mittig im Satzspiegel
@@ -1115,19 +1118,20 @@ function renderNow() {
   let r;
   try { r = buildOps({ preview: true }); } catch (err) { console.error(err); $('#status').textContent = 'Fehler: ' + err.message; return; }
   last = r;
-  const view = $('#view'), pg = pageRect(r.W);
-  // Arbeitsfläche: Abbildung, Seite und alle Platzhalter (auch außerhalb der Abbildung) bleiben sichtbar.
-  // Während des Ziehens bleibt die Ansicht stehen, damit nichts unter dem Zeiger springt.
-  if (!drag || VT.x1 == null) {
-    const sl = 0.08 * Math.max(r.W, r.H), b = { x0: -sl, y0: -sl, x1: r.W + sl, y1: r.H + sl };
+  const view = $('#view'), pg = pageRect(r.W), cw = Math.max(50, view.clientWidth), ch = Math.max(50, view.clientHeight);
+  // Einpassen: Abbildung, Seite und alle Platzhalter (auch außerhalb der Abbildung) sichtbar machen.
+  // Nicht während des Ziehens – sonst springt die Ansicht unter dem Zeiger.
+  if ($('#fit').checked && !drag) {
+    const sl = 0.04 * Math.max(r.W, r.H), b = { x0: -sl, y0: -sl, x1: r.W + sl, y1: r.H + sl };
     const inc = (R, m = 0) => { b.x0 = Math.min(b.x0, R.x - m); b.y0 = Math.min(b.y0, R.y - m); b.x1 = Math.max(b.x1, R.x + R.w + m); b.y1 = Math.max(b.y1, R.y + R.h + m); };
     if (pg) inc(pg, 8);
-    ST.panels.forEach(p => inc(p, sl * 0.5));
-    if ($('#fit').checked) zoom = clamp(Math.min((view.clientWidth - 2 * PAD - 6) / (b.x1 - b.x0), (view.clientHeight - 2 * PAD - 6) / (b.y1 - b.y0)), 0.05, 8);
-    VT = { ...b, ox: PAD - b.x0 * zoom, oy: PAD - b.y0 * zoom };
+    ST.panels.forEach(p => inc(p, sl));
+    zoom = clamp(Math.min((cw - 2 * PAD) / (b.x1 - b.x0), (ch - 2 * PAD) / (b.y1 - b.y0)), 0.05, 8);
+    VT.ox = (cw - (b.x1 - b.x0) * zoom) / 2 - b.x0 * zoom; VT.oy = (ch - (b.y1 - b.y0) * zoom) / 2 - b.y0 * zoom;
   }
+  Object.assign(VT, { x0: -VT.ox / zoom, y0: -VT.oy / zoom, x1: (cw - VT.ox) / zoom, y1: (ch - VT.oy) / zoom });
   $('#zoom').value = Math.round(zoom * 100); $('#zoomLbl').textContent = Math.round(zoom * 100) + ' %';
-  const dpr = window.devicePixelRatio || 1, cw = (VT.x1 - VT.x0) * zoom + 2 * PAD, ch = (VT.y1 - VT.y0) * zoom + 2 * PAD;
+  const dpr = window.devicePixelRatio || 1;
   cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const ctx = cv.getContext('2d');
@@ -1144,7 +1148,7 @@ function renderNow() {
   drawOps(ctx, r.ops, false);
   // Alles außerhalb der Abbildung blass: wird nicht exportiert
   // (auf der Seite weiß, daneben in der Hintergrundfarbe – so bleibt die Seite auch im Dunkelmodus weiß)
-  const X0 = VT.x0 - PAD / zoom, Y0 = VT.y0 - PAD / zoom, X1 = VT.x1 + PAD / zoom, Y1 = VT.y1 + PAD / zoom;
+  const X0 = VT.x0 - 1, Y0 = VT.y0 - 1, X1 = VT.x1 + 1, Y1 = VT.y1 + 1;
   const outside = new Path2D(); outside.rect(X0, Y0, X1 - X0, Y1 - Y0); outside.rect(0, 0, r.W, r.H);
   const dimBg = hexA(cssVar('--bg'), 0.62);
   if (pg) {
@@ -1153,10 +1157,24 @@ function renderNow() {
     ctx.save(); ctx.clip(off, 'evenodd'); ctx.fillStyle = dimBg; ctx.fill(outside, 'evenodd'); ctx.restore();
   } else { ctx.fillStyle = dimBg; ctx.fill(outside, 'evenodd'); }
   ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 1 / zoom; ctx.strokeRect(0, 0, r.W, r.H);
+  drawSizeLabels(ctx, r, pg);
   drawOverlay(ctx, r);
   status(r); updPageUI();
   const fh = $('#inFigH'); if (document.activeElement !== fh) fh.value = S.figH;
   saveSoon();
+}
+// Maße in der Vorschau: Seite (über dem Blatt), Satzspiegel (gestrichelt, unten links), Abbildung (unter ihr rechts)
+const PAGE_NAME = { slide169: 'Folie 16:9', slide43: 'Folie 4:3', custom: 'Seite' };
+function drawSizeLabels(ctx, r, pg) {
+  const px = 1 / zoom, cm = v => String(r2(v / UNIT_PX.cm)).replace('.', ','), muted = cssVar('--muted') || '#687083', onPage = '#8a90a0';
+  const lab = (t, x, y, col, align = 'left') => { ctx.font = `${11 * px}px "Segoe UI", sans-serif`; ctx.fillStyle = col; ctx.textAlign = align; ctx.fillText(t, x, y); };
+  if (pg) {
+    const name = PAGE_NAME[S.page] || `${S.page} ${S.pageOri === 'l' ? 'quer' : 'hochkant'}`;
+    lab(`${name} · ${cm(pg.w)} × ${cm(pg.h)} cm`, pg.x, pg.y - 6 * px, muted);
+    const ly = pg.y + pg.h - pg.m - 5 * px;
+    if (pg.m > 0 && r.H < ly - 16 * px) lab(`Satzspiegel ${cm(pg.w - 2 * pg.m)} × ${cm(pg.h - 2 * pg.m)} cm (Seitenrand ${cm(pg.m)} cm)`, pg.x + pg.m + 4 * px, ly, onPage);
+  }
+  lab(`Abbildung ${cm(r.W)} × ${cm(r.H)} cm`, r.W, r.H + 14 * px, pg && r.H + 14 * px < pg.y + pg.h ? onPage : muted, 'right');
 }
 function status(r) {
   const sc = (+S.dpi || 300) / 96, u = S.figUnit === 'in' ? 'Zoll' : S.figUnit, notes = [];
@@ -1217,6 +1235,10 @@ function drawOverlay(ctx, r) {
       const a = p.annots.find(x => x.id === selItem.id);
       if (a) { const b = annotBox(a, h.g); ctx.strokeStyle = acc; ctx.lineWidth = px; ctx.setLineDash([3 * px, 3 * px]); ctx.strokeRect(b[0] - 3 * px, b[1] - 3 * px, b[2] + 6 * px, b[3] + 6 * px); ctx.setLineDash([]); }
     }
+  }
+  if (!r.hits.length) {
+    ctx.fillStyle = 'rgba(90,90,90,.85)'; ctx.font = `${13 * px}px "Segoe UI", sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(ST.L.mode === 'free' ? 'Rahmen aufziehen oder Bilder hierher ziehen' : 'Bilder hierher ziehen oder „+ Platzhalter“', r.W / 2, r.H0 / 2);
   }
   if (drag && drag.draw) drag.draw(ctx, px, acc);
   if (drag && drag.snaps) { ctx.strokeStyle = '#e0407a'; ctx.lineWidth = px; for (const s of drag.snaps) { ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, VT.y0); ctx.lineTo(s.x, VT.y1); } else { ctx.moveTo(VT.x0, s.y); ctx.lineTo(VT.x1, s.y); } ctx.stroke(); } }
@@ -1337,6 +1359,11 @@ function zoomAt(p, fx, fy, f) {
 function toFree() { if (ST.L.mode !== 'free') { ST.L.mode = 'free'; ST.S.autoH = false; syncUI(); } }
 
 cv.addEventListener('pointerdown', e => {
+  if (e.button === 1 || (e.button === 0 && spaceDown)) {   // Ansicht verschieben
+    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch { }
+    drag = { t: 'vpan', sx: e.clientX, sy: e.clientY, ox0: VT.ox, oy0: VT.oy }; cv.style.cursor = 'grabbing';
+    return;
+  }
   if (e.button !== 0) return;
   closePop();
   const pt = figPt(e), tol = 7 / zoom;
@@ -1352,6 +1379,16 @@ cv.addEventListener('pointerdown', e => {
       if (msel.has(h.id) && msel.size > 1) { sel = h.id; selItem = null; buildProps(); buildList(); } else select(h.id);
       const group = ST.panels.filter(q => msel.has(q.id) && q.id !== h.id).map(q => ({ q, x: q.x, y: q.y }));
       drag = { t: 'move', p: selP(), R0: { ...h.R }, pt0: pt, group };
+    }
+    else if (ST.L.mode === 'free') {   // freie Platzierung: auf leerer Fläche einen neuen Platzhalter aufziehen
+      select(null);
+      drag = { t: 'pcreate', a: pt, b: pt, pt0: pt, draw: (ctx, px, acc) => {
+        const x = Math.min(drag.a.x, drag.b.x), y = Math.min(drag.a.y, drag.b.y), w = Math.abs(drag.b.x - drag.a.x), h = Math.abs(drag.b.y - drag.a.y);
+        ctx.fillStyle = 'rgba(47,111,222,.12)'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = acc; ctx.lineWidth = 1.5 * px; ctx.setLineDash([5 * px, 3 * px]); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+        ctx.fillStyle = acc; ctx.font = `${11 * px}px "Segoe UI", sans-serif`; ctx.textAlign = 'left';
+        ctx.fillText(`${String(r2(fromPx(w, S.figUnit))).replace('.', ',')} × ${String(r2(fromPx(h, S.figUnit))).replace('.', ',')} ${S.figUnit}`, x, y - 4 * px);
+      } };
     }
     else select(null);
     return;
@@ -1404,6 +1441,7 @@ cv.addEventListener('pointerdown', e => {
   }
 });
 cv.addEventListener('pointermove', e => {
+  if (drag && drag.t === 'vpan') { VT.ox = drag.ox0 + e.clientX - drag.sx; VT.oy = drag.oy0 + e.clientY - drag.sy; $('#fit').checked = false; render(); return; }
   const pt = figPt(e);
   if (!drag) { hover(pt); return; }
   const d = drag, dx = pt.x - (d.pt0 ? d.pt0.x : 0), dy = pt.y - (d.pt0 ? d.pt0.y : 0), tol = 6 / zoom;
@@ -1450,6 +1488,13 @@ cv.addEventListener('pointermove', e => {
     }
     case 'amove': d.a.p = d.p0.map(q => [q[0] + dx / d.g.s, q[1] + dy / d.g.s]); break;
     case 'rcreate': d.b = pt; break;
+    case 'pcreate': {
+      const T = e.altKey ? null : snapTargets(new Set()), sx = T && snap1([pt.x], T.xs, tol), sy = T && snap1([pt.y], T.ys, tol);
+      d.b = { x: pt.x + (sx ? sx.d : 0), y: pt.y + (sy ? sy.d : 0) };
+      if (e.shiftKey) { const s = Math.max(Math.abs(d.b.x - d.a.x), Math.abs(d.b.y - d.a.y)); d.b = { x: d.a.x + Math.sign(d.b.x - d.a.x || 1) * s, y: d.a.y + Math.sign(d.b.y - d.a.y || 1) * s }; }
+      d.snaps = [sx && { x: sx.at }, sy && { y: sy.at }].filter(Boolean);
+      break;
+    }
     case 'rmove': d.ins.region = { ...d.r0, x: d.r0.x + dx / d.g.s, y: d.r0.y + dy / d.g.s }; break;
   }
   render();
@@ -1457,10 +1502,17 @@ cv.addEventListener('pointermove', e => {
 });
 cv.addEventListener('pointerup', e => {
   const d = drag; drag = null;
+  if (d && d.t === 'vpan') { cv.style.cursor = spaceDown ? 'grab' : modeCursor(); return; }
   if (mode === 'image') cv.style.cursor = 'grab';
   if (!d) return;
   const p = d.p, pt = figPt(e);
   if (d.t === 'acreate' && !d.moved) { p.annots = p.annots.filter(a => a !== d.a); selItem = null; render(); return; }
+  if (d.t === 'pcreate') {
+    const x = Math.min(d.a.x, d.b.x), y = Math.min(d.a.y, d.b.y), w = Math.abs(d.b.x - d.a.x), h = Math.abs(d.b.y - d.a.y);
+    if (d.moved && w > 8 && h > 8) { const q = newPanel(); Object.assign(q, { x, y, w, h }); ST.panels.push(q); sel = q.id; msel = new Set([q.id]); commit(); refreshAll(); }
+    else render();
+    return;
+  }
   if (d.t === 'inset' && d.moved) {
     const ins = p.insets.find(i => i.id === d.ir.id), R = d.R, cx = d.ir.x + d.ir.w / 2 + pt.x - d.pt0.x, cy = d.ir.y + d.ir.h / 2 + pt.y - d.pt0.y;
     ins.corner = (cy < R.y + R.h / 2 ? 'u' : 'l') + (cx < R.x + R.w / 3 ? 'l' : cx > R.x + 2 * R.w / 3 ? 'r' : 'c');
@@ -1490,6 +1542,7 @@ cv.addEventListener('pointerup', e => {
   render();
 });
 function hover(pt) {
+  if (spaceDown) { cv.style.cursor = 'grab'; return; }
   if (mode !== 'layout') return;
   const sp = selP(), sh = sp && hitOf(sp.id), tol = 7 / zoom;
   let cur = 'default';
@@ -1497,14 +1550,38 @@ function hover(pt) {
   if (cur === 'default' && (hitInset(pt) || hitPanel(pt))) cur = 'move';
   cv.style.cursor = cur;
 }
+// Ansicht zoomen: der Punkt unter dem Zeiger (bzw. die Fenstermitte) bleibt stehen
+function zoomView(nz, at) {
+  const b = cv.getBoundingClientRect(), sx = at ? at.clientX - b.left : b.width / 2, sy = at ? at.clientY - b.top : b.height / 2;
+  const fx = (sx - VT.ox) / zoom, fy = (sy - VT.oy) / zoom;
+  zoom = clamp(nz, 0.05, 8); VT.ox = sx - fx * zoom; VT.oy = sy - fy * zoom;
+  $('#fit').checked = false; render();
+}
+function panView(dx, dy) { VT.ox += dx; VT.oy += dy; $('#fit').checked = false; render(); }
+// Mausrad: Ansicht verschieben (Shift = waagerecht); Strg+Mausrad bzw. Zwei-Finger-Zoom: Ansicht zoomen;
+// im Werkzeug „Bild“ über einem Bild: das Bild im Platzhalter zoomen
 cv.addEventListener('wheel', e => {
-  if (e.ctrlKey) { e.preventDefault(); $('#fit').checked = false; zoom = clamp(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), 0.05, 8); render(); return; }
-  if (mode !== 'image') return;
-  const pt = figPt(e), h = hitPanel(pt); if (!h || !h.g) return;
   e.preventDefault();
-  if (h.id !== sel) select(h.id);
-  zoomAt(selP(), pt.x, pt.y, Math.exp(-e.deltaY * 0.0015)); commitSoon(); render(); refreshNumbers();
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? cv.clientHeight : 1;
+  if (e.ctrlKey || e.metaKey) { zoomView(zoom * Math.exp(-e.deltaY * k * 0.002), e); return; }
+  if (mode === 'image') {
+    const pt = figPt(e), h = hitPanel(pt);
+    if (h && h.g) {
+      if (h.id !== sel) select(h.id);
+      zoomAt(selP(), pt.x, pt.y, Math.exp(-e.deltaY * k * 0.0015)); commitSoon(); render(); refreshNumbers();
+      return;
+    }
+  }
+  let dx = e.deltaX * k, dy = e.deltaY * k;
+  if (e.shiftKey && !dx) { dx = dy; dy = 0; }
+  panView(-dx, -dy);
 }, { passive: false });
+// Mittlere Maustaste: kein automatisches Scrollen des Browsers
+cv.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
+let spaceDown = false;
+const modeCursor = () => ({ layout: 'default', image: 'grab', scale: 'crosshair', annot: 'crosshair', inset: 'crosshair' }[mode]);
+document.addEventListener('keyup', e => { if (e.key === ' ' && spaceDown) { e.preventDefault(); spaceDown = false; if (!drag) cv.style.cursor = modeCursor(); } });
+window.addEventListener('blur', () => { spaceDown = false; });
 cv.addEventListener('dblclick', e => {
   const pt = figPt(e), hi = hitInset(pt);
   if (hi) { select(hi.h.id, { kind: 'inset', id: hi.ir.id }); const ins = selP().insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') pickFiles(false, f => loadInto(f, selP(), ins)); return; }
@@ -1532,8 +1609,9 @@ document.addEventListener('paste', e => {
   const p = selP();
   loadInto(files.slice(0, 1), p && !p.img ? p : null);
 });
-// Dateien in einen Platzhalter (bzw. ein Inset); weitere Dateien füllen leere Platzhalter, fehlende werden ergänzt
-async function loadInto(files, target, inset) {
+// Dateien in einen Platzhalter (bzw. ein Inset); weitere Dateien füllen leere Platzhalter, fehlende werden ergänzt.
+// at (freie Platzierung, auf leere Fläche abgelegt): immer neue Platzhalter an dieser Stelle, passend zum Bild.
+async function loadInto(files, target, inset, at) {
   files = files.filter(f => IMG_RE.test(f.name) || f.type.startsWith('image/'));
   if (!files.length) { toast('Keine unterstützte Bilddatei (PNG, JPG, TIFF)'); return; }
   $('#status').textContent = 'Lade ' + files.map(f => f.name).join(', ') + ' …';
@@ -1542,9 +1620,17 @@ async function loadInto(files, target, inset) {
     let id;
     try { id = await loadImageFile(f); } catch (err) { console.error(err); toast(`${f.name}: ${err.message || 'konnte nicht gelesen werden'}`); continue; }
     if (inset && k === 0) { inset.src = 'image'; inset.img = id; k++; continue; }
-    let p = k === 0 && target ? target : null;
-    if (!p) { const start = target ? ST.panels.indexOf(target) : 0; p = ST.panels.slice(start).find(q => !q.img && q !== target) || ST.panels.find(q => !q.img); }
-    if (!p) { p = newPanel(); ST.panels.push(p); if (ST.L.mode === 'free') { const last = ST.panels[ST.panels.length - 2]; Object.assign(p, last ? { x: last.x + 20, y: last.y + 20, w: last.w, h: last.h } : { x: 10, y: 10, w: 200, h: 150 }); } }
+    let p = k === 0 && target ? target : null, fresh = false;
+    if (!p && !at) { const start = target ? ST.panels.indexOf(target) : 0; p = ST.panels.slice(start).find(q => !q.img && q !== target) || ST.panels.find(q => !q.img); }
+    if (!p) {
+      p = newPanel(); ST.panels.push(p); fresh = true;
+      if (ST.L.mode === 'free' && !at) { const last = ST.panels[ST.panels.length - 2]; Object.assign(p, last ? { x: last.x + 20, y: last.y + 20, w: last.w, h: last.h } : { x: 10, y: 10, w: 200, h: 150 }); }
+    }
+    if (fresh && at) {   // Größe: Diagramme in Originalgröße, sonst ein Drittel der Breite im Seitenverhältnis des Bildes
+      const d = ST.imgs[id], sr = srcRect(id), orig = d.physW && (d.kind === 'plot' || d.dpi >= 150);
+      const w = orig ? d.physW : figWpx() / 3, h = orig ? d.physH : w * sr.h / sr.w;
+      Object.assign(p, { x: at.x - w / 2 + 15 * k, y: at.y - h / 2 + 15 * k, w, h });
+    }
     const plot = ST.imgs[id].kind === 'plot' || ST.imgs[id].dpi >= 150;   // Diagramm (SVG oder PNG mit Druck-dpi): ganz zeigen, heller Grund, dunkles Label
     Object.assign(p, { img: id, zoom: 1, cx: 0.5, cy: 0.5, annots: [], adj: freshAdj(), fit: plot ? 'contain' : 'cover' });
     // Durchsichtige Stellen zeigen den Abbildungshintergrund statt der (schwarzen) Bildfläche
@@ -1567,6 +1653,7 @@ view.addEventListener('drop', e => {
   const pt = figPt(e), hi = hitInset(pt);
   if (hi) { const p = panelById(hi.h.id), ins = p.insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') { sel = p.id; loadInto(fs, p, ins); return; } }
   const h = hitPanel(pt);
+  if (!h && ST.L.mode === 'free') { loadInto(fs, null, null, pt); return; }
   loadInto(fs, h ? panelById(h.id) : null);
 });
 document.addEventListener('dragover', e => e.preventDefault());
@@ -1587,6 +1674,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === ' ') { e.preventDefault(); if (!spaceDown) { spaceDown = true; if (!drag) cv.style.cursor = 'grab'; } return; }   // Leertaste + Ziehen = Ansicht verschieben
   const p = selP();
   if (e.key === 'Escape') { if (drag) { drag = null; render(); } else if (selItem) select(sel); else select(null); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && p) {
@@ -1621,6 +1709,14 @@ function layoutIcon(cols, rows, cells) {
   smart.title = 'Ordnet die Bilder in Zeilen so an, dass sie ohne Beschnitt die Breite füllen (nach ihren Seitenverhältnissen)';
   smart.onclick = () => { ST.L.mode = 'smart'; S.autoH = true; commit(); refreshAll(); };
   smart.dataset.lay = 'smart'; box.appendChild(smart);
+  const free = document.createElement('button');
+  free.innerHTML = `<svg viewBox="0 0 34 24"><rect x="2" y="2" width="13" height="9" rx="1"/><rect x="19" y="5" width="12" height="15" rx="1"/><rect x="4" y="14" width="11" height="8" rx="1"/></svg><span>Frei</span>`;
+  free.title = 'Freie Platzierung: Größe der Abbildung selbst festlegen, Platzhalter aufziehen oder Bilder auf die Fläche ziehen, zum Schluss „Abbildung an Platzhalter anpassen“';
+  free.onclick = () => {
+    ST.L.mode = 'free'; S.autoH = false; commit(); refreshAll(); setMode('layout');
+    toast('Freie Platzierung: auf leerer Fläche Rahmen aufziehen oder Bilder dorthin ziehen');
+  };
+  free.dataset.lay = 'free'; box.appendChild(free);
   for (const [id, label, cols, rows, cells] of PRESETS) {
     const b = document.createElement('button'); b.dataset.lay = id; b.title = label;
     b.innerHTML = layoutIcon(cols, rows, cells) + `<span>${label}</span>`;
@@ -1657,7 +1753,12 @@ $('#btnGrid').onclick = () => {
 };
 $('#btnAdd').onclick = () => {
   const p = newPanel();
-  if (ST.L.mode === 'free') { const W = figWpx(); Object.assign(p, { x: W * 0.35, y: 10, w: W * 0.3, h: W * 0.225 }); }
+  if (ST.L.mode === 'free') {   // mittig in die Abbildung, bei Überlappung leicht versetzt
+    const W = figWpx(), H = toPx(S.figH, S.figUnit), w = W * 0.3, h = w * 0.75;
+    let x = (W - w) / 2, y = (H - h) / 2;
+    while (ST.panels.some(q => Math.abs(q.x - x) < 1 && Math.abs(q.y - y) < 1)) { x += 15; y += 15; }
+    Object.assign(p, { x, y, w, h });
+  }
   ST.panels.push(p); sel = p.id; commit(); refreshAll();
 };
 $('#btnRelayout').onclick = () => { ST.L.mode = 'smart'; S.autoH = true; commit(); refreshAll(); };
@@ -1687,7 +1788,7 @@ function buildList() {
   });
   const m = ST.L.mode;
   $('#layoutMode').textContent = m === 'free' ? '(frei angeordnet)' : m === 'smart' ? '(Smart)' : `(Raster ${ST.L.cols} × ${ST.L.rows})`;
-  $$('#layouts button').forEach(b => b.classList.toggle('on', m === 'smart' ? b.dataset.lay === 'smart' : m === 'cells' && b.dataset.lay === ST.L.preset));
+  $$('#layouts button').forEach(b => b.classList.toggle('on', m === 'cells' ? b.dataset.lay === ST.L.preset : b.dataset.lay === m));
 }
 // In automatischen Layouts wandert der Platzhalter mit; frei angeordnet ändert sich nur die Reihenfolge (Labels)
 function movePanel(i, j) { const [p] = ST.panels.splice(i, 1); ST.panels.splice(j, 0, p); commit(); buildList(); render(); }
@@ -1849,7 +1950,8 @@ function syncUI() {
   $$('[data-k]').forEach(el => { if (document.activeElement === el) return; const v = S[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
   $('#gCols').value = ST.L.cols || 2; $('#gRows').value = ST.L.rows || 2;
 }
-function scaleFree(f, fy = f) { if (ST.L.mode !== 'free') return; for (const p of ST.panels) { p.x *= f; p.w *= f; p.y *= fy; p.h *= fy; } }
+// Größe der Abbildung ändern: frei angeordnete Platzhalter bleiben stehen (wie auf einer Zeichenfläche), außer „mitskalieren“ ist an
+function scaleFree(f, fy = f) { if (ST.L.mode !== 'free' || !S.scaleWithFig) return; for (const p of ST.panels) { p.x *= f; p.w *= f; p.y *= fy; p.h *= fy; } }
 $$('[data-k]').forEach(el => {
   const h = () => {
     const k = el.dataset.k;
@@ -1874,8 +1976,9 @@ function updPageUI() {
   $('#pageOri').hidden = !/^A\d$/.test(S.page);
   $('#rowPageCustom').hidden = S.page !== 'custom';
   $('#rowPageOpts').hidden = !S.page;
+  $('#rowScaleFree').hidden = ST.L.mode !== 'free';
 }
-$('#btn100').onclick = () => { $('#fit').checked = false; zoom = 1; render(); };
+$('#btn100').onclick = () => zoomView(1, null);
 // Abbildung auf die Platzhalter zuschneiden: Platzhalter an den Außenrand schieben, Breite und Höhe anpassen
 $('#btnFitFig').onclick = () => {
   const ps = ST.panels; if (!ps.length) return;
@@ -1889,8 +1992,8 @@ $('#btnFitFig').onclick = () => {
 $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
 $('#fit').onchange = render;
 $('#guides').onchange = render;
-$('#zoom').oninput = e => { $('#fit').checked = false; zoom = e.target.value / 100; render(); };
-window.addEventListener('resize', () => { if ($('#fit').checked) render(); });
+$('#zoom').oninput = e => zoomView(e.target.value / 100, null);
+window.addEventListener('resize', render);
 $('#btnCapCopy').onclick = () => copyText(S.capText.replace(/\*\*|\*/g, ''), 'Bildunterschrift kopiert');
 
 /* ---------- Export ---------- */

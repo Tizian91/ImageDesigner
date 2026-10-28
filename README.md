@@ -10,8 +10,9 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 
 - **Layout:** Vorlagen (einzeln, 2/3/4 nebeneinander oder untereinander, 2×2, 3×2, 1 groß + 2/3 klein …), freies Raster und **Smart**: ordnet die Bilder zeilenweise so an, dass sie nach ihren Seitenverhältnissen ohne Beschnitt die Breite füllen. Höhe automatisch oder fest, Abstand und Außenrand in mm.
 - **Platzhalter:** in der Vorschau verschieben und skalieren (mit Einrasten an Kanten und Abständen; Alt = ohne Einrasten, Shift = Seitenverhältnis halten) oder per Zahlenfeld. Ergänzen, entfernen, duplizieren, Reihenfolge per Ziehen ändern.
+- **Freie Platzierung** (Kachel „Frei“): Größe der Abbildung selbst festlegen, auf leerer Fläche Platzhalter aufziehen (Shift = quadratisch) oder Bilder dorthin ziehen – sie bekommen einen passenden Platzhalter, Diagramme mit Druckgröße gleich ihre Originalgröße. Größenänderungen verschieben nichts (optional mitskalieren). Zum Schluss „Abbildung an Platzhalter anpassen“.
 - **Arbeitsfläche:** Platzhalter bleiben auch außerhalb der Abbildung sichtbar und greifbar (blass = wird nicht exportiert, die Statuszeile warnt). „Abbildung an Platzhalter anpassen“ setzt Breite und Höhe passend zu allen Platzhaltern.
-- **Seite als Größenvergleich:** A2–A6 hochkant/quer, Folie 16:9 oder 4:3, individuell; mit Seitenrand und Satzspiegel, Abbildung am Rand oder mittig. „100 %“ zeigt die Originalgröße. Export wahlweise nur die Abbildung oder die ganze Seite.
+- **Seite als Größenvergleich:** A2–A6 hochkant/quer, Folie 16:9 oder 4:3, individuell; mit Seitenrand und Satzspiegel (gestrichelt), Abbildung am Rand oder mittig. Seite, Satzspiegel und Abbildung sind in der Vorschau mit ihren Maßen beschriftet. „100 %“ zeigt die Originalgröße. Export wahlweise nur die Abbildung oder die ganze Seite.
 - **Ausrichten & Verteilen:** Mehrfachauswahl mit Shift/Strg + Klick, gemeinsam verschieben; links/Mitte/rechts, oben/Mitte/unten, gleichmäßig verteilen, mit eingestelltem Abstand aneinanderreihen, gleiche Breite/Höhe/Größe.
 - **Zeilen- und Spaltenüberschriften** (z. B. „vorher/nachher“, „Probe A/B“), Platz wird automatisch freigehalten; Zeilenüberschriften senkrecht oder waagerecht.
 - **Diagramme einfügen:** SVG und PNG aus dem Diagramm-Designer per Datei, Drag & Drop oder Strg+V. Diagramme werden ganz gezeigt (Einpassen), mit weißem Grund und schwarzem Label; „Originalgröße“ setzt den Platzhalter auf die Größe des Diagramms, damit Schriftgrößen erhalten bleiben. Im SVG-/PDF-Export bleibt ein SVG-Diagramm Vektorgrafik. Transparente PNGs zeigen den Abbildungshintergrund.
@@ -41,7 +42,9 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 | Shift/Strg + Klick | Platzhalter zur Auswahl hinzufügen oder entfernen |
 | Strg+Z / Strg+Y | Rückgängig / Wiederholen |
 | Entf | gewählte Annotation, Inset oder Platzhalter löschen |
-| Strg + Mausrad | Vorschau zoomen |
+| Strg + Mausrad | Vorschau auf den Mauszeiger zoomen (Zoom-Regler und „100 %“: auf die Mitte) |
+| Mausrad (Shift = waagerecht) | Vorschau verschieben; im Werkzeug „Bild“ über einem Bild: Bild zoomen |
+| mittlere Maustaste / Leertaste + Ziehen | Vorschau verschieben |
 
 ## Nutzung
 
