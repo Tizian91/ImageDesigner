@@ -29,7 +29,8 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 - **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – mit Linienstil (durchgezogen, gestrichelt, gepunktet, Strich-Punkt) und runden oder eckigen Enden; sie hängen am Bild und wandern beim Verschieben/Zoomen mit.
 - **Rahmen** um die Platzhalter (Farbe, Breite, je Platzhalter an/aus), **Bildunterschrift** mit **fett**/*kursiv* und Blocksatz.
 - **Export:** PNG, TIFF (LZW) und JPG mit dpi-Angabe (150–1200 dpi), SVG (Bilder eingebettet, Text als Vektor), PDF über Drucken, „Für Word kopieren“ in Originalgröße. Hinweis bei zu geringer Bildauflösung.
-- **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), automatisches Speichern im Browser (IndexedDB, inkl. Bilder) – beim nächsten Öffnen geht es dort weiter, wo man aufgehört hat. **„＋ Neu“** in der Kopfzeile beginnt mit einer leeren Fläche im Ausgangszustand (wahlweise mit dem bisherigen Stil; rückgängig machbar). Projektdatei `.bildtafel.json` mit allen Bildern.
+- **Projekte:** „Öffnen“, „Speichern“ und „Speichern unter…“ in der Kopfzeile. Die Projektdatei `.bildtafel.json` enthält alle Bilder und lässt sich weitergeben. In Edge/Chrome speichert Strg+S nach dem ersten „Speichern unter…“ direkt in dieselbe Datei (auch nach einem Neustart, nach einmaliger Bestätigung); andere Browser laden die Datei herunter. Öffnen auch per Drag & Drop auf die Fläche oder in der installierten App mit „Öffnen mit“. Ein ● vor dem Namen zeigt ungespeicherte Änderungen.
+- **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), automatisches Speichern im Browser (IndexedDB, inkl. Bilder) – beim nächsten Öffnen geht es dort weiter, wo man aufgehört hat. **„＋ Neu“** in der Kopfzeile beginnt mit einer leeren Fläche im Ausgangszustand (wahlweise mit dem bisherigen Stil; rückgängig machbar).
 
 ## Tastenkürzel
 
@@ -41,6 +42,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 | Strg+A | alle Platzhalter auswählen (dann gemeinsam ziehen oder mit Pfeiltasten verschieben) |
 | Shift/Strg + Klick | Platzhalter zur Auswahl hinzufügen oder entfernen |
 | Strg+Z / Strg+Y | Rückgängig / Wiederholen |
+| Strg+S / Strg+Umschalt+S / Strg+O | Projekt speichern / speichern unter / öffnen |
 | Entf | gewählte Annotation, Inset oder Platzhalter löschen |
 | Strg + Mausrad | Vorschau auf den Mauszeiger zoomen (Zoom-Regler und „100 %“: auf die Mitte) |
 | Mausrad (Shift = waagerecht) | Vorschau verschieben; im Werkzeug „Bild“ über einem Bild: Bild zoomen |

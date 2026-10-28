@@ -86,7 +86,12 @@ button.mini{padding:1px 6px;font-size:12px}
 <body>
 <header>
   <h1>Bildtafel-Designer</h1>
-  <span class="hint">Layout wählen → Bilder hineinziehen → Maßstab, Labels &amp; Beschriftung → exportieren</span>
+  <span class="seg">
+    <button id="hOpen" title="Projekt öffnen (Strg+O) – oder die Projektdatei auf die Fläche ziehen">📂 Öffnen</button>
+    <button id="hSave" title="Projekt speichern (Strg+S)">💾 Speichern</button>
+    <button id="hSaveAs" title="Speichern unter … (Strg+Umschalt+S)">Speichern unter…</button>
+  </span>
+  <span id="projName" class="hint" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Unbenanntes Projekt</span>
   <span class="sp"></span>
   <button id="hNew" title="Neue, leere Abbildung beginnen (Rückgängig ist danach noch möglich)">＋ Neu</button>
   <button id="hWord" class="primary" title="PNG in Originalgröße in die Zwischenablage, dann in Word Strg+V">Für Word kopieren</button>
@@ -228,8 +233,8 @@ button.mini{padding:1px 6px;font-size:12px}
 
   <details>
     <summary>Projekt</summary>
-    <div class="btns"><button id="btnSaveProj">Projekt speichern (.json)</button><button id="btnLoadProj">Projekt öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
-    <p class="hint">Das Projekt wird automatisch im Browser gespeichert (inkl. Bilder) und beim nächsten Öffnen wiederhergestellt. „Neu“ (auch oben in der Kopfzeile) beginnt mit einer leeren Fläche. Die Projektdatei enthält alle Bilder und lässt sich weitergeben.</p>
+    <div class="btns"><button id="btnSaveProj" title="Strg+S">Speichern</button><button id="btnSaveProjAs" title="Strg+Umschalt+S">Speichern unter…</button><button id="btnLoadProj" title="Strg+O">Öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
+    <p class="hint">Die Projektdatei (.bildtafel.json) enthält alle Bilder und lässt sich weitergeben. „Speichern unter…“ fragt nach Ordner und Namen, danach speichert Strg+S in dieselbe Datei (Edge/Chrome; andere Browser laden sie herunter). Öffnen geht auch per Drag &amp; Drop auf die Fläche. Zusätzlich merkt sich der Browser automatisch den letzten Stand. „Neu“ beginnt mit einer leeren Fläche.</p>
   </details>
 </aside>
 <div id="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
@@ -319,6 +324,7 @@ let S = ST.S;
 const IMG = new Map();     // id → { id, name, w, h, full (ImageBitmap), prev (Canvas ≤ 2048 px), blob, meta }
 let sel = null;            // id des ausgewählten Platzhalters (Bezug für Eigenschaften)
 let msel = new Set();      // Mehrfachauswahl (Shift/Strg + Klick) fürs Ausrichten
+let projHandle = null, projName = '', projDirty = false;   // Projektdatei: Dateizugriff (Edge/Chrome), Name, ungespeicherte Änderungen
 let selItem = null;        // { kind: 'annot'|'inset'|'text', id }
 let mode = 'layout', atool = 'arrow';
 let zoom = 1;
@@ -1086,11 +1092,12 @@ function commit() {
   hist = hist.slice(0, hpos + 1); hist.push(s);
   if (hist.length > 150) hist.shift();
   hpos = hist.length - 1; updUndo(); saveSoon();
+  if (hist.length > 1) markDirty();
 }
 const commitSoon = () => { clearTimeout(commitT); commitT = setTimeout(commit, 450); };
 function restoreSnap(s) { ST = JSON.parse(s); S = ST.S; if (!ST.panels.some(p => p.id === sel)) sel = null; selItem = null; msel = new Set(sel ? [sel] : []); refreshAll(); }
-function undo() { commit(); if (hpos > 0) restoreSnap(hist[--hpos]); updUndo(); }
-function redo() { if (hpos < hist.length - 1) restoreSnap(hist[++hpos]); updUndo(); }
+function undo() { commit(); if (hpos > 0) { restoreSnap(hist[--hpos]); markDirty(); } updUndo(); }
+function redo() { if (hpos < hist.length - 1) { restoreSnap(hist[++hpos]); markDirty(); } updUndo(); }
 function updUndo() { $('#btnUndo').disabled = hpos <= 0; $('#btnRedo').disabled = hpos >= hist.length - 1; }
 
 /* ---------- Vorschau ---------- */
@@ -1665,6 +1672,14 @@ view.addEventListener('dragleave', e => { if (e.target === view) view.classList.
 view.addEventListener('drop', e => {
   e.preventDefault(); view.classList.remove('dropping');
   const fs = [...e.dataTransfer.files]; if (!fs.length) return;
+  // Projektdatei: öffnen; den Dateizugriff (Edge/Chrome) gleich mitnehmen, damit Strg+S wieder in diese Datei speichert
+  const pi = fs.findIndex(isProjFile);
+  if (pi >= 0) {
+    const item = [...e.dataTransfer.items].filter(i => i.kind === 'file')[pi];
+    const hp = item && item.getAsFileSystemHandle ? item.getAsFileSystemHandle().catch(() => null) : Promise.resolve(null);
+    hp.then(h => loadProjectFile(fs[pi], h && h.kind === 'file' ? h : null));
+    return;
+  }
   const pt = figPt(e), hi = hitInset(pt);
   if (hi) { const p = panelById(hi.h.id), ins = p.insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') { sel = p.id; loadInto(fs, p, ins); return; } }
   const h = hitPanel(pt);
@@ -1677,6 +1692,9 @@ document.addEventListener('drop', e => e.preventDefault());
 /* ---------- Tastatur ---------- */
 document.addEventListener('keydown', e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+  // Strg+S / Strg+Umschalt+S / Strg+O gelten überall, auch beim Tippen
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); if (document.activeElement && document.activeElement.blur && typing) document.activeElement.blur(); saveProject(e.shiftKey); return; }
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'o') { e.preventDefault(); openProject(); return; }
   if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && !typing && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
   // Strg+A: alle Platzhalter auswählen – dann lässt sich die ganze Abbildung mit einem Zug (oder den Pfeiltasten) verschieben
@@ -2289,28 +2307,81 @@ async function restore() {
     if (p.img && !IMG.has(p.img)) p.img = null; p.insets = p.insets.filter(i => i.src === 'region' ? p.img : true); for (const i of p.insets) if (i.img && !IMG.has(i.img)) i.img = null; }
   try { for (const k of await db.keys('imgs')) if (!need.has(k)) db.del('imgs', k); } catch { }
 }
-$('#btnSaveProj').onclick = () => busy('Projekt wird gespeichert …', async () => {
+/* ---------- Projektdatei: Speichern, Speichern unter, Öffnen (auch per Drag & Drop) ----------
+   Mit der File System Access API (Edge/Chrome) wird in die gewählte Datei geschrieben und Strg+S speichert
+   wieder dorthin; der Dateizugriff wird in IndexedDB gemerkt. Andere Browser laden die Datei herunter. */
+const PROJ_TYPES = [{ description: 'Bildtafel-Projekt', accept: { 'application/json': ['.json'] } }];
+const canSaveFS = () => typeof window.showSaveFilePicker === 'function';
+const isProjFile = f => /\.json$/i.test(f.name || '');
+async function projectBlob() {
   const images = {};
   for (const id of usedImgs(ST)) { const im = IMG.get(id); if (im) images[id] = { name: im.name, meta: im.meta, data: await blobURL(im.blob) }; }
-  download(new Blob([JSON.stringify({ app: 'ImageDesigner', version: 1, state: ST, images })], { type: 'application/json' }), safeName() + '.bildtafel.json');
-});
-$('#btnLoadProj').onclick = () => $('#projFile').click();
-$('#projFile').onchange = async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  return new Blob([JSON.stringify({ app: 'ImageDesigner', version: 1, state: ST, images })], { type: 'application/json' });
+}
+function setProj(handle, name) {
+  projHandle = handle || null; projName = name || ''; projDirty = false;
+  db.put('kv', 'proj', { handle: projHandle, name: projName, dirty: false }).catch(() => db.put('kv', 'proj', { handle: null, name: projName, dirty: false }).catch(() => { }));
+  updProjUI();
+}
+function markDirty() {
+  if (projDirty) return;
+  projDirty = true; updProjUI();
+  db.put('kv', 'proj', { handle: projHandle, name: projName, dirty: true }).catch(() => { });
+}
+function updProjUI() {
+  const n = projName || 'Unbenanntes Projekt', el = $('#projName');
+  el.textContent = (projDirty ? '● ' : '') + n;
+  el.title = (projHandle ? 'Strg+S speichert in diese Datei' : projName ? 'Strg+S lädt die Datei erneut herunter' : 'Noch nicht gespeichert') + (projDirty ? ' · ungespeicherte Änderungen' : '');
+  document.title = (projDirty ? '● ' : '') + (projName ? projName.replace(/(\.bildtafel)?\.json$/i, '') + ' – ' : '') + 'Bildtafel-Designer';
+}
+async function saveProject(as) {
+  commit();
+  const name = projName || safeName() + '.bildtafel.json';
+  try {
+    let h = null;
+    if (canSaveFS()) {   // erst die Datei wählen (braucht den Klick), dann das Projekt zusammenstellen
+      h = as ? null : projHandle;
+      if (h && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted' && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') h = null;
+      if (!h) h = await window.showSaveFilePicker({ suggestedName: name, types: PROJ_TYPES, id: 'bildtafelProjekt' });
+    }
+    $('#status').textContent = 'Projekt wird gespeichert …';
+    await new Promise(r => setTimeout(r, 20));
+    const blob = await projectBlob();
+    if (h) { const w = await h.createWritable(); await w.write(blob); await w.close(); setProj(h, h.name); toast(`Gespeichert: ${h.name}`); }
+    else { download(blob, name); setProj(null, name); toast(`${name} heruntergeladen`); }
+  } catch (err) { if (err.name !== 'AbortError') { console.error(err); toast('Speichern fehlgeschlagen: ' + (err.message || err)); } }
+  finally { render(); }
+}
+async function loadProjectFile(f, handle) {
   try {
     const o = JSON.parse(await f.text());
     if (!o || o.app !== 'ImageDesigner') throw new Error('keine Projektdatei des Bildtafel-Designers');
-    for (const [id, rec] of Object.entries(o.images || {})) { if (!/^data:image\//.test(rec.data)) continue; const blob = await (await fetch(rec.data)).blob(); await addImage(id, { ...rec, blob }); dbPutImg(id).catch(() => { }); }
-    ST = sanitize(o.state); S = ST.S; sel = null; selItem = null; commit(); refreshAll(); toast(`${f.name} geöffnet`);
+    $('#status').textContent = `${f.name} wird geöffnet …`;
+    for (const [id, rec] of Object.entries(o.images || {})) {
+      if (!/^data:image\//.test(rec.data)) continue;
+      const blob = await (await fetch(rec.data)).blob(); await addImage(id, { ...rec, blob }); dbPutImg(id).catch(() => { });
+    }
+    ST = sanitize(o.state); S = ST.S; sel = null; selItem = null; msel = new Set(); drag = null;
+    $('#fit').checked = true; setMode('layout');
+    commit(); setProj(handle, f.name); refreshAll(); toast(`${f.name} geöffnet`);
   } catch (err) { console.error(err); toast('Projekt konnte nicht geöffnet werden: ' + err.message); }
-};
+}
+async function openProject() {
+  if (typeof window.showOpenFilePicker !== 'function') { $('#projFile').click(); return; }
+  try { const [h] = await window.showOpenFilePicker({ types: PROJ_TYPES, id: 'bildtafelProjekt' }); await loadProjectFile(await h.getFile(), h); }
+  catch (err) { if (err.name !== 'AbortError') { console.error(err); toast('Öffnen fehlgeschlagen: ' + err.message); } }
+}
+$('#hSave').onclick = $('#btnSaveProj').onclick = () => saveProject(false);
+$('#hSaveAs').onclick = $('#btnSaveProjAs').onclick = () => saveProject(true);
+$('#hOpen').onclick = $('#btnLoadProj').onclick = openProject;
+$('#projFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) loadProjectFile(f, null); };
 // Neu: leere Fläche im Ausgangszustand (optional mit dem aktuellen Stil). Bleibt rückgängig machbar; eigene Stile bleiben erhalten.
 function newProject(keepStyle) {
   const st = keepStyle ? styleOnly() : null;
   ST = freshState(); if (st) Object.assign(ST.S, st);
   S = ST.S; sel = null; selItem = null; msel = new Set(); drag = null;
   $('#fit').checked = true; setMode('layout');
-  commit(); refreshAll();
+  commit(); setProj(null, ''); refreshAll();
   toast(keepStyle ? 'Neue, leere Abbildung mit dem bisherigen Stil' : 'Neue, leere Abbildung im Ausgangszustand');
 }
 function askNew(btn) {
@@ -2343,9 +2414,17 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
   refreshUserPresets(); dirInit();
   setMode('layout'); setAtool('arrow');
   commit(); refreshAll();
+  try { const pj = await db.get('kv', 'proj'); if (pj) { projHandle = pj.handle || null; projName = pj.name || ''; projDirty = !!pj.dirty; } } catch { }
+  updProjUI();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
-  if ('launchQueue' in window) launchQueue.setConsumer(async p => { if (p.files && p.files.length) loadInto(await Promise.all(p.files.map(f => f.getFile())), null); });
+  // Installierte App: „Öffnen mit“ im Explorer – Projektdateien öffnen (mit Dateizugriff für Strg+S), Bilder einfügen
+  if ('launchQueue' in window) launchQueue.setConsumer(async p => {
+    if (!p.files || !p.files.length) return;
+    const pj = p.files.find(isProjFile);
+    if (pj) { await loadProjectFile(await pj.getFile(), pj); return; }
+    loadInto(await Promise.all(p.files.map(f => f.getFile())), null);
+  });
 })();
 </script>
 </body>

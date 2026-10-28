@@ -22,7 +22,8 @@
         "image/tiff": [".tif", ".tiff"],
         "image/png": [".png"],
         "image/jpeg": [".jpg", ".jpeg"],
-        "image/svg+xml": [".svg"]
+        "image/svg+xml": [".svg"],
+        "application/json": [".json"]
       }
     }
   ]
