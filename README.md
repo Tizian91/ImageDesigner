@@ -9,7 +9,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 ## Funktionen
 
 - **Layout:** Vorlagen (einzeln, 2/3/4 nebeneinander oder untereinander, 2×2, 3×2, 1 groß + 2/3 klein …), freies Raster und **Smart**: ordnet die Bilder zeilenweise so an, dass sie nach ihren Seitenverhältnissen ohne Beschnitt die Breite füllen. Höhe automatisch oder fest, Abstand und Außenrand in mm.
-- **Platzhalter:** in der Vorschau verschieben und skalieren (mit Einrasten an Kanten und Abständen; Alt = ohne Einrasten, Shift = Seitenverhältnis halten) oder per Zahlenfeld. Ergänzen, entfernen, duplizieren, Reihenfolge per Ziehen ändern.
+- **Platzhalter:** in der Vorschau verschieben und skalieren (mit Einrasten an Kanten und Abständen; Alt = ohne Einrasten, Shift = Seitenverhältnis halten) oder per Zahlenfeld. Ist der Platzhalter größer als das sichtbare Bild, rastet die gezogene Seite an der Bildkante ein (grüne Linie), bevor das Bild beim Weiterziehen schrumpft. Ergänzen, entfernen, duplizieren, Reihenfolge per Ziehen ändern.
 - **Freie Platzierung** (Kachel „Frei“): Größe der Abbildung selbst festlegen, auf leerer Fläche Platzhalter aufziehen (Shift = quadratisch) oder Bilder dorthin ziehen – sie bekommen einen passenden Platzhalter, Diagramme mit Druckgröße gleich ihre Originalgröße. Größenänderungen verschieben nichts (optional mitskalieren). Zum Schluss „Abbildung an Platzhalter anpassen“.
 - **Arbeitsfläche:** Platzhalter bleiben auch außerhalb der Abbildung sichtbar und greifbar (blass = wird nicht exportiert, die Statuszeile warnt). „Abbildung an Platzhalter anpassen“ setzt Breite und Höhe passend zu allen Platzhaltern.
 - **Seite als Größenvergleich:** A2–A6 hochkant/quer, Folie 16:9 oder 4:3, individuell; mit Seitenrand und Satzspiegel (gestrichelt), Abbildung am Rand oder mittig. Seite, Satzspiegel und Abbildung sind in der Vorschau mit ihren Maßen beschriftet. „100 %“ zeigt die Originalgröße. Export wahlweise nur die Abbildung oder die ganze Seite.
@@ -29,7 +29,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 - **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – mit Linienstil (durchgezogen, gestrichelt, gepunktet, Strich-Punkt) und runden oder eckigen Enden; sie hängen am Bild und wandern beim Verschieben/Zoomen mit.
 - **Rahmen** um die Platzhalter (Farbe, Breite, je Platzhalter an/aus), **Bildunterschrift** mit **fett**/*kursiv* und Blocksatz.
 - **Export:** PNG, TIFF (LZW) und JPG mit dpi-Angabe (150–1200 dpi), SVG (Bilder eingebettet, Text als Vektor), PDF über Drucken, „Für Word kopieren“ in Originalgröße. Hinweis bei zu geringer Bildauflösung.
-- **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), automatisches Speichern im Browser (IndexedDB, inkl. Bilder), Projektdatei `.bildtafel.json` mit allen Bildern.
+- **Rückgängig/Wiederholen** (Strg+Z / Strg+Y), automatisches Speichern im Browser (IndexedDB, inkl. Bilder) – beim nächsten Öffnen geht es dort weiter, wo man aufgehört hat. **„＋ Neu“** in der Kopfzeile beginnt mit einer leeren Fläche im Ausgangszustand (wahlweise mit dem bisherigen Stil; rückgängig machbar). Projektdatei `.bildtafel.json` mit allen Bildern.
 
 ## Tastenkürzel
 

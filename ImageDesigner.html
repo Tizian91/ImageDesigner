@@ -88,6 +88,7 @@ button.mini{padding:1px 6px;font-size:12px}
   <h1>Bildtafel-Designer</h1>
   <span class="hint">Layout wählen → Bilder hineinziehen → Maßstab, Labels &amp; Beschriftung → exportieren</span>
   <span class="sp"></span>
+  <button id="hNew" title="Neue, leere Abbildung beginnen (Rückgängig ist danach noch möglich)">＋ Neu</button>
   <button id="hWord" class="primary" title="PNG in Originalgröße in die Zwischenablage, dann in Word Strg+V">Für Word kopieren</button>
   <button id="hPng">PNG speichern</button>
   <button id="hTif">TIFF speichern</button>
@@ -228,7 +229,7 @@ button.mini{padding:1px 6px;font-size:12px}
   <details>
     <summary>Projekt</summary>
     <div class="btns"><button id="btnSaveProj">Projekt speichern (.json)</button><button id="btnLoadProj">Projekt öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
-    <p class="hint">Das Projekt wird automatisch im Browser gespeichert (inkl. Bilder). Die Projektdatei enthält alle Bilder und lässt sich weitergeben.</p>
+    <p class="hint">Das Projekt wird automatisch im Browser gespeichert (inkl. Bilder) und beim nächsten Öffnen wiederhergestellt. „Neu“ (auch oben in der Kopfzeile) beginnt mit einer leeren Fläche. Die Projektdatei enthält alle Bilder und lässt sich weitergeben.</p>
   </details>
 </aside>
 <div id="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
@@ -312,7 +313,7 @@ const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length
 const freshAdj = () => ({ b: 0, c: 0, g: 1, inv: false });
 const newPanel = () => ({ id: uid(), x: 0, y: 0, w: 200, h: 150, img: null, zoom: 1, cx: 0.5, cy: 0.5, fit: 'cover', frame: 'g', label: '', lblColor: '', bg: '',
   sb: { on: true, val: null, unit: 'µm', corner: '' }, texts: [], insets: [], annots: [], adj: freshAdj() });
-const freshState = () => ({ S: { ...DEF }, L: { mode: 'smart', cols: 2, rows: 1, cells: null }, panels: [newPanel(), newPanel()], imgs: {} });
+const freshState = () => ({ S: { ...DEF }, L: { mode: 'smart', cols: 2, rows: 1, cells: null }, panels: [], imgs: {} });
 let ST = freshState();
 let S = ST.S;
 const IMG = new Map();     // id → { id, name, w, h, full (ImageBitmap), prev (Canvas ≤ 2048 px), blob, meta }
@@ -1241,7 +1242,7 @@ function drawOverlay(ctx, r) {
     ctx.fillText(ST.L.mode === 'free' ? 'Rahmen aufziehen oder Bilder hierher ziehen' : 'Bilder hierher ziehen oder „+ Platzhalter“', r.W / 2, r.H0 / 2);
   }
   if (drag && drag.draw) drag.draw(ctx, px, acc);
-  if (drag && drag.snaps) { ctx.strokeStyle = '#e0407a'; ctx.lineWidth = px; for (const s of drag.snaps) { ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, VT.y0); ctx.lineTo(s.x, VT.y1); } else { ctx.moveTo(VT.x0, s.y); ctx.lineTo(VT.x1, s.y); } ctx.stroke(); } }
+  if (drag && drag.snaps) { ctx.lineWidth = px; for (const s of drag.snaps) { ctx.strokeStyle = s.img ? '#16a34a' : '#e0407a'; ctx.lineWidth = (s.img ? 2 : 1) * px; ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, VT.y0); ctx.lineTo(s.x, VT.y1); } else { ctx.moveTo(VT.x0, s.y); ctx.lineTo(VT.x1, s.y); } ctx.stroke(); } }
   ctx.restore();
 }
 function annotBox(a, g) {
@@ -1282,6 +1283,15 @@ function snapTargets(skip) {
   const sk = skip instanceof Set ? skip : new Set([skip]);
   for (const p of ST.panels) if (!sk.has(p.id)) { xs.push(p.x, p.x + p.w, p.x - g, p.x + p.w + g); ys.push(p.y, p.y + p.h, p.y - g, p.y + p.h + g); }
   return { xs, ys };
+}
+// Breite (axis 'x') bzw. Höhe ('y') des Platzhalters, bei der er in dieser Richtung genau das sichtbare Bild umfasst,
+// ohne dass sich der Bildmaßstab ändert. null, wenn es diese Stelle nicht gibt (z. B. Bild verschoben oder gleiche Vergrößerung).
+function fitSnap(p, x, y, w, h, axis) {
+  if (!p.img || magOn(p) || Math.abs((axis === 'x' ? p.cx : p.cy) - 0.5) > 1e-3) return null;
+  const sr = srcRect(p.img); if (!sr) return null;
+  const v = axis === 'x' ? h * p.zoom * sr.w / sr.h : w * p.zoom * sr.h / sr.w;
+  const g = geom({ ...p, x, y, w: axis === 'x' ? v : w, h: axis === 'x' ? h : v });
+  return g && Math.abs((axis === 'x' ? g.w : g.h) - v) < 0.01 ? v : null;
 }
 function snap1(vals, targets, tol) {   // bester Versatz, damit einer der Werte auf einem Ziel liegt
   let best = null;
@@ -1467,6 +1477,11 @@ cv.addEventListener('pointermove', e => {
       if (d.hd.includes('w')) { let l = x + dx; const s = T && snap1([l], T.xs, tol); if (s) { l += s.d; d.snaps.push({ x: s.at }); } w = x + w - l; x = l; }
       if (d.hd.includes('s')) { let b = y + h + dy; const s = T && snap1([b], T.ys, tol); if (s) { b += s.d; d.snaps.push({ y: s.at }); } h = b - y; }
       if (d.hd.includes('n')) { let t = y + dy; const s = T && snap1([t], T.ys, tol); if (s) { t += s.d; d.snaps.push({ y: s.at }); } h = y + h - t; y = t; }
+      // Bildkante hat Vorrang: die gezogene Seite rastet dort ein, wo der Platzhalter genau so groß ist wie das sichtbare Bild
+      if (!e.altKey && !(e.shiftKey && d.hd.length === 2)) {
+        if (/[ew]/.test(d.hd)) { const v = fitSnap(p, x, y, w, h, 'x'); if (v != null && Math.abs(w - v) <= tol) { if (d.hd.includes('w')) x += w - v; w = v; d.snaps = d.snaps.filter(s => s.x == null); d.snaps.push({ x: d.hd.includes('e') ? x + w : x, img: true }); } }
+        if (/[ns]/.test(d.hd)) { const v = fitSnap(p, x, y, w, h, 'y'); if (v != null && Math.abs(h - v) <= tol) { if (d.hd.includes('n')) y += h - v; h = v; d.snaps = d.snaps.filter(s => s.y == null); d.snaps.push({ y: d.hd.includes('s') ? y + h : y, img: true }); } }
+      }
       if (e.shiftKey && d.hd.length === 2) { const a = d.R0.w / d.R0.h; if (w / h > a) w = h * a; else h = w / a; if (d.hd.includes('w')) x = d.R0.x + d.R0.w - w; if (d.hd.includes('n')) y = d.R0.y + d.R0.h - h; }
       if (w > 10 && h > 10) Object.assign(p, { x, y, w, h });
       break;
@@ -2289,7 +2304,23 @@ $('#projFile').onchange = async e => {
     ST = sanitize(o.state); S = ST.S; sel = null; selItem = null; commit(); refreshAll(); toast(`${f.name} geöffnet`);
   } catch (err) { console.error(err); toast('Projekt konnte nicht geöffnet werden: ' + err.message); }
 };
-$('#btnReset').onclick = () => { if (!confirm('Neues, leeres Projekt beginnen? (Rückgängig ist möglich)')) return; const keepS = { ...S }; ST = freshState(); ST.S = { ...keepS, capText: '', capOn: false }; S = ST.S; sel = null; selItem = null; commit(); refreshAll(); };
+// Neu: leere Fläche im Ausgangszustand (optional mit dem aktuellen Stil). Bleibt rückgängig machbar; eigene Stile bleiben erhalten.
+function newProject(keepStyle) {
+  const st = keepStyle ? styleOnly() : null;
+  ST = freshState(); if (st) Object.assign(ST.S, st);
+  S = ST.S; sel = null; selItem = null; msel = new Set(); drag = null;
+  $('#fit').checked = true; setMode('layout');
+  commit(); refreshAll();
+  toast(keepStyle ? 'Neue, leere Abbildung mit dem bisherigen Stil' : 'Neue, leere Abbildung im Ausgangszustand');
+}
+function askNew(btn) {
+  const b = btn.getBoundingClientRect();
+  popup('Neue Abbildung beginnen', `<div class="hint" style="max-width:300px">Alle Bilder, Platzhalter und Texte werden entfernt. Mit Strg+Z lässt sich das rückgängig machen.<br>Eigene Stile und der Stil-Ordner bleiben erhalten.</div>
+    <div class="row"><label><input type="checkbox" id="keepStyle"> Aktuellen Stil behalten (Größe, Schrift, Labels, Maßstab …)</label></div>`,
+    { x: b.left - 260, y: b.bottom - 8 }, pop => newProject(pop.querySelector('#keepStyle').checked));
+}
+$('#hNew').onclick = e => askNew(e.currentTarget);
+$('#btnReset').onclick = e => askNew(e.currentTarget);
 
 /* ---------- Seitenleiste verbreitern ---------- */
 (() => {
