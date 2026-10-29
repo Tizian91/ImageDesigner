@@ -1,7 +1,7 @@
 // Service Worker: hält die App offline verfügbar, sobald sie installiert ist.
 // Bei jeder Änderung an den Dateien VERSION erhöhen, damit alte Caches verworfen werden.
 'use strict';
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE = 'bildtafel-designer-' + VERSION;
 const FILES = ['./', './index.html', './ImageDesigner.html', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];

@@ -27,7 +27,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 - **Bildlabels** a, b, c / A, B, C / (a) / a) / i, ii … mit Größe, Farbe, Fett/Kursiv, Kasten (Füllung, Deckkraft, Rand) und Ecke; alles je Platzhalter überschreibbar.
 - **Textfelder** in sechs Positionen (Ecken und Mitte oben/unten), mehrzeilig, links-/rechtsbündig oder zentriert, mit Kasten (Füllung, Deckkraft, Rand). Elemente in derselben Ecke werden automatisch gestapelt; Labels, Maßstab, Insets und Textfelder haben je einen eigenen Abstand zum Rand.
 - **Insets:** eigenes Bild oder vergrößerter Ausschnitt (im Bild aufziehen) mit Markierung und Verbindungslinien; Ecke per Ziehen wählen.
-- **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – mit Linienstil (durchgezogen, gestrichelt, gepunktet, Strich-Punkt) und runden oder eckigen Enden, Text mit Kasten (Füllung, Deckkraft, Rand); sie hängen am Bild und wandern beim Verschieben/Zoomen mit.
+- **Annotationen:** Pfeil, Linie, Rechteck, Ellipse, Text – mit Linienstil (durchgezogen, gestrichelt, gepunktet, Strich-Punkt) und runden oder eckigen Enden, Text mit Kasten (Füllung, Deckkraft, Rand); sie hängen am Bild und wandern beim Verschieben/Zoomen mit. Nachträglich an Griffen umformen: Pfeil und Linie an den Enden, Rechteck und Ellipse an Ecken und Kanten.
 - **Rahmen** um die Platzhalter (Farbe, Breite; je Platzhalter einstellbar), **Bildunterschrift** mit **fett**/*kursiv* und Blocksatz.
 - **Export:** PNG, TIFF (LZW) und JPG mit dpi-Angabe (150–1200 dpi), SVG (Bilder eingebettet, Text als Vektor), PDF über Drucken, „Für Word kopieren“ in Originalgröße. Hinweis bei zu geringer Bildauflösung.
 - **Projekte:** „Öffnen“, „Speichern“ und „Speichern unter…“ in der Kopfzeile. Die Projektdatei `.bildtafel.json` enthält alle Bilder und lässt sich weitergeben. In Edge/Chrome speichert Strg+S nach dem ersten „Speichern unter…“ direkt in dieselbe Datei (auch nach einem Neustart, nach einmaliger Bestätigung); andere Browser laden die Datei herunter. Öffnen auch per Drag & Drop auf die Fläche oder in der installierten App mit „Öffnen mit“. Ein ● vor dem Namen zeigt ungespeicherte Änderungen.
@@ -37,6 +37,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 
 | Taste | Wirkung |
 |---|---|
+| ? | Kurzanleitung (auch Knopf „?“ in der Kopfzeile) |
 | V / B / M / A / I | Werkzeug Platzhalter / Bild / Maßstab / Annotation / Inset |
 | Doppelklick | leerer Platzhalter: Bild öffnen · sonst zwischen Platzhalter und Bild wechseln |
 | Pfeiltasten (Shift = ×10) | Platzhalter, Bild oder Annotation verschieben |
@@ -52,3 +53,5 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 ## Nutzung
 
 `ImageDesigner.html` per Doppelklick in Edge oder Chrome öffnen. Für die Installation als App (inkl. „Öffnen mit“ für TIFF/PNG/JPG) muss die Seite über `https://` oder `http://localhost` geladen werden, wie beim Diagramm-Designer.
+
+Wie das Programm aufgebaut ist (Zustand, Zeichenliste, Stilsystem, Bedienung, Speichern), steht in [ARCHITEKTUR.md](ARCHITEKTUR.md).
