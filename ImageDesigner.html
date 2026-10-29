@@ -1066,8 +1066,10 @@ async function buildSVG() {
   const out = ops => ops.map(o => {
     switch (o.k) {
       case 'rect': return `<rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h, fill: o.fill || 'none', 'fill-opacity': o.fill && o.fa != null && o.fa < 1 ? o.fa : null, stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o) })}/>`;
-      case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null));
-        return `<svg${attr({ x: o.x, y: o.y, width: o.w, height: o.h, viewBox: `${f2(o.sx)} ${f2(o.sy)} ${f2(o.sw)} ${f2(o.sh)}`, preserveAspectRatio: 'none', overflow: 'hidden' })}><use href="#${u.id}"/></svg>`; }
+      // Ausschnitt per Zuschnitt + Matrix statt verschachteltem <svg viewBox>: Inkscape ignoriert dessen Beschnitt
+      case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null)), kx = o.w / o.sw, ky = o.h / o.sh, id = 'c' + n++;
+        defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`);
+        return `<g clip-path="url(#${id})"><use href="#${u.id}" transform="matrix(${+kx.toPrecision(6)} 0 0 ${+ky.toPrecision(6)} ${f2(o.x - o.sx * kx)} ${f2(o.y - o.sy * ky)})"/></g>`; }
       case 'tr': return `<g transform="translate(${f2(o.dx)} ${f2(o.dy)})">${out(o.ops)}</g>`;
       case 'clip': { const id = 'c' + n++; defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`); return `<g clip-path="url(#${id})">${out(o.ops)}</g>`; }
       case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o), 'stroke-linejoin': o.stroke ? 'round' : null })}/>`;
