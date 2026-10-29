@@ -15,8 +15,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <style>
-:root{--bg:#f3f4f7;--panel:#ffffff;--text:#1d2330;--muted:#687083;--border:#d9dde5;--accent:#2f6fde;--accent-soft:#e7efff}
-@media (prefers-color-scheme: dark){:root{--bg:#15171c;--panel:#1f232a;--text:#e6e8ec;--muted:#9aa3b2;--border:#353b46;--accent:#6c9cff;--accent-soft:#25324d}}
+/* --accent = Standard (gilt für alle), --own = nur die Auswahl */
+:root{--bg:#f3f4f7;--panel:#ffffff;--text:#1d2330;--muted:#687083;--border:#d9dde5;--accent:#2f6fde;--accent-soft:#e7efff;--own:#d9771e;--own-soft:#fdf0e4}
+@media (prefers-color-scheme: dark){:root{--bg:#15171c;--panel:#1f232a;--text:#e6e8ec;--muted:#9aa3b2;--border:#353b46;--accent:#6c9cff;--accent-soft:#25324d;--own:#f0a052;--own-soft:#3a2c1e}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -26,8 +27,20 @@ header h1{font-size:15px;margin:0 12px 0 0}
 header .sp{flex:1}
 main{flex:1;display:flex;min-height:0}
 aside{width:380px;min-width:260px;max-width:75vw;flex:none;overflow:auto;background:var(--panel);padding:4px 12px 30px}
-#splitter{flex:none;width:6px;cursor:col-resize;background:var(--border);touch-action:none;transition:background .15s}
-#splitter:hover,#splitter.active{background:var(--accent)}
+#right{width:340px}
+.splitter{flex:none;width:6px;cursor:col-resize;background:var(--border);touch-action:none;transition:background .15s}
+.splitter:hover,.splitter.active{background:var(--accent)}
+.grp{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px -12px 0;padding:6px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.grp:first-child{margin-top:-4px}
+.grp button{text-transform:none;letter-spacing:0;font-weight:400}
+.grp.std{color:var(--accent);box-shadow:inset 3px 0 var(--accent);margin-top:18px}
+.grp small{display:block;text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted);font-size:11.5px;margin-top:1px}
+#right .rhead{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:6px;margin:0 -12px;padding:8px 12px;background:var(--own-soft);box-shadow:inset 0 -2px var(--own)}
+#right .rhead #selName{color:var(--muted)}
+#right .own{color:var(--own)}
+#right.collapsed{width:30px!important;min-width:0;padding:0;overflow:hidden;cursor:pointer}
+#right.collapsed>:not(.rhead){display:none}
+#right.collapsed .rhead{writing-mode:vertical-rl;margin:0;padding:8px 4px;height:100%;box-shadow:inset 2px 0 var(--own)}
 body.resizing{cursor:col-resize;user-select:none}
 details{border-bottom:1px solid var(--border);padding:4px 0 8px}
 summary{font-weight:600;cursor:pointer;padding:6px 0;user-select:none}
@@ -80,7 +93,8 @@ button.mini{padding:1px 6px;font-size:12px}
 #status b{color:#c0392b;font-weight:600}
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30}
 #toast.show{opacity:.95}
-@media (max-width:820px){main{flex-direction:column}aside{width:auto!important;max-width:none;max-height:45vh;border-bottom:1px solid var(--border)}#splitter{display:none}}
+@media (max-width:820px){main{flex-direction:column}aside{width:auto!important;max-width:none;max-height:45vh;border-bottom:1px solid var(--border)}.splitter{display:none}
+  #right.collapsed{width:auto!important;height:36px}#right.collapsed .rhead{writing-mode:horizontal-tb}}
 </style>
 </head>
 <body>
@@ -99,7 +113,8 @@ button.mini{padding:1px 6px;font-size:12px}
   <button id="hTif">TIFF speichern</button>
 </header>
 <main>
-<aside>
+<aside id="left">
+  <div class="grp"><span>Dokument</span><button id="btnFold" class="mini" title="Alle Bereiche zu- oder aufklappen. Alt + Klick auf einen Bereich: nur diesen offen lassen">⊟ alle zuklappen</button></div>
   <details open>
     <summary>Layout</summary>
     <div id="layouts" class="layouts"></div>
@@ -137,9 +152,40 @@ button.mini{padding:1px 6px;font-size:12px}
     <p class="hint">Spaltenüberschriften stehen über den Bildern der obersten Zeile, Zeilenüberschriften links neben dem ersten Bild jeder Zeile. Der nötige Platz wird automatisch freigehalten.</p>
   </details>
 
-  <details open id="selBox">
-    <summary>Ausgewählter Platzhalter <span id="selName" style="font-weight:400;color:var(--muted)"></span></summary>
-    <div id="panelProps"></div>
+  <details>
+    <summary>Bildunterschrift</summary>
+    <div class="row"><label><input type="checkbox" data-k="capOn"> Bildunterschrift unter der Abbildung</label></div>
+    <textarea data-k="capText" style="height:70px" placeholder="**Abb. 1:** REM-Aufnahmen der Probe (a) vor und (b) nach der Behandlung."></textarea>
+    <div class="row"><span>Größe (pt) / Ausrichtung</span><input type="number" step="0.5" min="3" data-k="capSize"><select data-k="capAlign"><option value="left">links</option><option value="center">zentriert</option><option value="justify">Blocksatz</option></select></div>
+    <div class="btns"><button id="btnCapCopy">Text kopieren</button></div>
+    <p class="hint">**fett** und *kursiv* sind möglich. Für Word ist es oft besser, die Unterschrift als Text einzufügen („Text kopieren“).</p>
+  </details>
+
+  <details open>
+    <summary>Export</summary>
+    <div class="row"><span>Export-Auflösung</span><select data-k="dpi" data-num="1"><option value="150">150 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="1200">1200 dpi</option></select></div>
+    <div class="row"><span>Dateiname</span><input data-k="fileName" style="width:150px"></div>
+    <div class="row" title="„Ganze Seite“ exportiert das gewählte Seitenformat (Layout → Seite) mit der Abbildung an ihrer Stelle"><span>Exportieren</span><select data-k="exportArea"><option value="figure">nur die Abbildung</option><option value="page">ganze Seite mit Abbildung</option></select></div>
+    <div class="btns"><button id="btnPng" class="primary">PNG</button><button id="btnTif">TIFF (LZW)</button><button id="btnJpg">JPG</button><button id="btnSvg">SVG</button><button id="btnPdf">PDF (Drucken)</button><button id="btnWord">Für Word kopieren</button></div>
+    <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet die Bilder ein, Text und Maßstab bleiben Vektoren.</p>
+  </details>
+
+  <details>
+    <summary>Projekt</summary>
+    <div class="btns"><button id="btnSaveProj" title="Strg+S">Speichern</button><button id="btnSaveProjAs" title="Strg+Umschalt+S">Speichern unter…</button><button id="btnLoadProj" title="Strg+O">Öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
+    <p class="hint">Die Projektdatei (.bildtafel.json) enthält alle Bilder und lässt sich weitergeben. „Speichern unter…“ fragt nach Ordner und Namen, danach speichert Strg+S in dieselbe Datei (Edge/Chrome; andere Browser laden sie herunter). Öffnen geht auch per Drag &amp; Drop auf die Fläche. Zusätzlich merkt sich der Browser automatisch den letzten Stand. „Neu“ beginnt mit einer leeren Fläche.</p>
+  </details>
+
+  <div class="grp std"><span>Standardstil<small>gilt für alle Platzhalter – außer wo rechts bei der Auswahl etwas Eigenes eingestellt ist</small></span></div>
+
+  <details>
+    <summary>Schrift</summary>
+    <div class="row"><span>Schriftart</span>
+      <select data-k="font">
+        <option>Arial</option><option>Helvetica</option><option>Calibri</option><option>Aptos</option><option>Segoe UI</option><option>Verdana</option>
+        <option>Times New Roman</option><option>Georgia</option><option>Cambria</option><option>Palatino Linotype</option><option>Consolas</option>
+      </select></div>
+    <div class="row"><span>Eigene Schrift</span><input data-k="fontCustom" placeholder="z. B. Source Sans Pro" style="width:160px"></div>
   </details>
 
   <details>
@@ -191,15 +237,6 @@ button.mini{padding:1px 6px;font-size:12px}
   </details>
 
   <details>
-    <summary>Bildunterschrift</summary>
-    <div class="row"><label><input type="checkbox" data-k="capOn"> Bildunterschrift unter der Abbildung</label></div>
-    <textarea data-k="capText" style="height:70px" placeholder="**Abb. 1:** REM-Aufnahmen der Probe (a) vor und (b) nach der Behandlung."></textarea>
-    <div class="row"><span>Größe (pt) / Ausrichtung</span><input type="number" step="0.5" min="3" data-k="capSize"><select data-k="capAlign"><option value="left">links</option><option value="center">zentriert</option><option value="justify">Blocksatz</option></select></div>
-    <div class="btns"><button id="btnCapCopy">Text kopieren</button></div>
-    <p class="hint">**fett** und *kursiv* sind möglich. Für Word ist es oft besser, die Unterschrift als Text einzufügen („Text kopieren“).</p>
-  </details>
-
-  <details>
     <summary>Vorlagen &amp; Stile</summary>
     <div class="btns" id="presetBtns"></div>
     <div class="row"><input id="presetName" placeholder="Name für eigenen Stil" style="flex:1"><button id="btnSavePreset">Speichern</button></div>
@@ -215,29 +252,8 @@ button.mini{padding:1px 6px;font-size:12px}
     <div class="btns"><button id="btnExportStyle">Stil exportieren (.json)</button><button id="btnImportStyle">Stil importieren</button><input type="file" id="styleFile" accept=".json" hidden></div>
     <p class="hint">Ein Stil umfasst Breite, Abstände, Schriften, Labels, Maßstab, Rahmen, Texte und Export-Einstellungen – nicht die Bilder, Überschriften und die Bildunterschrift.</p>
   </details>
-
-  <details open>
-    <summary>Schrift &amp; Export</summary>
-    <div class="row"><span>Schriftart</span>
-      <select data-k="font">
-        <option>Arial</option><option>Helvetica</option><option>Calibri</option><option>Aptos</option><option>Segoe UI</option><option>Verdana</option>
-        <option>Times New Roman</option><option>Georgia</option><option>Cambria</option><option>Palatino Linotype</option><option>Consolas</option>
-      </select></div>
-    <div class="row"><span>Eigene Schrift</span><input data-k="fontCustom" placeholder="z. B. Source Sans Pro" style="width:160px"></div>
-    <div class="row"><span>Export-Auflösung</span><select data-k="dpi" data-num="1"><option value="150">150 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="1200">1200 dpi</option></select></div>
-    <div class="row"><span>Dateiname</span><input data-k="fileName" style="width:150px"></div>
-    <div class="row" title="„Ganze Seite“ exportiert das gewählte Seitenformat (Layout → Seite) mit der Abbildung an ihrer Stelle"><span>Exportieren</span><select data-k="exportArea"><option value="figure">nur die Abbildung</option><option value="page">ganze Seite mit Abbildung</option></select></div>
-    <div class="btns"><button id="btnPng" class="primary">PNG</button><button id="btnTif">TIFF (LZW)</button><button id="btnJpg">JPG</button><button id="btnSvg">SVG</button><button id="btnPdf">PDF (Drucken)</button><button id="btnWord">Für Word kopieren</button></div>
-    <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet die Bilder ein, Text und Maßstab bleiben Vektoren.</p>
-  </details>
-
-  <details>
-    <summary>Projekt</summary>
-    <div class="btns"><button id="btnSaveProj" title="Strg+S">Speichern</button><button id="btnSaveProjAs" title="Strg+Umschalt+S">Speichern unter…</button><button id="btnLoadProj" title="Strg+O">Öffnen</button><input type="file" id="projFile" accept=".json" hidden><button id="btnReset">Neu</button></div>
-    <p class="hint">Die Projektdatei (.bildtafel.json) enthält alle Bilder und lässt sich weitergeben. „Speichern unter…“ fragt nach Ordner und Namen, danach speichert Strg+S in dieselbe Datei (Edge/Chrome; andere Browser laden sie herunter). Öffnen geht auch per Drag &amp; Drop auf die Fläche. Zusätzlich merkt sich der Browser automatisch den letzten Stand. „Neu“ beginnt mit einer leeren Fläche.</p>
-  </details>
 </aside>
-<div id="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
+<div id="splitter" class="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
 
 <section id="stage">
   <div class="toolbar">
@@ -268,6 +284,12 @@ button.mini{padding:1px 6px;font-size:12px}
   <div id="view"><canvas id="cv"></canvas></div>
   <div id="status"></div>
 </section>
+<div id="splitterR" class="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
+<aside id="right">
+  <div class="rhead"><button id="btnRight" class="mini" title="Bereich ein- oder ausklappen">»</button><b>Ausgewählter Platzhalter</b><span id="selName"></span></div>
+  <p class="hint own">Einstellungen hier gelten nur für die Auswahl.</p>
+  <div id="panelProps"></div>
+</aside>
 </main>
 <div id="pop" hidden></div>
 <div id="tip"></div>
@@ -2395,17 +2417,42 @@ function askNew(btn) {
 $('#hNew').onclick = e => askNew(e.currentTarget);
 $('#btnReset').onclick = e => askNew(e.currentTarget);
 
-/* ---------- Seitenleiste verbreitern ---------- */
-(() => {
-  const aside = $('aside'), sp = $('#splitter'), KEY = STORE + '.asideW';
+/* ---------- Seitenleisten: verbreitern, rechts einklappen, Bereiche links zuklappen ---------- */
+function splitter(aside, sp, KEY, dir) {   // dir: +1 = Leiste links vom Splitter, -1 = rechts davon
   const setW = w => { aside.style.width = Math.max(260, Math.min(window.innerWidth * 0.75, w)) + 'px'; };
   try { const w = +localStorage.getItem(KEY); if (w) setW(w); } catch { }
   let start = null;
   sp.addEventListener('pointerdown', e => { sp.setPointerCapture(e.pointerId); start = { x: e.clientX, w: aside.getBoundingClientRect().width }; sp.classList.add('active'); document.body.classList.add('resizing'); });
-  sp.addEventListener('pointermove', e => { if (start) setW(start.w + e.clientX - start.x); });
-  const end = () => { if (!start) return; start = null; sp.classList.remove('active'); document.body.classList.remove('resizing'); try { localStorage.setItem(KEY, Math.round(aside.getBoundingClientRect().width)); } catch { } render(); };
+  sp.addEventListener('pointermove', e => { if (start) setW(start.w + dir * (e.clientX - start.x)); });
+  const end = () => { if (!start) return; start = null; sp.classList.remove('active'); document.body.classList.remove('resizing'); try { localStorage.setItem(KEY, Math.round(aside.getBoundingClientRect().width)); } catch { } };
   sp.addEventListener('pointerup', end); sp.addEventListener('pointercancel', end);
-  sp.addEventListener('dblclick', () => { aside.style.width = ''; try { localStorage.removeItem(KEY); } catch { } render(); });
+  sp.addEventListener('dblclick', () => { aside.style.width = ''; try { localStorage.removeItem(KEY); } catch { } });
+}
+splitter($('#left'), $('#splitter'), STORE + '.asideW', 1);
+splitter($('#right'), $('#splitterR'), STORE + '.rightW', -1);
+// Vorschau neu zeichnen, wann immer sich ihr Platz ändert (Splitter, Einklappen, Fenster)
+new ResizeObserver(() => render()).observe($('#view'));
+// Rechts: Auswahl-Bereich ein-/ausklappen. Öffnet sich bewusst nicht von selbst – sonst springt die Vorschau beim Anklicken.
+(() => {
+  const r = $('#right'), KEY = STORE + '.rightOpen';
+  const set = open => { r.classList.toggle('collapsed', !open); $('#btnRight').textContent = open ? '»' : '«'; $('#splitterR').hidden = !open; try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { } };
+  try { set(localStorage.getItem(KEY) !== '0'); } catch { set(true); }
+  $('#btnRight').onclick = e => { e.stopPropagation(); set(r.classList.contains('collapsed')); };
+  r.addEventListener('click', () => { if (r.classList.contains('collapsed')) set(true); });
+})();
+// Links: alle Bereiche zu-/aufklappen, Alt + Klick = nur diesen offen lassen; offene Bereiche werden gemerkt
+(() => {
+  const secs = $$('#left > details'), btn = $('#btnFold'), KEY = STORE + '.open';
+  const name = d => d.querySelector('summary').textContent.trim();
+  try { const o = JSON.parse(localStorage.getItem(KEY)); if (o) for (const d of secs) if (name(d) in o) d.open = o[name(d)]; } catch { }
+  const upd = () => { btn.textContent = secs.some(d => d.open) ? '⊟ alle zuklappen' : '⊞ alle aufklappen'; };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(secs.map(d => [name(d), d.open])))); } catch { } };
+  for (const d of secs) {
+    d.addEventListener('toggle', () => { upd(); save(); });
+    d.querySelector('summary').addEventListener('click', e => { if (!e.altKey) return; e.preventDefault(); for (const x of secs) x.open = x === d; });
+  }
+  btn.onclick = () => { const open = !secs.some(d => d.open); for (const d of secs) d.open = open; };
+  upd();
 })();
 
 let toastT;
