@@ -38,6 +38,20 @@ aside{width:380px;min-width:260px;max-width:75vw;flex:none;overflow:auto;backgro
 #right .rhead{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:6px;margin:0 -12px;padding:8px 12px;background:var(--own-soft);box-shadow:inset 0 -2px var(--own)}
 #right .rhead #selName{color:var(--muted)}
 #right .own{color:var(--own)}
+/* Stilwerte rechts: blass = folgt dem Standard, orange = eigener Wert, gestrichelt = fixiert */
+.pv{display:inline-flex;align-items:center}
+.row>.pv:first-child{flex:1}
+.pv.inh>input,.pv.inh>select,.pv.inh>label{opacity:.6}
+.pv.own>input,.pv.own>select{border-color:var(--own);box-shadow:0 0 0 1px var(--own)}
+.pv.own>label{color:var(--own)}
+.pv.fix>input,.pv.fix>select{border-style:dashed;border-color:var(--muted)}
+.rowact{display:inline-flex;gap:2px}
+.row:not(.has-own)>.rowact{display:none}
+details.sty{border:0;padding:0;margin:4px 0}
+details.sty>summary{font-size:12px;color:var(--muted);padding:3px 0}
+.cnt,.dev{color:var(--own)}
+button.dev{border-color:var(--own);background:var(--own-soft);white-space:nowrap}
+button.fixon{border-style:dashed;border-color:var(--text)}
 #right.collapsed{width:30px!important;min-width:0;padding:0;overflow:hidden;cursor:pointer}
 #right.collapsed>:not(.rhead){display:none}
 #right.collapsed .rhead{writing-mode:vertical-rl;margin:0;padding:8px 4px;height:100%;box-shadow:inset 2px 0 var(--own)}
@@ -192,20 +206,12 @@ button.mini{padding:1px 6px;font-size:12px}
     <summary>Bildlabels (a, b, c …)</summary>
     <div class="row"><label><input type="checkbox" data-k="lblOn"> Labels zeigen</label></div>
     <div class="row"><span>Stil</span><select data-k="lblStyle"><option value="a">a, b, c</option><option value="A">A, B, C</option><option value="(a)">(a), (b)</option><option value="a)">a), b)</option><option value="(A)">(A), (B)</option><option value="A)">A), B)</option><option value="a.">a., b.</option><option value="i">i, ii, iii</option><option value="1">1, 2, 3</option></select></div>
-    <div class="row"><span>Größe (pt) / Farbe</span><input type="number" step="0.5" min="3" data-k="lblSize"><input type="color" data-k="lblColor"></div>
-    <div class="row"><span>Schrift</span><label><input type="checkbox" data-k="lblBold"> fett</label><label><input type="checkbox" data-k="lblItalic"> kursiv</label></div>
-    <div class="row"><span>Hinterlegung</span><select data-k="lblBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="lblBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="lblBoxAlpha" title="Deckkraft" style="width:56px"></div>
-    <div class="row"><span>Ecke</span><select data-k="lblCorner"><option value="ul">oben links</option><option value="ur">oben rechts</option><option value="ll">unten links</option><option value="lr">unten rechts</option></select></div>
+    <div data-sty="lbl"></div>
   </details>
 
   <details>
     <summary>Maßstabsbalken</summary>
-    <div class="row"><span>Farbe / Dicke (pt)</span><input type="color" data-k="sbColor"><input type="number" step="0.25" min="0.25" data-k="sbW"></div>
-    <div class="row"><span>Schrift (pt)</span><input type="number" step="0.5" min="3" data-k="sbSize"><label><input type="checkbox" data-k="sbBold"> fett</label></div>
-    <div class="row"><span>Beschriftung</span><select data-k="sbText"><option value="above">über dem Balken</option><option value="below">unter dem Balken</option><option value="none">keine</option></select></div>
-    <div class="row"><span>Enden</span><select data-k="sbEnds"><option value="none">glatt</option><option value="ticks">mit Endstrichen</option></select></div>
-    <div class="row"><span>Hinterlegung</span><select data-k="sbBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="sbBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="sbBoxAlpha" title="Deckkraft" style="width:56px"></div>
-    <div class="row"><span>Ecke (Standard)</span><select data-k="sbCorner"><option value="lr">unten rechts</option><option value="ll">unten links</option><option value="lc">unten Mitte</option><option value="ur">oben rechts</option><option value="ul">oben links</option></select></div>
+    <div data-sty="sb"></div>
     <div class="row"><span>Automatische Länge (Anteil der Breite)</span><input type="number" step="0.05" min="0.05" max="0.9" data-k="sbFrac"></div>
     <div class="row"><label><input type="checkbox" data-k="sbSame"> Gleiche Länge in allen Bildern (wenn möglich)</label></div>
     <div class="row"><label><input type="checkbox" data-k="sameMag"> Gleiche Vergrößerung in allen kalibrierten Bildern</label></div>
@@ -215,24 +221,18 @@ button.mini{padding:1px 6px;font-size:12px}
 
   <details>
     <summary>Rahmen &amp; Hintergrund</summary>
-    <div class="row"><label><input type="checkbox" data-k="frameOn"> Rahmen um die Platzhalter</label></div>
-    <div class="row"><span>Farbe / Breite (pt)</span><input type="color" data-k="frameColor"><input type="number" step="0.25" min="0" data-k="frameW"></div>
+    <div data-sty="frame"></div>
     <div class="row"><span>Hintergrund Abbildung</span><input type="color" data-k="bg"><label><input type="checkbox" data-k="transparent"> transparent</label></div>
-    <div class="row"><span>Hintergrund leerer Bildflächen</span><input type="color" data-k="panelBg"></div>
   </details>
 
   <details>
     <summary>Textfelder, Annotationen &amp; Insets</summary>
     <div class="sub">Textfelder in den Ecken</div>
-    <div class="row"><span>Größe (pt) / Farbe</span><input type="number" step="0.5" min="3" data-k="txtSize"><input type="color" data-k="txtColor"><label><input type="checkbox" data-k="txtBold"> fett</label></div>
-    <div class="row"><span>Hinterlegung</span><select data-k="txtBox"><option value="none">keine</option><option value="box">Kasten</option></select><input type="color" data-k="txtBoxColor"><input type="number" step="0.1" min="0" max="1" data-k="txtBoxAlpha" style="width:56px"></div>
-    <div class="row"><span>Abstand zum Rand (pt)</span><input type="number" step="0.5" min="0" data-k="cornerPad"></div>
-    <div class="sub">Annotationen (Standard für neue)</div>
-    <div class="row"><span>Farbe / Linie (pt) / Schrift (pt)</span><input type="color" data-k="anColor"><input type="number" step="0.25" min="0.25" data-k="anW" style="width:56px"><input type="number" step="0.5" min="3" data-k="anSize" style="width:56px"></div>
-    <div class="row"><span>Linienstil / Enden</span><select data-k="anDash"><option value="solid">durchgezogen</option><option value="dashed">gestrichelt</option><option value="dotted">gepunktet</option><option value="dashdot">Strich-Punkt</option></select><select data-k="anCap"><option value="round">rund</option><option value="butt">eckig</option></select></div>
+    <div data-sty="txt"></div>
+    <div class="sub">Annotationen</div>
+    <div data-sty="an"></div>
     <div class="sub">Insets</div>
-    <div class="row"><span>Größe (Anteil der Breite)</span><input type="number" step="0.05" min="0.1" max="0.9" data-k="insSize"></div>
-    <div class="row"><span>Rahmen Farbe / Breite (pt)</span><input type="color" data-k="insColor"><input type="number" step="0.25" min="0" data-k="insW"></div>
+    <div data-sty="ins"></div>
     <div class="row"><label><input type="checkbox" data-k="insMark"> Ausschnitt im Hauptbild markieren</label><label><input type="checkbox" data-k="insLines"> Verbindungslinien</label></div>
   </details>
 
@@ -287,7 +287,7 @@ button.mini{padding:1px 6px;font-size:12px}
 <div id="splitterR" class="splitter" title="Ziehen zum Ändern der Breite (Doppelklick = Standard)"></div>
 <aside id="right">
   <div class="rhead"><button id="btnRight" class="mini" title="Bereich ein- oder ausklappen">»</button><b>Ausgewählter Platzhalter</b><span id="selName"></span></div>
-  <p class="hint own">Einstellungen hier gelten nur für die Auswahl.</p>
+  <p class="hint">Einstellungen hier gelten <span class="own">nur für die Auswahl</span>. Unter „Aussehen“: <span style="opacity:.6">blass</span> = folgt dem Standard links · <span class="own">orange</span> = eigener Wert (↺ zurück zum Standard, ⇧ als Standard für alle) · 📌 = fixiert, Änderungen am Standard wirken nicht.</p>
   <div id="panelProps"></div>
 </aside>
 </main>
@@ -307,15 +307,15 @@ const STORE = 'imageDesigner.v1';
 const DEF = {
   figW: 17, figH: 12, figUnit: 'cm', autoH: true, gap: 2, margin: 0, cellAspect: 'auto',
   font: 'Arial', fontCustom: '', dpi: 300, fileName: 'abbildung',
-  bg: '#ffffff', transparent: false, panelBg: '#000000',
+  bg: '#ffffff', transparent: false, panelBg: '#000000', panelBgOff: false,
   frameOn: false, frameColor: '#000000', frameW: 1,
   lblOn: true, lblStyle: 'a', lblSize: 12, lblColor: '#ffffff', lblBold: true, lblItalic: false,
-  lblBox: 'none', lblBoxColor: '#000000', lblBoxAlpha: 0.6, lblCorner: 'ul',
+  lblBox: 'none', lblBoxColor: '#000000', lblBoxAlpha: 0.6, lblBoxStroke: '#ffffff', lblBoxSW: 0, lblCorner: 'ul', lblPad: 4,
   sbColor: '#ffffff', sbW: 3, sbSize: 10, sbBold: true, sbText: 'above', sbEnds: 'none',
-  sbBox: 'none', sbBoxColor: '#000000', sbBoxAlpha: 0.6, sbCorner: 'lr', sbFrac: 0.25, sbSame: false,
-  txtSize: 9, txtColor: '#ffffff', txtBold: false, txtBox: 'none', txtBoxColor: '#000000', txtBoxAlpha: 0.6, cornerPad: 4,
-  anColor: '#ffd400', anW: 1.5, anSize: 10,
-  insSize: 0.35, insColor: '#ffffff', insW: 1, insMark: true, insLines: false,
+  sbBox: 'none', sbBoxColor: '#000000', sbBoxAlpha: 0.6, sbBoxStroke: '#ffffff', sbBoxSW: 0, sbCorner: 'lr', sbPad: 4, sbFrac: 0.25, sbSame: false,
+  txtSize: 9, txtColor: '#ffffff', txtBold: false, txtBox: 'none', txtBoxColor: '#000000', txtBoxAlpha: 0.6, txtBoxStroke: '#ffffff', txtBoxSW: 0, txtPad: 4,
+  anColor: '#ffd400', anW: 1.5, anSize: 10, anBold: false, anBox: 'none', anBoxColor: '#000000', anBoxAlpha: 0.6, anBoxStroke: '#ffffff', anBoxSW: 0,
+  insSize: 0.35, insColor: '#ffffff', insW: 1, insPad: 4, insMark: true, insLines: false,
   capOn: false, capText: '', capSize: 9, capAlign: 'justify',
   sameMag: false, magZoom: 1, anDash: 'solid', anCap: 'round',
   scaleWithFig: false, page: '', pageOri: 'p', pageW: 21, pageH: 29.7, pageMargin: 2.5, pageAlign: 'left', exportArea: 'figure',
@@ -323,6 +323,9 @@ const DEF = {
 };
 // Inhalt statt Aussehen: gehört nicht zu einem gespeicherten Stil
 const NON_STYLE = ['capText', 'capOn', 'fileName', 'colHeads', 'rowHeads', 'figH', 'magZoom'];
+// Früher galt ein gemeinsamer Abstand (cornerPad) für alles in den Ecken; ältere Projekte und Stile übernehmen ihn für alle
+const PAD_KEYS = ['lblPad', 'sbPad', 'txtPad', 'insPad'];
+const padCompat = o => { if (typeof o.cornerPad === 'number') for (const k of PAD_KEYS) if (o[k] == null) o[k] = o.cornerPad; delete o.cornerPad; return o; };
 const UNIT_PX = { cm: 96 / 2.54, mm: 96 / 25.4, in: 96, px: 1 };
 const toPx = (v, u) => v * (UNIT_PX[u] || 1);
 const fromPx = (v, u) => v / (UNIT_PX[u] || 1);
@@ -335,11 +338,12 @@ const safeName = () => (S.fileName || 'abbildung').replace(/[\\/:*?"<>|]/g, '_')
 const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : NaN; };
 
 /* ---------- Zustand ----------
-   S: Aussehen und Abbildung; L: Layout; panels: Platzhalter; imgs: Daten je Bild (Kalibrierung, Zuschnitt).
+   S: Aussehen und Abbildung (= Standardstil); L: Layout; panels: Platzhalter; imgs: Daten je Bild (Kalibrierung, Zuschnitt).
+   Platzhalter, Textfelder, Insets und Annotationen tragen eigene Stilwerte in .st und ggf. einen fixierten Stand in .fix (siehe sv()).
    Alles davon ist JSON und wird für Rückgängig/Speichern komplett kopiert. Die Pixel liegen in IMG. */
 const freshAdj = () => ({ b: 0, c: 0, g: 1, inv: false });
-const newPanel = () => ({ id: uid(), x: 0, y: 0, w: 200, h: 150, img: null, zoom: 1, cx: 0.5, cy: 0.5, fit: 'cover', frame: 'g', label: '', lblColor: '', bg: '',
-  sb: { on: true, val: null, unit: 'µm', corner: '' }, texts: [], insets: [], annots: [], adj: freshAdj() });
+const newPanel = () => ({ id: uid(), x: 0, y: 0, w: 200, h: 150, img: null, zoom: 1, cx: 0.5, cy: 0.5, fit: 'cover', label: '', st: {},
+  sb: { on: true, val: null, unit: 'µm' }, texts: [], insets: [], annots: [], adj: freshAdj() });
 const freshState = () => ({ S: { ...DEF }, L: { mode: 'smart', cols: 2, rows: 1, cells: null }, panels: [], imgs: {} });
 let ST = freshState();
 let S = ST.S;
@@ -855,11 +859,24 @@ function sharedLen() {
    rect, img (Quellausschnitt → Ziel), clip (Gruppe mit Rechteck-Maske), path (SVG-Pfad), ell, text.
    Dieselbe Liste wird auf Canvas (Vorschau, PNG, TIFF, JPG) und als SVG ausgegeben. */
 const REF_ASC = f => tight('Hbdfl(', f).asc;
-function boxRect(x, y, w, h, color, alpha) { return { k: 'rect', x, y, w, h, fill: color, fa: alpha }; }
-function labelItem(text, color) {
-  const f = font(S.lblSize, S.lblBold, S.lblItalic), t = tight(text, f), asc = REF_ASC(f), desc = Math.max(0, t.desc);
-  const bp = S.lblBox === 'box' ? f.px * 0.22 : 0, w = t.w + 2 * bp, h = asc + desc + 2 * bp;
-  return { w, h, draw: (x, y) => [...(bp ? [boxRect(x, y, w, h, S.lblBoxColor, S.lblBoxAlpha)] : []), { k: 'text', x: x + bp, y: y + bp + asc, t: text, f, fill: color || S.lblColor }] };
+/* ---------- Stilwerte eines Elements ----------
+   Ein Element folgt dem Standard S, solange es einen Schlüssel nicht selbst setzt (el.st). Fixieren (el.fix) friert den
+   Standard zu diesem Zeitpunkt ein; ein fixierter Platzhalter friert auch seine Textfelder, Insets und Annotationen ein. */
+function sv(k, el, p) {
+  for (const o of [el && el.st, el && el.fix, p && p !== el && p.fix]) if (o && o[k] != null) return o[k];
+  return S[k];
+}
+const svOf = (el, p) => k => sv(k, el, p);
+// Kasten hinter Text: Füllung mit Deckkraft, Rand innen liegend (die Kastengröße bleibt gleich)
+const boxStyle = (v, pre) => v(pre + 'Box') === 'box' ? { fill: v(pre + 'BoxColor'), fa: v(pre + 'BoxAlpha'), stroke: v(pre + 'BoxStroke'), sw: Math.max(0, v(pre + 'BoxSW') || 0) * PT } : null;
+function boxRect(x, y, w, h, b) {
+  const s = b.sw;
+  return { k: 'rect', x: x + s / 2, y: y + s / 2, w: w - s, h: h - s, fill: b.fill, fa: b.fa, ...(s > 0 ? { stroke: b.stroke, sw: s } : {}) };
+}
+function labelItem(text, p) {
+  const v = svOf(p, p), f = font(v('lblSize'), v('lblBold'), v('lblItalic')), t = tight(text, f), asc = REF_ASC(f), desc = Math.max(0, t.desc);
+  const box = boxStyle(v, 'lbl'), bp = box ? f.px * 0.22 + box.sw : 0, w = t.w + 2 * bp, h = asc + desc + 2 * bp;
+  return { w, h, draw: (x, y) => [...(box ? [boxRect(x, y, w, h, box)] : []), { k: 'text', x: x + bp, y: y + bp + asc, t: text, f, fill: v('lblColor') }] };
 }
 // Spaltenüberschriften über der obersten Zeile, Zeilenüberschriften links neben dem ersten Bild jeder Zeile
 function headOps() {
@@ -876,11 +893,12 @@ function headOps() {
   });
   return ops;
 }
-function textItem(tx) {
-  if (!tx.text || !tx.text.trim()) return null;
-  const blk = textBlock(tx.text, tx.size || S.txtSize, S.txtBold, 1e9, tx.align || 'left'), box = (tx.box || S.txtBox) === 'box';
-  const bp = box ? (tx.size || S.txtSize) * PT * 0.25 : 0, w = blk.w + 2 * bp, h = blk.h + 2 * bp;
-  return { w, h, draw: (x, y) => [...(box ? [boxRect(x, y, w, h, S.txtBoxColor, S.txtBoxAlpha)] : []), ...blockOps(blk, x + bp, y + bp, tx.color || S.txtColor, blk.w)] };
+// Textblock mit optionalem Kasten; v = Stilwerte, pre = 'txt' (Textfeld) oder 'an' (Text-Annotation)
+function textItem(text, align, v, pre) {
+  if (!text || !text.trim()) return null;
+  const size = v(pre + 'Size'), blk = textBlock(text, size, v(pre + 'Bold'), 1e9, align || 'left'), box = boxStyle(v, pre);
+  const bp = box ? size * PT * 0.25 + box.sw : 0, w = blk.w + 2 * bp, h = blk.h + 2 * bp;
+  return { w, h, draw: (x, y) => [...(box ? [boxRect(x, y, w, h, box)] : []), ...blockOps(blk, x + bp, y + bp, v(pre + 'Color'), blk.w)] };
 }
 function sbInfo(p, g, shared) {
   const d = p.img && ST.imgs[p.img];
@@ -889,19 +907,20 @@ function sbInfo(p, g, shared) {
   const meters = p.sb.val > 0 ? p.sb.val * uf : shared || niceLen(S.sbFrac * p.w / g.s * d.mpp);
   return { meters, len: meters / d.mpp * g.s, label: lenLabel(meters) };
 }
-function sbItem(info) {
+function sbItem(info, p) {
   if (!info) return null;
-  const f = font(S.sbSize, S.sbBold), t = tight(info.label, f), asc = REF_ASC(f), desc = Math.max(0, tight('g', f).desc * 0.2, t.desc);
-  const tb = S.sbW * PT, txt = S.sbText !== 'none', textH = txt ? asc + desc : 0, gapT = txt ? f.px * 0.25 : 0;
-  const th = S.sbEnds === 'ticks' ? tb * 3 : tb, ex = (th - tb) / 2, bw = Math.max(info.len, txt ? t.w : 0);
-  const bp = S.sbBox === 'box' ? f.px * 0.3 : 0, w = bw + 2 * bp, h = textH + gapT + th + 2 * bp;
+  const v = svOf(p, p), col = v('sbColor');
+  const f = font(v('sbSize'), v('sbBold')), t = tight(info.label, f), asc = REF_ASC(f), desc = Math.max(0, tight('g', f).desc * 0.2, t.desc);
+  const tb = v('sbW') * PT, txt = v('sbText') !== 'none', textH = txt ? asc + desc : 0, gapT = txt ? f.px * 0.25 : 0;
+  const th = v('sbEnds') === 'ticks' ? tb * 3 : tb, ex = (th - tb) / 2, bw = Math.max(info.len, txt ? t.w : 0);
+  const box = boxStyle(v, 'sb'), bp = box ? f.px * 0.3 + box.sw : 0, w = bw + 2 * bp, h = textH + gapT + th + 2 * bp;
   return { w, h, draw: (x, y) => {
-    const o = [], ix = x + bp, iy = y + bp, above = S.sbText !== 'below';
-    if (bp) o.push(boxRect(x, y, w, h, S.sbBoxColor, S.sbBoxAlpha));
+    const o = [], ix = x + bp, iy = y + bp, above = v('sbText') !== 'below';
+    if (box) o.push(boxRect(x, y, w, h, box));
     const barY = above ? iy + textH + gapT + ex : iy + ex, bx = ix + (bw - info.len) / 2;
-    o.push({ k: 'rect', x: bx, y: barY, w: info.len, h: tb, fill: S.sbColor });
-    if (ex) { const sw = Math.max(tb * 0.5, 0.5 * PT); o.push({ k: 'rect', x: bx, y: barY - ex, w: sw, h: th, fill: S.sbColor }, { k: 'rect', x: bx + info.len - sw, y: barY - ex, w: sw, h: th, fill: S.sbColor }); }
-    if (txt) o.push({ k: 'text', x: ix + bw / 2, y: above ? iy + asc : barY + tb + ex + gapT + asc, t: info.label, f, fill: S.sbColor, anchor: 'middle' });
+    o.push({ k: 'rect', x: bx, y: barY, w: info.len, h: tb, fill: col });
+    if (ex) { const sw = Math.max(tb * 0.5, 0.5 * PT); o.push({ k: 'rect', x: bx, y: barY - ex, w: sw, h: th, fill: col }, { k: 'rect', x: bx + info.len - sw, y: barY - ex, w: sw, h: th, fill: col }); }
+    if (txt) o.push({ k: 'text', x: ix + bw / 2, y: above ? iy + asc : barY + tb + ex + gapT + asc, t: info.label, f, fill: col, anchor: 'middle' });
     return o;
   } };
 }
@@ -911,9 +930,9 @@ function insetAspect(p, ins) {
 }
 function insetItem(p, ins, g, hit, preview) {
   if (ins.src === 'region' && !g) return null;
-  const a = insetAspect(p, ins); let w = (ins.size || S.insSize) * p.w, h = w / a;
+  const v = svOf(ins, p), a = insetAspect(p, ins); let w = v('insSize') * p.w, h = w / a;
   if (h > 0.85 * p.h) { h = 0.85 * p.h; w = h * a; }
-  const col = ins.color || S.insColor, sw = (ins.lw ?? S.insW) * PT;
+  const col = v('insColor'), sw = v('insW') * PT;
   return { w, h, draw: (x, y) => {
     const o = [];
     hit.insets.push({ id: ins.id, x, y, w, h });
@@ -947,15 +966,15 @@ function dashFor(style, w, cap) {
   const c = cap === 'butt' ? 0 : 1;
   return d.map((v, i) => (i % 2 ? v + c : Math.max(0.01, v - c)) * w);
 }
-function annotOps(a, g) {
-  const col = a.color || S.anColor, w = (a.w || S.anW) * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
-  const cap = a.cap || S.anCap, dash = dashFor(a.dash || S.anDash, w, cap), join = cap === 'round' ? 'round' : 'miter';
+function annotOps(a, g, p) {
+  const v = svOf(a, p), col = v('anColor'), w = v('anW') * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
+  const cap = v('anCap'), dash = dashFor(v('anDash'), w, cap), join = cap === 'round' ? 'round' : 'miter';
   const [p1, p2] = [P[0], P[1] || P[0]];
   if (a.type === 'arrow' || a.type === 'line') {
     let e = p2;
     if (a.type === 'arrow') {
       const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
-      const hl = Math.min(L, (4 + 2.5 * (a.w || S.anW)) * PT), hw = hl * 0.42;
+      const hl = Math.min(L, (4 + 2.5 * v('anW')) * PT), hw = hl * 0.42;
       e = [p2[0] - ux * hl * 0.8, p2[1] - uy * hl * 0.8];
       const b = [p2[0] - ux * hl, p2[1] - uy * hl];
       o.push({ k: 'path', d: `M${f2(p2[0])} ${f2(p2[1])}L${f2(b[0] - uy * hw)} ${f2(b[1] + ux * hw)}L${f2(b[0] + uy * hw)} ${f2(b[1] - ux * hw)}Z`, fill: col });
@@ -966,7 +985,7 @@ function annotOps(a, g) {
   } else if (a.type === 'ellipse') {
     o.push({ k: 'ell', cx: (p1[0] + p2[0]) / 2, cy: (p1[1] + p2[1]) / 2, rx: Math.abs(p2[0] - p1[0]) / 2, ry: Math.abs(p2[1] - p1[1]) / 2, stroke: col, sw: w, cap, dash });
   } else if (a.type === 'text') {
-    const it = textItem({ text: a.text, size: a.size || S.anSize, color: col, align: a.align || 'left', box: a.box ? 'box' : 'none' });
+    const it = textItem(a.text, a.align, v, 'an');
     if (it) { o.push(...it.draw(p1[0], p1[1])); TEXT_BB.set(a.id, [p1[0], p1[1], it.w, it.h]); }
   }
   return o;
@@ -979,37 +998,37 @@ function buildOps(o = {}) {
   if (!S.transparent) ops.push({ k: 'rect', x: 0, y: 0, w: W, h: H, fill: S.bg });
   const labels = panelLabels(), shared = sharedLen();
   ST.panels.forEach((p, i) => {
-    const R = { x: p.x, y: p.y, w: p.w, h: p.h }, g = geom(p), hit = { id: p.id, R, g, insets: [] }, inner = [];
+    const R = { x: p.x, y: p.y, w: p.w, h: p.h }, g = geom(p), hit = { id: p.id, R, g, insets: [] }, inner = [], v = svOf(p, p);
     hits.push(hit);
     if (g) {
-      if (p.bg !== 'none') inner.push({ k: 'rect', ...R, fill: p.bg || S.panelBg });
+      if (!v('panelBgOff')) inner.push({ k: 'rect', ...R, fill: v('panelBg') });
       inner.push({ k: 'img', id: p.img, adj: p.adj, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h });
-      for (const a of p.annots) inner.push(...annotOps(a, g));
+      for (const a of p.annots) inner.push(...annotOps(a, g, p));
     }
-    const C = { ul: [], uc: [], ur: [], ll: [], lc: [], lr: [] };
-    const lc = S.lblCorner;
-    if (S.lblOn && labels[i]) C[lc].push(labelItem(labels[i], p.lblColor));
-    const sbc = p.sb.corner || S.sbCorner, sb = sbItem(sbInfo(p, g, shared));
+    // Elemente in den Ecken, jedes mit seinem eigenen Abstand zum Rand (pt)
+    const C = { ul: [], uc: [], ur: [], ll: [], lc: [], lr: [] }, put = (c, it, pad) => { if (it) C[c].push(Object.assign(it, { pad: pad * PT })); };
+    if (S.lblOn && labels[i]) put(v('lblCorner'), labelItem(labels[i], p), v('lblPad'));
+    const sbc = v('sbCorner'), sb = sbItem(sbInfo(p, g, shared), p);
     hit.sb = sb ? { corner: sbc } : null;
-    if (sbc[0] === 'l') C[sbc].push(sb);
-    for (const ins of p.insets) C[ins.corner || 'ur'].push(insetItem(p, ins, g, hit, o.preview));
-    for (const tx of p.texts) C[tx.corner || 'ur'].push(textItem(tx));
-    if (sbc[0] === 'u') C[sbc].push(sb);
-    // Ecken füllen: oben von oben nach unten, unten von unten nach oben
-    const pad = S.cornerPad * PT, sp = pad * 0.6;
+    if (sbc[0] === 'l') put(sbc, sb, v('sbPad'));
+    for (const ins of p.insets) put(ins.corner || 'ur', insetItem(p, ins, g, hit, o.preview), sv('insPad', ins, p));
+    for (const tx of p.texts) { const tv = svOf(tx, p); put(tx.corner || 'ur', textItem(tx.text, tx.align, tv, 'txt'), tv('txtPad')); }
+    if (sbc[0] === 'u') put(sbc, sb, v('sbPad'));
+    // Ecken füllen: oben von oben nach unten, unten von unten nach oben; nie näher am Rand als der eigene Abstand
     for (const c of Object.keys(C)) {
-      let y = c[0] === 'u' ? R.y + pad : R.y + R.h - pad;
+      const up = c[0] === 'u';
+      let y = up ? -Infinity : Infinity;
       for (const it of C[c]) {
-        if (!it) continue;
-        const x = c[1] === 'l' ? R.x + pad : c[1] === 'r' ? R.x + R.w - pad - it.w : R.x + (R.w - it.w) / 2;
-        inner.push(...it.draw(x, c[0] === 'u' ? y : y - it.h));
-        y += (c[0] === 'u' ? 1 : -1) * (it.h + sp);
+        const x = c[1] === 'l' ? R.x + it.pad : c[1] === 'r' ? R.x + R.w - it.pad - it.w : R.x + (R.w - it.w) / 2;
+        y = up ? Math.max(y, R.y + it.pad) : Math.min(y, R.y + R.h - it.pad);
+        inner.push(...it.draw(x, up ? y : y - it.h));
+        y += (up ? 1 : -1) * (it.h + it.pad * 0.6);
       }
     }
     if (inner.length) ops.push({ k: 'clip', ...R, ops: inner });
-    if (p.frame === 'on' || (p.frame === 'g' && S.frameOn)) {
-      const fw = (p.frameW ?? S.frameW) * PT;
-      if (fw > 0) ops.push({ k: 'rect', x: R.x + fw / 2, y: R.y + fw / 2, w: R.w - fw, h: R.h - fw, stroke: p.frameColor || S.frameColor, sw: fw });
+    if (v('frameOn')) {
+      const fw = v('frameW') * PT;
+      if (fw > 0) ops.push({ k: 'rect', x: R.x + fw / 2, y: R.y + fw / 2, w: R.w - fw, h: R.h - fw, stroke: v('frameColor'), sw: fw });
     }
   });
   ops.push(...headOps());
@@ -1302,7 +1321,7 @@ function hitAnnot(pt) {
     const p = panelById(h.id);
     for (const a of [...p.annots].reverse()) {
       const P = a.p.map(q => h.g.toFig(q[0], q[1])), b = annotBox(a, h.g);
-      if ((a.type === 'arrow' || a.type === 'line') && segDist(pt, P[0], P[1]) < tol + (a.w || S.anW) * PT) return { p, a };
+      if ((a.type === 'arrow' || a.type === 'line') && segDist(pt, P[0], P[1]) < tol + sv('anW', a, p) * PT) return { p, a };
       if (a.type !== 'arrow' && a.type !== 'line' && inR(pt, { x: b[0], y: b[1], w: b[2], h: b[3] }, tol)) return { p, a };
     }
   }
@@ -1464,12 +1483,12 @@ cv.addEventListener('pointerdown', e => {
     if (atool === 'text') {
       popup('Text einfügen', '<textarea rows="3" placeholder="Text (Strg+Enter = OK)"></textarea>', { x: e.clientX, y: e.clientY }, pop => {
         const t = pop.querySelector('textarea').value; if (!t.trim()) return;
-        const a = { id: uid(), type: 'text', p: [ip], text: t, color: S.anColor, size: S.anSize, w: S.anW };
+        const a = { id: uid(), type: 'text', p: [ip], text: t, st: {} };
         p.annots.push(a); selItem = { kind: 'annot', id: a.id }; commit(); buildProps(); render();
       });
       return;
     }
-    const a = { id: uid(), type: atool, p: [ip, ip.slice()], color: S.anColor, w: S.anW, dash: S.anDash, cap: S.anCap };
+    const a = { id: uid(), type: atool, p: [ip, ip.slice()], st: {} };   // Stil kommt aus dem Standard (folgt ihm auch später)
     p.annots.push(a); selItem = { kind: 'annot', id: a.id };
     drag = { t: 'acreate', p, a, g, pt0: pt };
     return;
@@ -1580,7 +1599,7 @@ cv.addEventListener('pointerup', e => {
     if (bx - ax > 2 && by - ay > 2) {
       const R = hitOf(p.id).R, cx = (Math.min(d.a.x, d.b.x) + Math.max(d.a.x, d.b.x)) / 2, cy = (d.a.y + d.b.y) / 2;
       const corner = (cy < R.y + R.h / 2 ? 'l' : 'u') + (cx < R.x + R.w / 2 ? 'r' : 'l');   // gegenüberliegende Ecke
-      const ins = { id: uid(), src: 'region', region: { x: ax, y: ay, w: bx - ax, h: by - ay }, corner, size: S.insSize };
+      const ins = { id: uid(), src: 'region', region: { x: ax, y: ay, w: bx - ax, h: by - ay }, corner, st: {} };
       p.insets.push(ins); selItem = { kind: 'inset', id: ins.id }; buildProps();
     }
   }
@@ -1680,8 +1699,8 @@ async function loadInto(files, target, inset, at) {
     const plot = ST.imgs[id].kind === 'plot' || ST.imgs[id].dpi >= 150;   // Diagramm (SVG oder PNG mit Druck-dpi): ganz zeigen, heller Grund, dunkles Label
     Object.assign(p, { img: id, zoom: 1, cx: 0.5, cy: 0.5, annots: [], adj: freshAdj(), fit: plot ? 'contain' : 'cover' });
     // Durchsichtige Stellen zeigen den Abbildungshintergrund statt der (schwarzen) Bildfläche
-    if (plot || ST.imgs[id].alpha) Object.assign(p, { bg: ST.imgs[id].alpha ? 'none' : '#ffffff', lblColor: '#000000' });
-    else if ((p.bg === '#ffffff' || p.bg === 'none') && p.lblColor === '#000000') Object.assign(p, { bg: '', lblColor: '' });
+    if (plot || ST.imgs[id].alpha) Object.assign(p.st, ST.imgs[id].alpha ? { panelBgOff: true } : { panelBg: '#ffffff' }, { lblColor: '#000000' });
+    else if ((p.st.panelBg === '#ffffff' || p.st.panelBgOff) && p.st.lblColor === '#000000') { delete p.st.panelBg; delete p.st.panelBgOff; delete p.st.lblColor; }
     p.insets = p.insets.filter(i => i.src !== 'region');
     if (k === 0) sel = p.id;
     k++;
@@ -1864,6 +1883,92 @@ function movePanel(i, j) { const [p] = ST.panels.splice(i, 1); ST.panels.splice(
 const CORNERS = { ul: 'oben links', uc: 'oben Mitte', ur: 'oben rechts', ll: 'unten links', lc: 'unten Mitte', lr: 'unten rechts' };
 const optList = (o, cur) => Object.entries(o).map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
 const ANAME = { arrow: 'Pfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text' };
+
+/* ---------- Stil-Tabelle: eine Quelle für links (Standard, data-k) und rechts (nur die Auswahl, el.st) ----------
+   F: Eingabefeld je Schlüssel. KIND: Zeilen je Elementart; das optionale dritte Feld blendet eine Zeile rechts je nach Element aus. */
+const F = {
+  lblSize: ['num', 0.5, 3], lblColor: ['color'], lblBold: ['chk', 'fett'], lblItalic: ['chk', 'kursiv'],
+  lblCorner: ['sel', { ul: 'oben links', ur: 'oben rechts', ll: 'unten links', lr: 'unten rechts' }],
+  sbColor: ['color'], sbW: ['num', 0.25, 0.25], sbSize: ['num', 0.5, 3], sbBold: ['chk', 'fett'],
+  sbText: ['sel', { above: 'über dem Balken', below: 'unter dem Balken', none: 'keine' }], sbEnds: ['sel', { none: 'glatt', ticks: 'mit Endstrichen' }],
+  sbCorner: ['sel', { lr: 'unten rechts', ll: 'unten links', lc: 'unten Mitte', ur: 'oben rechts', ul: 'oben links' }],
+  frameOn: ['chk', 'Rahmen um die Platzhalter'], frameColor: ['color'], frameW: ['num', 0.25, 0], panelBg: ['color'], panelBgOff: ['chk', 'durchsichtig'],
+  txtSize: ['num', 0.5, 3], txtColor: ['color'], txtBold: ['chk', 'fett'],
+  anColor: ['color'], anW: ['num', 0.25, 0.25], anDash: ['sel', ADASH_LABEL], anCap: ['sel', { round: 'rund', butt: 'eckig' }], anSize: ['num', 0.5, 3], anBold: ['chk', 'fett'],
+  insSize: ['num', 0.05, 0.05, 0.95], insColor: ['color'], insW: ['num', 0.25, 0],
+  lblPad: ['num', 0.5, 0], sbPad: ['num', 0.5, 0], txtPad: ['num', 0.5, 0], insPad: ['num', 0.5, 0],
+};
+for (const b of ['lbl', 'sb', 'txt', 'an']) Object.assign(F, { [b + 'Box']: ['sel', { none: 'keine', box: 'Kasten' }], [b + 'BoxColor']: ['color'], [b + 'BoxAlpha']: ['num', 0.1, 0, 1], [b + 'BoxStroke']: ['color'], [b + 'BoxSW']: ['num', 0.25, 0] });
+const boxRows = (b, when) => [['Kasten / Deckkraft', [b + 'Box', b + 'BoxColor', b + 'BoxAlpha'], when], ['Kastenrand Farbe / Breite (pt)', [b + 'BoxStroke', b + 'BoxSW'], when]];
+const isText = a => a.type === 'text', notText = a => a.type !== 'text';
+const KIND = {
+  lbl: { name: 'Label', many: 'Platzhaltern', rows: [['Größe (pt) / Farbe', ['lblSize', 'lblColor']], ['Schrift', ['lblBold', 'lblItalic']], ...boxRows('lbl'), ['Ecke / Abstand zum Rand (pt)', ['lblCorner', 'lblPad']]] },
+  sb: { name: 'Maßstabsbalken', many: 'Platzhaltern', rows: [['Farbe / Dicke (pt)', ['sbColor', 'sbW']], ['Schrift (pt)', ['sbSize', 'sbBold']], ['Beschriftung', ['sbText']], ['Enden', ['sbEnds']], ...boxRows('sb'), ['Ecke / Abstand zum Rand (pt)', ['sbCorner', 'sbPad']]] },
+  frame: { name: 'Rahmen & Bildfläche', many: 'Platzhaltern', rows: [['', ['frameOn']], ['Rahmen Farbe / Breite (pt)', ['frameColor', 'frameW']], ['Hintergrund leerer Bildflächen', ['panelBg', 'panelBgOff']]] },
+  txt: { name: 'Textfeld', many: 'Textfeldern', rows: [['Größe (pt) / Farbe', ['txtSize', 'txtColor', 'txtBold']], ...boxRows('txt'), ['Abstand zum Rand (pt)', ['txtPad']]] },
+  an: { name: 'Annotation', many: 'Annotationen', rows: [['Farbe', ['anColor']], ['Linie (pt) / Stil / Enden', ['anW', 'anDash', 'anCap'], notText], ['Schrift (pt)', ['anSize', 'anBold'], isText], ...boxRows('an', isText)] },
+  ins: { name: 'Inset', many: 'Insets', rows: [['Größe (Anteil der Breite)', ['insSize']], ['Rahmen Farbe / Breite (pt)', ['insColor', 'insW']], ['Abstand zum Rand (pt)', ['insPad']]] },
+};
+const kindKeys = kind => KIND[kind].rows.flatMap(r => r[1]);
+const ALL_KEYS = Object.keys(KIND).flatMap(kindKeys);
+function fieldHTML(k, attr, v) {
+  const [t, a, b, c] = F[k];
+  if (t === 'color') return `<input type="color" ${attr}${v != null ? ` value="${esc(v)}"` : ''}>`;
+  if (t === 'chk') return `<label><input type="checkbox" ${attr}${v ? ' checked' : ''}> ${esc(a)}</label>`;
+  if (t === 'sel') return `<select ${attr}>${optList(a, v)}</select>`;
+  return `<input type="number" step="${a}" min="${b}"${c != null ? ` max="${c}"` : ''} ${attr}${v != null ? ` value="${v}"` : ''} style="width:60px">`;
+}
+const fieldVal = el => { if (el.type === 'checkbox') return el.checked; if (el.type !== 'number') return el.value; const v = parseFloat(el.value); return isNaN(v) ? null : v; };
+// Zustand eines Werts: own = eigener Wert, fix = eingefroren (Element oder sein Platzhalter fixiert), inh = folgt dem Standard
+const pvState = (k, el, p) => el.st && el.st[k] != null ? 'own' : (el.fix && el.fix[k] != null) || (p !== el && p.fix && p.fix[k] != null) ? 'fix' : 'inh';
+// Alle Elemente einer Art als [Element, Platzhalter]
+const kindEls = kind => ST.panels.flatMap(p => ['lbl', 'sb', 'frame'].includes(kind) ? [[p, p]] : (kind === 'txt' ? p.texts : kind === 'ins' ? p.insets : p.annots).map(el => [el, p]));
+
+// Links: Standard-Felder aus der Tabelle erzeugen; je Zeile ein Hinweis, wie viele Elemente abweichen
+function buildStdUI() {
+  for (const box of $$('#left [data-sty]')) {
+    const kind = box.dataset.sty;
+    box.innerHTML = KIND[kind].rows.map(([label, keys]) => `<div class="row" data-keys="${keys}">${label ? `<span>${label}</span>` : ''}${keys.map(k => fieldHTML(k, `data-k="${k}"`)).join('')}<button class="mini dev" hidden></button></div>`).join('');
+    for (const row of box.querySelectorAll('.row')) row.querySelector('.dev').onclick = e => {
+      const keys = row.dataset.keys.split(',');
+      if (!+e.currentTarget.dataset.own) return;
+      popup('Eigene Werte zurücksetzen?', `<p class="hint" style="max-width:300px">Alle ${KIND[kind].many} mit eigenen Werten in dieser Zeile folgen danach wieder dem Standard. Fixierte behalten ihren fixierten Stand.</p>`, { x: e.clientX, y: e.clientY }, () => {
+        for (const [el] of kindEls(kind)) if (el.st) for (const k of keys) delete el.st[k];
+        commit(); refreshAll();
+      });
+    };
+  }
+}
+function updStdMarks() {
+  for (const row of $$('#left [data-sty] .row')) {
+    const kind = row.parentNode.dataset.sty, keys = row.dataset.keys.split(','), els = kindEls(kind);
+    let own = 0, fix = 0;
+    for (const [el, p] of els) { const s = keys.map(k => pvState(k, el, p)); if (s.includes('own')) own++; else if (s.includes('fix')) fix++; }
+    const b = row.querySelector('.dev');
+    b.hidden = !(own || fix); b.dataset.own = own;
+    b.textContent = [own && `${own} eigene`, fix && `${fix} 📌`].filter(Boolean).join(' · ');
+    b.title = `Gilt für ${els.length - own - fix} von ${els.length} ${KIND[kind].many}. Dort wirkt eine Änderung hier nicht: ${own} mit eigenen Werten, ${fix} fixiert.${own ? '\nKlick: eigene Werte zurücksetzen' : ''}`;
+  }
+}
+
+// Rechts: dieselben Zeilen für ein Element, mit Markierung je Wert und ↺ / ⇧ je Zeile
+const styOpen = new Set(['an']);   // aufgeklappte „Aussehen“-Blöcke je Elementart
+function styRows(kind, el, p) {
+  return KIND[kind].rows.filter(r => !r[2] || r[2](el)).map(([label, keys]) => {
+    const own = keys.some(k => pvState(k, el, p) === 'own');
+    return `<div class="row${own ? ' has-own' : ''}" data-keys="${keys}">${label ? `<span>${label}</span>` : ''}${keys.map(k => { const s = pvState(k, el, p);
+      return `<span class="pv ${s}" title="${{ own: 'eigener Wert – gilt nur hier', fix: 'fixiert – folgt dem Standard nicht mehr', inh: 'folgt dem Standard (links)' }[s]}">${fieldHTML(k, `data-s="${k}"`, sv(k, el, p))}</span>`; }).join('')}<span class="rowact"><button class="mini" data-act="sreset" title="Eigene Werte entfernen – wieder dem Standard folgen">↺</button><button class="mini" data-act="sstd" title="Als Standard übernehmen – gilt dann für alle, die dem Standard folgen">⇧</button></span></div>`;
+  }).join('');
+}
+function styBlock(scope, kinds, el, p) {
+  const n = kinds.flatMap(kindKeys).filter(k => el.st && el.st[k] != null).length, key = scope.replace(/\d+$/, '');
+  const fixTitle = el === p ? 'Platzhalter fixieren: sein Aussehen und das seiner Texte, Insets und Annotationen bleibt, auch wenn der Standard links geändert wird' : 'Fixieren: Aussehen bleibt, auch wenn der Standard links geändert wird';
+  return `<details class="sty" data-el="${scope}" data-key="${key}"${styOpen.has(key) ? ' open' : ''}><summary>Aussehen <span class="cnt">${n ? n + ' eigene' : ''}${el.fix ? ' 📌' : ''}</span></summary>
+    <div class="row"><span class="hint">${p !== el && p.fix ? '📌 Platzhalter ist fixiert' : ''}</span><button class="mini${el.fix ? ' fixon' : ''}" data-act="fix" title="${fixTitle}">📌 ${el.fix ? 'fixiert – lösen' : 'fixieren'}</button></div>
+    ${kinds.map(k => (kinds.length > 1 ? `<div class="sub">${KIND[k].name}</div>` : '') + styRows(k, el, p)).join('')}</details>`;
+}
+const scopeObj = (p, scope) => scope === 'p' ? p : scope === 'img' ? ST.imgs[p.img] : scope === 'an' ? p.annots.find(x => selItem && x.id === selItem.id)
+  : scope.startsWith('tx') ? p.texts[+scope.slice(2)] : scope.startsWith('in') ? p.insets[+scope.slice(2)] : null;
 function buildProps() {
   const box = $('#panelProps'), p = selP();
   $('#selName').textContent = p ? `(${panelLabels()[ST.panels.indexOf(p)] || ST.panels.indexOf(p) + 1})` : '';
@@ -1871,9 +1976,8 @@ function buildProps() {
   const u = S.figUnit, d = p.img ? ST.imgs[p.img] : null, im = p.img ? IMG.get(p.img) : null, num = v => r2(fromPx(v, u));
   let h = `<div class="row"><span>X / Y (${u === 'in' ? 'Zoll' : u})</span><input type="number" step="0.1" data-b="p:x" data-u="1" value="${num(p.x)}"><input type="number" step="0.1" data-b="p:y" data-u="1" value="${num(p.y)}"></div>
     <div class="row"><span>Breite / Höhe</span><input type="number" step="0.1" min="0.1" data-b="p:w" data-u="1" value="${num(p.w)}"><input type="number" step="0.1" min="0.1" data-b="p:h" data-u="1" value="${num(p.h)}"></div>
-    <div class="row"><span>Label</span><input data-b="p:label" value="${esc(p.label)}" placeholder="automatisch (- = keins)" style="width:130px"><select data-b="p:lblColor" title="Labelfarbe">${optList({ '': 'Farbe wie eingestellt', '#000000': 'schwarz', '#ffffff': 'weiß' }, p.lblColor || '')}</select></div>
-    <div class="row"><span>Rahmen</span><select data-b="p:frame">${optList({ g: 'wie eingestellt', on: 'an', off: 'aus' }, p.frame)}</select></div>
-    <div class="row"><span>Hintergrund der Bildfläche</span><select data-b="p:bg" title="sichtbar bei Transparenz oder wenn das Bild die Fläche nicht füllt">${optList({ '': 'wie eingestellt', none: 'durchsichtig', '#ffffff': 'weiß', '#000000': 'schwarz' }, ['', 'none', '#ffffff', '#000000'].includes(p.bg) ? p.bg : '')}</select></div>
+    <div class="row"><span>Label</span><input data-b="p:label" value="${esc(p.label)}" placeholder="automatisch (- = keins)" style="width:130px"></div>
+    ${styBlock('p', ['lbl', 'sb', 'frame'], p, p)}
     <div class="sub">Bild</div>`;
   if (!im) h += `<div class="btns"><button data-act="load">Bild laden…</button></div><p class="hint">Oder eine Datei auf den Platzhalter ziehen.</p>`;
   else {
@@ -1899,28 +2003,27 @@ function buildProps() {
       <div class="btns"><button data-act="calib">Maßstab nachzeichnen</button>${d.mpp ? '<button data-act="mppAll">Kalibrierung auf alle Bilder</button><button data-act="mpp0">Löschen</button>' : ''}</div>
       <div class="row"><label><input type="checkbox" data-b="p:sb.on"${p.sb.on ? ' checked' : ''}> Maßstabsbalken zeigen</label></div>
       <div class="row"><span>Länge</span><input type="number" step="any" min="0" data-b="p:sb.val" value="${p.sb.val ?? ''}" placeholder="auto" style="width:72px"><select data-b="p:sb.unit">${optList(Object.fromEntries(SB_UNITS.map(x => [x[0], x[0]])), p.sb.unit)}</select></div>
-      <div class="row"><span>Ecke</span><select data-b="p:sb.corner">${optList({ '': 'Standard', ...CORNERS }, p.sb.corner)}</select></div>`;
+      <p class="hint">Aussehen und Ecke des Balkens: oben unter „Aussehen“.</p>`;
   }
   h += `<div class="sub">Textfelder</div>`;
   p.texts.forEach((t, i) => {
     h += `<div class="card"><div class="row"><select data-b="tx${i}:corner">${optList(CORNERS, t.corner)}</select><span class="seg">${['left', 'center', 'right'].map(a => `<button class="mini${(t.align || 'left') === a ? ' on' : ''}" data-act="talign" data-i="${i}" data-v="${a}" title="${{ left: 'linksbündig', center: 'zentriert', right: 'rechtsbündig' }[a]}">${{ left: '⇤', center: '↔', right: '⇥' }[a]}</button>`).join('')}</span><span style="flex:1"></span><button class="mini" data-act="tdel" data-i="${i}">✕</button></div>
       <textarea data-b="tx${i}:text" placeholder="Text (mehrzeilig möglich)">${esc(t.text)}</textarea>
-      <div class="row"><span>Farbe / Größe (pt)</span><input type="color" data-b="tx${i}:color" value="${t.color || S.txtColor}"><input type="number" step="0.5" min="3" data-b="tx${i}:size" value="${t.size || ''}" placeholder="${S.txtSize}" style="width:60px"></div></div>`;
+      ${styBlock('tx' + i, ['txt'], t, p)}</div>`;
   });
   h += `<div class="btns"><button data-act="tadd">+ Textfeld</button></div><div class="sub">Insets</div>`;
   p.insets.forEach((t, i) => {
     const s = selItem && selItem.id === t.id ? ' style="border-color:var(--accent)"' : '';
     h += `<div class="card"${s}><div class="row"><b>${t.src === 'region' ? 'Ausschnitt' : 'Eigenes Bild'}</b><select data-b="in${i}:corner">${optList(CORNERS, t.corner)}</select><span style="flex:1"></span>${t.src !== 'region' ? `<button class="mini" data-act="iload" data-i="${i}">Bild…</button>` : ''}<button class="mini" data-act="idel" data-i="${i}">✕</button></div>
-      <div class="row"><span>Größe / Rahmen (pt)</span><input type="number" step="0.05" min="0.05" max="0.95" data-b="in${i}:size" value="${t.size || S.insSize}" style="width:60px"><input type="color" data-b="in${i}:color" value="${t.color || S.insColor}"><input type="number" step="0.25" min="0" data-b="in${i}:lw" value="${t.lw ?? ''}" placeholder="${S.insW}" style="width:56px"></div></div>`;
+      ${styBlock('in' + i, ['ins'], t, p)}</div>`;
   });
   h += `<div class="btns"><button data-act="iadd">+ Inset mit eigenem Bild</button><button data-act="iregion">+ Ausschnitt-Inset (Werkzeug)</button></div>`;
   if (im) {
     h += `<div class="sub">Annotationen</div>`;
     const a = selItem && selItem.kind === 'annot' && p.annots.find(x => x.id === selItem.id);
     if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : ''}</button>`).join('')}</div>`;
-    if (a) h += `<div class="card"><div class="row"><span>Farbe / Linie (pt)</span><input type="color" data-b="an:color" value="${a.color || S.anColor}"><input type="number" step="0.25" min="0.25" data-b="an:w" value="${a.w || S.anW}" style="width:56px"><button class="mini" data-act="adel">✕</button></div>` +
-      (a.type !== 'text' ? `<div class="row"><span>Linienstil / Enden</span><select data-b="an:dash">${optList(ADASH_LABEL, a.dash || S.anDash)}</select><select data-b="an:cap">${optList({ round: 'rund', butt: 'eckig' }, a.cap || S.anCap)}</select></div>` : '') +
-      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea><div class="row"><span>Größe (pt)</span><input type="number" step="0.5" min="3" data-b="an:size" value="${a.size || S.anSize}" style="width:60px"><label><input type="checkbox" data-b="an:box"${a.box ? ' checked' : ''}> Kasten</label></div>` : '') + '</div>';
+    if (a) h += `<div class="card"><div class="row"><b>${ANAME[a.type]}</b><span style="flex:1"></span><button class="mini" data-act="adel">✕</button></div>` +
+      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea>` : '') + styBlock('an', ['an'], a, p) + '</div>';
     h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit.</p>`;
   }
   h += `<div class="btns" style="margin-top:10px"><button data-act="dup">Duplizieren</button><button data-act="pdel">Platzhalter entfernen</button></div>`;
@@ -1929,8 +2032,18 @@ function buildProps() {
 }
 const mppUnit = m => { let u = SB_UNITS[0]; for (const x of SB_UNITS) if (m >= x[1] * 0.9999) u = x; return u; };
 function bindProps(box, p) {
-  const obj = scope => scope === 'p' ? p : scope === 'img' ? ST.imgs[p.img] : scope === 'an' ? p.annots.find(x => selItem && x.id === selItem.id)
-    : scope.startsWith('tx') ? p.texts[+scope.slice(2)] : scope.startsWith('in') ? p.insets[+scope.slice(2)] : null;
+  const obj = scope => scopeObj(p, scope);
+  // Stilfelder: Eingabe = eigener Wert dieses Elements; Markierung sofort nachführen (ohne neu aufzubauen, sonst springt der Fokus)
+  box.querySelectorAll('[data-s]').forEach(inp => inp.addEventListener(inp.type === 'checkbox' || inp.tagName === 'SELECT' ? 'change' : 'input', () => {
+    const blk = inp.closest('[data-el]'), el = obj(blk.dataset.el), k = inp.dataset.s, v = fieldVal(inp);
+    if (!el || v == null) return;
+    (el.st || (el.st = {}))[k] = v;
+    const pv = inp.closest('.pv'); pv.className = 'pv own'; pv.title = 'eigener Wert – gilt nur hier'; inp.closest('.row').classList.add('has-own');
+    const n = Object.keys(el.st).filter(x => blk.querySelector(`[data-s="${x}"]`)).length;
+    blk.querySelector('.cnt').textContent = `${n} eigene${el.fix ? ' 📌' : ''}`;
+    updStdMarks(); commitSoon(); render();
+  }));
+  box.querySelectorAll('details.sty').forEach(d => d.addEventListener('toggle', () => { if (d.open) styOpen.add(d.dataset.key); else styOpen.delete(d.dataset.key); }));
   box.querySelectorAll('[data-b]').forEach(el => {
     const ev = el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input';
     el.addEventListener(ev, () => {
@@ -1974,12 +2087,26 @@ async function propAction(a, p, b) {
     case 'tadd': p.texts.push({ id: uid(), corner: p.texts.length ? 'll' : 'ur', align: 'left', text: '' }); break;
     case 'talign': p.texts[i].align = b.dataset.v; break;
     case 'tdel': p.texts.splice(i, 1); break;
-    case 'iadd': { const ins = { id: uid(), src: 'image', img: null, corner: 'ur', size: S.insSize }; p.insets.push(ins); selItem = { kind: 'inset', id: ins.id }; pickFiles(false, f => loadInto(f, p, ins)); break; }
+    case 'iadd': { const ins = { id: uid(), src: 'image', img: null, corner: 'ur', st: {} }; p.insets.push(ins); selItem = { kind: 'inset', id: ins.id }; pickFiles(false, f => loadInto(f, p, ins)); break; }
     case 'iregion': setMode('inset'); toast('Im Bild einen Ausschnitt aufziehen'); return;
     case 'iload': pickFiles(false, f => loadInto(f, p, p.insets[i])); return;
     case 'idel': p.insets.splice(i, 1); break;
     case 'asel': selItem = { kind: 'annot', id: b.dataset.id }; break;
     case 'adel': p.annots = p.annots.filter(x => !selItem || x.id !== selItem.id); selItem = null; break;
+    // ↺ eigene Werte der Zeile entfernen · ⇧ als Standard übernehmen · 📌 Element fixieren bzw. lösen
+    case 'sreset': case 'sstd': {
+      const el = scopeObj(p, b.closest('[data-el]').dataset.el), keys = b.closest('.row').dataset.keys.split(',');
+      for (const k of keys) if (el.st && el.st[k] != null) { if (a === 'sstd') S[k] = el.st[k]; delete el.st[k]; }
+      if (a === 'sstd') toast('Als Standard übernommen – gilt für alle, die dem Standard folgen');
+      break;
+    }
+    case 'fix': {
+      const el = scopeObj(p, b.closest('[data-el]').dataset.el);
+      if (el.fix) delete el.fix;
+      else { el.fix = {}; for (const k of el === p ? ALL_KEYS : kindKeys({ p: '', tx: 'txt', in: 'ins', an: 'an' }[b.closest('[data-el]').dataset.key])) el.fix[k] = el === p ? S[k] : sv(k, null, p); }
+      toast(el.fix ? 'Fixiert – Änderungen am Standard wirken hier nicht mehr' : 'Gelöst – folgt wieder dem Standard');
+      break;
+    }
     case 'dup': { const q = JSON.parse(JSON.stringify(p)); q.id = uid(); q.x += 15; q.y += 15; ST.panels.splice(ST.panels.indexOf(p) + 1, 0, q); sel = q.id; break; }
     case 'pdel': removePanel(p); return;
   }
@@ -2003,6 +2130,7 @@ function refreshNumbers() {
 }
 
 /* ---------- Globale Einstellungen ---------- */
+buildStdUI();   // Standard-Stilfelder links aus der Stil-Tabelle – vor dem Anbinden aller data-k-Felder
 function syncUI() {
   $$('[data-k]').forEach(el => { if (document.activeElement === el) return; const v = S[el.dataset.k]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
   $('#gCols').value = ST.L.cols || 2; $('#gRows').value = ST.L.rows || 2;
@@ -2019,6 +2147,7 @@ $$('[data-k]').forEach(el => {
     else if (k === 'figH') { if (!(v > 0)) return; S.autoH = false; scaleFree(1, v / S.figH); S.figH = v; ST.L.ratio = v / S.figW; syncUI(); }
     else if (k === 'autoH') { S.autoH = v; if (v) ST.L.ratio = S.figH / S.figW; }
     else S[k] = v;
+    if (ALL_KEYS.includes(k)) buildProps();   // rechts zeigen Felder, die dem Standard folgen, den neuen Wert
     commitSoon(); render();
   };
   el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', h);
@@ -2028,7 +2157,7 @@ $$('[data-k]').forEach(el => {
   b.onclick = () => { const nw = r2(fromPx(toPx(w, 'cm'), S.figUnit)); scaleFree(nw / S.figW); S.figW = nw; commit(); refreshAll(); };
   $('#sizeBtns').appendChild(b);
 });
-function refreshAll() { syncUI(); buildList(); buildProps(); updUndo(); render(); }
+function refreshAll() { syncUI(); buildList(); buildProps(); updStdMarks(); updUndo(); render(); }
 function updPageUI() {
   $('#pageOri').hidden = !/^A\d$/.test(S.page);
   $('#rowPageCustom').hidden = S.page !== 'custom';
@@ -2183,6 +2312,7 @@ const selectOptions = k => { const el = document.querySelector(`select[data-k="$
 function sanitizeStyle(o) {
   const out = {};
   if (!o || typeof o !== 'object') return out;
+  o = padCompat({ ...o });
   for (const k of Object.keys(DEF)) {
     if (NON_STYLE.includes(k) || !(k in o)) continue;
     const d = DEF[k], v = o[k], opts = k === 'font' ? null : selectOptions(k);
@@ -2316,9 +2446,29 @@ async function addImage(id, rec) {
 function sanitize(st) {
   const f = freshState();
   if (!st || !Array.isArray(st.panels)) return f;
-  st.S = { ...DEF, ...(st.S || {}) }; st.L = { ...f.L, ...(st.L || {}) }; st.imgs = st.imgs || {};
-  st.panels = st.panels.map(p => { const q = { ...newPanel(), ...p }; q.sb = { ...newPanel().sb, ...(p.sb || {}) }; q.adj = { ...freshAdj(), ...(p.adj || {}) }; return q; });
+  st.S = { ...DEF, ...padCompat(st.S || {}) }; st.L = { ...f.L, ...(st.L || {}) }; st.imgs = st.imgs || {};
+  st.panels = st.panels.map(p => { const q = { ...newPanel(), ...p }; q.sb = { ...newPanel().sb, ...(p.sb || {}) }; q.adj = { ...freshAdj(), ...(p.adj || {}) }; migrateSt(q, st.S); return q; });
   return st;
+}
+// Ältere Projekte: eigene Werte lagen direkt am Element; Annotationen und Insets hatten den Standard beim Anlegen
+// kopiert – solche Kopien (gleich dem Standard) werden verworfen, damit die Elemente wieder dem Standard folgen.
+function migrateSt(p, S0) {
+  const mv = (el, map, onlyDiff) => {
+    el.st = el.st || {};
+    for (const [old, k] of Object.entries(map)) {
+      const v = el[old]; delete el[old];
+      if (v == null || v === '' || (onlyDiff && v === S0[k]) || el.st[k] != null) continue;
+      el.st[k] = v;
+    }
+  };
+  mv(p, { lblColor: 'lblColor', frameColor: 'frameColor', frameW: 'frameW' });
+  if (p.bg === 'none') p.st.panelBgOff = true; else if (p.bg) p.st.panelBg = p.bg;
+  if (p.frame === 'on' || p.frame === 'off') p.st.frameOn = p.frame === 'on';
+  if (p.sb.corner) p.st.sbCorner = p.sb.corner;
+  delete p.bg; delete p.frame; delete p.sb.corner;
+  for (const t of p.texts) mv(t, { color: 'txtColor', size: 'txtSize', box: 'txtBox' });
+  for (const i of p.insets) mv(i, { size: 'insSize', color: 'insColor', lw: 'insW' }, true);
+  for (const a of p.annots) { if (typeof a.box === 'boolean') a.box = a.box ? 'box' : null; mv(a, { color: 'anColor', w: 'anW', dash: 'anDash', cap: 'anCap', size: 'anSize', box: 'anBox' }, true); }
 }
 async function restore() {
   let st = null;
@@ -2327,7 +2477,7 @@ async function restore() {
   const need = usedImgs(ST);
   for (const id of need) { try { const rec = await db.get('imgs', id); if (rec) await addImage(id, rec); } catch (err) { console.error(err); } }
   for (const id of need) if (IMG.has(id) && ST.imgs[id] && ST.imgs[id].alpha == null) ST.imgs[id].alpha = hasAlpha(id);
-  for (const p of ST.panels) { if (p.img && ST.imgs[p.img] && ST.imgs[p.img].alpha && !p.bg) p.bg = 'none';
+  for (const p of ST.panels) { if (p.img && ST.imgs[p.img] && ST.imgs[p.img].alpha && p.st.panelBg == null && p.st.panelBgOff == null) p.st.panelBgOff = true;
     if (p.img && !IMG.has(p.img)) p.img = null; p.insets = p.insets.filter(i => i.src === 'region' ? p.img : true); for (const i of p.insets) if (i.img && !IMG.has(i.img)) i.img = null; }
   try { for (const k of await db.keys('imgs')) if (!need.has(k)) db.del('imgs', k); } catch { }
 }
