@@ -113,7 +113,7 @@ Damit funktionieren automatisch: das Feld links und rechts, die Abweichungsanzei
 - `hits` enthält die Lage von Platzhaltern und Insets für die Trefferprüfung mit der Maus.
 - **Ausgabe:** `drawOps()` zeichnet auf ein Canvas (Vorschau, PNG, TIFF, JPG, „Für Word kopieren“), `buildSVG()` schreibt SVG (auch für PDF über Drucken). Neue Grundelemente müssen in **beiden** ergänzt werden.
 - In SVG werden Bildausschnitte als `clipPath` mit Transformationsmatrix geschrieben, nicht als verschachteltes `<svg viewBox>`, weil Inkscape dessen Beschnitt ignoriert.
-- Eingefügte SVG-Dateien sind in der Vorschau und für PNG/TIFF gerastert (`IMG.full`), das Original bleibt in `IMG.blob`. `buildSVG()` setzt es mit `inlineSvg()` als `<g>` ein, denn `<image>` mit SVG-Daten behandelt Inkscape als Bild ohne bearbeitbare Pfade. IDs bekommen je Vorkommen ein Präfix, eingebettetes CSS wird auf die Gruppe begrenzt.
+- Eingefügte SVG-Dateien werden für die schnelle Vorschau gerastert (`IMG.prev`, `IMG.full`). Reicht das Raster für die aktuelle Vergrößerung nicht, zeichnet `drawOps()` stattdessen das geladene SVG `IMG.vec`, auch im PNG-/TIFF-Export. Das Original bleibt in `IMG.blob`. `buildSVG()` setzt es mit `inlineSvg()` als `<g>` ein, denn `<image>` mit SVG-Daten behandelt Inkscape als Bild ohne bearbeitbare Pfade. IDs bekommen je Vorkommen ein Präfix, eingebettetes CSS wird auf die Gruppe begrenzt.
 
 ## Bedienung
 

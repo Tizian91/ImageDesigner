@@ -647,16 +647,17 @@ function makePrev(src, w, h) {
   const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
   return c;
 }
-// SVG (z. B. aus dem Diagramm-Designer) für Vorschau und PNG/TIFF fein rastern; das SVG selbst bleibt für den SVG-Export erhalten
+// SVG (z. B. aus dem Diagramm-Designer): Raster für die schnelle Vorschau, dazu das geladene SVG (vec) zum scharfen Zeichnen
+// bei starkem Zoom und im Export; die Datei selbst bleibt für den SVG-Export erhalten
 const isSvgFile = f => /\.svg$/i.test(f.name || '') || f.type === 'image/svg+xml';
 async function rasterSvg(blob) {
   const url = URL.createObjectURL(blob.type === 'image/svg+xml' ? blob : new Blob([blob], { type: 'image/svg+xml' })), im = new Image();
   im.src = url;
-  try { await im.decode(); } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  try { await im.decode(); } catch (err) { URL.revokeObjectURL(url); throw err; }
   const w0 = im.naturalWidth || 800, h0 = im.naturalHeight || 600, k = clamp(4000 / Math.max(w0, h0), 1, 8);
   const c = document.createElement('canvas'); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
   c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-  return { full: await createImageBitmap(c), w: c.width, h: c.height, physW: w0, physH: h0 };
+  return { full: await createImageBitmap(c), w: c.width, h: c.height, physW: w0, physH: h0, vec: im.naturalWidth ? im : null };
 }
 // dpi aus dem pHYs-Block einer PNG-Datei (der Diagramm-Designer schreibt ihn) → Größe im Druck
 function pngDpi(u8) {
@@ -672,10 +673,10 @@ function pngDpi(u8) {
 }
 async function loadImageFile(file) {
   const isTif = /\.tiff?$/i.test(file.name) || file.type === 'image/tiff';
-  let full, blob = file, meta = { items: [] }, w, h, extra = {};
+  let full, blob = file, meta = { items: [] }, w, h, vec = null, extra = {};
   if (isSvgFile(file)) {
     const r = await rasterSvg(file);
-    ({ full, w, h } = r); extra = { kind: 'plot', physW: r.physW, physH: r.physH };
+    ({ full, w, h, vec } = r); extra = { kind: 'plot', physW: r.physW, physH: r.physH };
   } else if (isTif) {
     const u8 = await bytesOf(file), { img, tags } = await decodeTiff(u8);
     full = await createImageBitmap(img); w = img.width; h = img.height;
@@ -688,7 +689,7 @@ async function loadImageFile(file) {
     if (dpi > 0) extra = { physW: w * 96 / dpi, physH: h * 96 / dpi, dpi: Math.round(dpi) };
   }
   const id = uid();
-  IMG.set(id, { id, name: file.name, w, h, full, prev: makePrev(full, w, h), blob, meta });
+  IMG.set(id, { id, name: file.name, w, h, full, vec, prev: makePrev(full, w, h), blob, meta });
   ST.imgs[id] = { name: file.name, mpp: meta.mpp || null, mppSrc: meta.src || '', crop: { t: 0, b: 0, l: 0, r: 0 }, bar: meta.bar || 0, hideBar: false, ...extra };
   if (!ST.imgs[id].bar && extra.kind !== 'plot') ST.imgs[id].bar = detectBar(id);
   ST.imgs[id].alpha = hasAlpha(id);
@@ -1119,9 +1120,13 @@ function drawOps(ctx, ops, hi) {
         break;
       case 'img': {
         const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi); if (!src) break;
-        const kx = src.width / im.w, ky = src.height / im.h;
+        const kx = src.width / im.w, ky = src.height / im.h, m = ctx.getTransform();
         ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(src, o.sx * kx, o.sy * ky, o.sw * kx, o.sh * ky, o.x, o.y, o.w, o.h);
+        // SVG: sobald das Raster für die Vergrößerung nicht reicht, direkt als Vektor zeichnen (scharf, aber langsamer)
+        if (im.vec && !adjActive(o.adj) && Math.hypot(m.a, m.b) * o.w / o.sw > kx * 1.01) {
+          const q = im.vec.naturalWidth / im.w, r = im.vec.naturalHeight / im.h;
+          ctx.drawImage(im.vec, o.sx * q, o.sy * r, o.sw * q, o.sh * r, o.x, o.y, o.w, o.h);
+        } else ctx.drawImage(src, o.sx * kx, o.sy * ky, o.sw * kx, o.sh * ky, o.x, o.y, o.w, o.h);
         break;
       }
       case 'clip': ctx.save(); ctx.beginPath(); ctx.rect(o.x, o.y, o.w, o.h); ctx.clip(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
@@ -2279,7 +2284,7 @@ async function rotateImg(p, dir) {
   const im = IMG.get(p.img), c = document.createElement('canvas'); c.width = im.h; c.height = im.w;
   const x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(dir * Math.PI / 2); x.drawImage(im.full, -im.w / 2, -im.h / 2);
   const blob = await new Promise(r => c.toBlob(r, 'image/png')), full = await createImageBitmap(c), id = uid();
-  IMG.set(id, { ...im, id, w: im.h, h: im.w, full, prev: makePrev(full, im.h, im.w), blob });
+  IMG.set(id, { ...im, id, w: im.h, h: im.w, full, vec: null, prev: makePrev(full, im.h, im.w), blob });
   ST.imgs[id] = { ...ST.imgs[p.img], crop: { t: 0, b: 0, l: 0, r: 0 }, hideBar: false, bar: 0 };
   Object.assign(p, { img: id, annots: [], zoom: 1, cx: 0.5, cy: 0.5 }); p.insets = p.insets.filter(i => i.src !== 'region');
   dbPutImg(id).catch(() => { });
@@ -2604,7 +2609,7 @@ async function addImage(id, rec) {
   const svg = rec.blob.type ? rec.blob.type === 'image/svg+xml' : /\.svg$/i.test(rec.name || '');   // ein gedrehtes SVG ist ein PNG, trägt aber noch den alten Namen
   const r = svg ? await rasterSvg(rec.blob) : { full: await createImageBitmap(rec.blob) };
   const full = r.full;
-  IMG.set(id, { id, name: rec.name, w: full.width, h: full.height, full, prev: makePrev(full, full.width, full.height), blob: rec.blob, meta: rec.meta || { items: [] } });
+  IMG.set(id, { id, name: rec.name, w: full.width, h: full.height, full, vec: r.vec || null, prev: makePrev(full, full.width, full.height), blob: rec.blob, meta: rec.meta || { items: [] } });
 }
 function sanitize(st) {
   const f = freshState();
