@@ -46,7 +46,7 @@ Eine einzelne HTML-Datei ohne Build-Schritt und ohne externe Bibliotheken. Alles
 | Strg+Z / Strg+Y | Rückgängig / Wiederholen |
 | Strg+S / Strg+Umschalt+S / Strg+O | Projekt speichern / speichern unter / öffnen |
 | Entf | gewählte Annotation, Inset oder Platzhalter löschen |
-| Strg + Mausrad | Vorschau auf den Mauszeiger zoomen (Zoom-Regler und „100 %“: auf die Mitte) |
+| Strg + Mausrad | Vorschau auf den Mauszeiger zoomen, über den Seitenleisten auf die Mitte (Zoom-Regler und „100 %“: auf die Mitte). Der Browser-Zoom bleibt unberührt; ihn setzt Strg+0 zurück |
 | Mausrad (Shift = waagerecht) | Vorschau verschieben; im Werkzeug „Bild“ über einem Bild: Bild zoomen |
 | mittlere Maustaste / Leertaste + Ziehen | Vorschau verschieben |
 
