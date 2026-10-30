@@ -200,7 +200,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
     <div class="row"><span>Dateiname</span><input data-k="fileName" style="width:150px"></div>
     <div class="row" title="„Ganze Seite“ exportiert das gewählte Seitenformat (Layout → Seite) mit der Abbildung an ihrer Stelle"><span>Exportieren</span><select data-k="exportArea"><option value="figure">nur die Abbildung</option><option value="page">ganze Seite mit Abbildung</option></select></div>
     <div class="btns"><button id="btnPng" class="primary">PNG</button><button id="btnTif">TIFF (LZW)</button><button id="btnJpg">JPG</button><button id="btnSvg">SVG</button><button id="btnPdf">PDF (Drucken)</button><button id="btnWord">Für Word kopieren</button></div>
-    <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet die Bilder ein, Text und Maßstab bleiben Vektoren.</p>
+    <p class="hint">PNG, TIFF und JPG enthalten die dpi-Angabe; in Word mit 100 % eingefügt hat die Abbildung genau die eingestellte Größe. SVG bettet Fotos als Bilder ein; eingefügte SVGs, Text und Maßstab bleiben Vektoren (außer das SVG wurde gedreht oder in Helligkeit/Kontrast geändert).</p>
   </details>
 
   <details>
@@ -1162,8 +1162,35 @@ function renderCanvas(scale) {
   return { canvas: c, ...r };
 }
 
-/* ---------- Ausgabe: SVG (Bilder eingebettet, Text und Formen als Vektoren) ---------- */
+/* ---------- Ausgabe: SVG (Fotos eingebettet; eingefügte SVGs, Text und Formen als Vektoren) ---------- */
 const blobURL = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+const isSvgBlob = im => im.blob.type ? im.blob.type === 'image/svg+xml' : /\.svg$/i.test(im.name || '');
+// CSS eines eingefügten SVGs auf dessen Gruppe beschränken (matplotlib z. B. setzt Regeln für „*“)
+const scopeCss = (css, sc) => css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\})\s*([^{}@]+)\{/g, (m, b, sel) => `${b}${sel.split(',').map(x => `${sc} ${x.trim()}`).join(',')}{`);
+// SVG-Datei als echte Vektoren einsetzen: <g>, das die Zeichnung auf 0…w × 0…h abbildet (wie die gerasterte Fassung).
+// Alle IDs bekommen ein Präfix, sonst überschreiben sich zwei Diagramme gegenseitig ihre Zuschnitte und Verläufe.
+function inlineSvg(text, prefix, w, h, physW, physH) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml'), root = doc.documentElement;
+  if (root.localName !== 'svg' || doc.querySelector('parsererror')) return null;
+  for (const e of [...root.getElementsByTagName('*')]) if (['script', 'metadata', 'namedview'].includes(e.localName)) e.remove();
+  const vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  const [vx, vy, vw, vh] = vb.length === 4 && vb.every(Number.isFinite) && vb[2] > 0 && vb[3] > 0 ? vb : [0, 0, physW || w, physH || h];
+  const s = Math.min(w / vw, h / vh), tx = (w - vw * s) / 2 - vx * s, ty = (h - vh * s) / 2 - vy * s;
+  const ids = new Map(), all = [...root.getElementsByTagName('*')];
+  for (const e of all) { const id = e.getAttribute('id'); if (id) { ids.set(id, prefix + id); e.setAttribute('id', prefix + id); } }
+  const fix = v => v.replace(/url\(\s*(['"]?)#([^'")\s]+)\1\s*\)/g, (m, q, id) => ids.has(id) ? `url(#${ids.get(id)})` : m);
+  for (const e of all) {
+    for (const a of [...e.attributes]) {
+      if (a.localName === 'href' && a.value[0] === '#') { if (ids.has(a.value.slice(1))) a.value = '#' + ids.get(a.value.slice(1)); }
+      else if (a.value.includes('url(')) a.value = fix(a.value);
+    }
+    if (e.localName === 'style') e.textContent = scopeCss(fix(e.textContent), `#${prefix}root`);
+  }
+  // Vererbte Angaben der Wurzel (Schrift, Füllung …) gehen auf die Gruppe über, Maße nicht
+  const keep = [...root.attributes].filter(a => !a.prefix && !/^(width|height|x|y|viewBox|version|id|transform|preserveAspectRatio|xmlns|baseProfile|contentScriptType|contentStyleType)$/.test(a.name));
+  const ser = new XMLSerializer(), inner = [...root.childNodes].map(c => ser.serializeToString(c)).join('').replace(/ xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, '');
+  return `<g id="${prefix}root"${keep.map(a => ` ${a.name}="${esc(fix(a.value))}"`).join('')} transform="matrix(${+s.toPrecision(6)} 0 0 ${+s.toPrecision(6)} ${f2(tx)} ${f2(ty)})">${inner}</g>`;
+}
 async function buildSVG() {
   const r = exportOps(), defs = [], used = new Map();
   let n = 0;
@@ -1172,8 +1199,12 @@ async function buildSVG() {
   const collect = ops => { for (const o of ops) { if (o.ops) collect(o.ops); if (o.k === 'img') { const key = o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
   collect(r.ops);
   for (const [, u] of used) {
-    const im = IMG.get(u.o.id);
+    const im = IMG.get(u.o.id), d = ST.imgs[u.o.id] || {};
     let blob = im.blob;
+    if (!adjActive(u.o.adj) && isSvgBlob(im)) {   // Vektoren bleiben Vektoren; nur wenn das SVG nicht lesbar ist, als Bild einbetten
+      const text = await im.blob.text();
+      if (inlineSvg(text, 'x', im.w, im.h, d.physW, d.physH)) { u.svg = text; continue; }
+    }
     if (adjActive(u.o.adj)) blob = await new Promise(res => imgSource(u.o.id, u.o.adj, true).toBlob(res, 'image/png'));
     defs.push(`<image id="${u.id}" width="${im.w}" height="${im.h}" preserveAspectRatio="none" href="${await blobURL(blob)}"/>`);
   }
@@ -1183,7 +1214,9 @@ async function buildSVG() {
       // Ausschnitt per Zuschnitt + Matrix statt verschachteltem <svg viewBox>: Inkscape ignoriert dessen Beschnitt
       case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null)), kx = o.w / o.sw, ky = o.h / o.sh, id = 'c' + n++;
         defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`);
-        return `<g clip-path="url(#${id})"><use href="#${u.id}" transform="matrix(${+kx.toPrecision(6)} 0 0 ${+ky.toPrecision(6)} ${f2(o.x - o.sx * kx)} ${f2(o.y - o.sy * ky)})"/></g>`; }
+        const mx = `matrix(${+kx.toPrecision(6)} 0 0 ${+ky.toPrecision(6)} ${f2(o.x - o.sx * kx)} ${f2(o.y - o.sy * ky)})`;
+        if (u.svg != null) { const im = IMG.get(o.id), d = ST.imgs[o.id] || {}; return `<g clip-path="url(#${id})"><g transform="${mx}">${inlineSvg(u.svg, `${u.id}_${n++}_`, im.w, im.h, d.physW, d.physH)}</g></g>`; }
+        return `<g clip-path="url(#${id})"><use href="#${u.id}" transform="${mx}"/></g>`; }
       case 'tr': return `<g transform="translate(${f2(o.dx)} ${f2(o.dy)})">${out(o.ops)}</g>`;
       case 'clip': { const id = 'c' + n++; defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`); return `<g clip-path="url(#${id})">${out(o.ops)}</g>`; }
       case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o), 'stroke-linejoin': o.stroke ? 'round' : null })}/>`;
@@ -1193,7 +1226,7 @@ async function buildSVG() {
     return '';
   }).join('');
   const body = out(r.ops);
-  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${f2(r.W * 0.75)}pt" height="${f2(r.H * 0.75)}pt" viewBox="0 0 ${f2(r.W)} ${f2(r.H)}"><defs>${defs.join('')}</defs>${body}</svg>`, W: r.W, H: r.H };
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${f2(r.W * 0.75)}pt" height="${f2(r.H * 0.75)}pt" viewBox="0 0 ${f2(r.W)} ${f2(r.H)}"><defs>${defs.join('')}</defs>${body}</svg>`, W: r.W, H: r.H };
 }
 
 /* ---------- Rückgängig / Wiederholen (Schnappschüsse des Zustands; Pixel bleiben in IMG) ---------- */
@@ -2568,7 +2601,7 @@ let saveT = null;
 function saveSoon() { clearTimeout(saveT); saveT = setTimeout(() => db.put('kv', 'state', JSON.stringify(ST)).catch(() => { }), 600); }
 const usedImgs = st => new Set(st.panels.flatMap(p => [p.img, ...p.insets.map(i => i.img)]).filter(Boolean));
 async function addImage(id, rec) {
-  const svg = rec.blob.type === 'image/svg+xml' || /\.svg$/i.test(rec.name || '');
+  const svg = rec.blob.type ? rec.blob.type === 'image/svg+xml' : /\.svg$/i.test(rec.name || '');   // ein gedrehtes SVG ist ein PNG, trägt aber noch den alten Namen
   const r = svg ? await rasterSvg(rec.blob) : { full: await createImageBitmap(rec.blob) };
   const full = r.full;
   IMG.set(id, { id, name: rec.name, w: full.width, h: full.height, full, prev: makePrev(full, full.width, full.height), blob: rec.blob, meta: rec.meta || { items: [] } });
