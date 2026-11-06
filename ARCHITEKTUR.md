@@ -45,7 +45,10 @@ ST = {
   S:      { figW, gap, lblSize, sbColor, anColor, … }   // Standardwerte, Vorgaben in DEF
   L:      { mode: 'smart' | 'cells' | 'free', cols, rows, cells }   // cells: Vorlage oder Raster
   panels: [ { id, x, y, w, h,                          // Platzhalter in Figurpixeln
-              img, zoom, cx, cy, fit, adj,              // Bild darin
+              img, zoom, cx, cy, fit, adj,              // Grundbild darin
+              base: { name, tint, on, leg, legName },   // Angaben zum Grundbild als Schicht
+              layers: [ { id, img, name, on, op, blend, tint, adj, t: [a, b, c, d, e, f], leg, legName } ],
+              legOn, legCorner,                         // Farblegende
               label, sb: { on, val, unit },             // Inhalt
               st: { … }, fix: { … },                    // eigener Stil, fixierter Stand (siehe unten)
               texts:   [ { id, text, corner, align, st, fix } ],
@@ -59,6 +62,16 @@ IMG = Map(id → { w, h, full, prev, blob, meta })   // die Pixel, nicht in ST
 - `ST` ist reines JSON. Rückgängig, Speichern im Browser und die Projektdatei kopieren es vollständig; die Pixel liegen getrennt in `IMG`.
 - Daneben gibt es nur Zustand der Bedienung: Auswahl (`sel`, `msel`, `selItem`), Werkzeug (`mode`, `atool`), Ansicht (`zoom`, `VT`) und den laufenden Ziehvorgang (`drag`).
 - **Koordinaten:** Die Abbildung rechnet in CSS-Pixeln zu 96 dpi (`PT` = pt → px, `MM` = mm → px). Annotationen und Inset-Ausschnitte stehen in **Bildpixeln**, damit sie beim Verschieben und Zoomen des Bildes mitwandern; `geom(p)` liefert `toFig` und `toImg` für die Umrechnung.
+
+## Ebenen
+
+- Das **Grundbild** (`p.img`) bestimmt alles Geometrische: Lage und Zoom im Platzhalter (`geom`), Kalibrierung und Maßstab, Annotationen und Inset-Ausschnitte (in seinen Pixeln).
+- Jede **Ebene** sitzt über die Matrix `t` auf dem Grundbild: Ebenen-Pixel → Grundbild-Pixel. `figMatrix(g, t)` setzt sie mit `geom` zu Ebenen-Pixel → Figurpixel zusammen; `layerGeo()` liefert Umriss, Griffe und die Umkehrung für die Maus. Eine allgemeine Matrix statt Lage/Maßstab/Drehung erlaubt es, Ebenen exakt zu verketten und umzukehren (`makeBase`, Drehen des Grundbilds).
+- `defaultT()` legt neue Ebenen deckungsgleich bzw. bei zwei kalibrierten Bildern im gleichen Maßstab an; `fitSim()` passt aus Passpunkten eine Ähnlichkeitstransformation an. `tParts()`/`tFrom()` übersetzen zwischen Matrix und den Zahlenfeldern.
+- **Zeichnen:** `imageOps()` liefert Grundbild (`img`) und Ebenen (`limg` mit Matrix, Mischmodus, Deckkraft). Mit Ebenen steckt alles in einer Gruppe `comp`: Auf dem Canvas wirken die Mischmodi darin, im SVG wird sie flach als ein PNG eingebettet.
+- **Einfärben** (`tint`) rechnet in `imgSource()`: Intensität = hellster Kanal, mal Farbe. Die Legendenfarbe einer nicht eingefärbten Map schätzt `autoColor()`.
+- Ebenen-Einstellungen sind Inhalt, kein Stil: Sie gehören nicht zum Stilsystem.
+- **Zuschneiden** (`cropMode`, Strg kehrt um): `keepImage(p, g0)` setzt Zoom und Bildmitte so, dass das Bild nach einer Größenänderung des Platzhalters in der Abbildung stehen bleibt. `commonCrop()` schneidet Platzhalter, Grundbild und Ebenen-Umrisse (konvex, `clipHalf`) und sucht darin mit `maxRectIn()` das größte Rechteck im Seitenverhältnis des Platzhalters.
 
 ## Stilsystem: Standard, eigene Werte, fixiert
 
@@ -105,6 +118,8 @@ Damit funktionieren automatisch: das Feld links und rechts, die Abweichungsanzei
 |---|---|
 | `rect` | Rechteck mit Füllung (`fill`, Deckkraft `fa`) und/oder Rand (`stroke`, `sw`, Strichmuster) |
 | `img` | Ausschnitt eines Bildes (`sx, sy, sw, sh` in Bildpixeln) in ein Zielrechteck |
+| `limg` | Ebene: Bildausschnitt über eine Matrix `m`, mit Mischmodus `blend` und Deckkraft `op` |
+| `comp` | Grundbild und Ebenen eines Platzhalters als Gruppe (SVG: ein flaches Bild) |
 | `clip` | Gruppe mit rechteckigem Zuschnitt (jeder Platzhalter) |
 | `tr` | verschobene Gruppe (Seiten-Export) |
 | `path`, `ell`, `text` | SVG-Pfad, Ellipse, Textzeile |
@@ -117,13 +132,15 @@ Damit funktionieren automatisch: das Feld links und rechts, die Abweichungsanzei
 
 ## Bedienung
 
-- **Werkzeuge** (`mode`): `layout`, `image`, `scale`, `annot` (mit `atool`), `inset`.
+- **Werkzeuge** (`mode`): `layout`, `image`, `scale`, `annot` (mit `atool`), `inset`, dazu `reg` für Passpunkte (Zustand in `REG`, nicht in `ST`; erst „Fertig“ schreibt einen Schritt für Rückgängig).
+- **Auswahl einer Ebene:** `selLayer` (id oder `null` = Grundbild). Mit gewählter Ebene wirkt das Werkzeug Bild nur auf sie.
 - **Ziehen:** `pointerdown` legt `drag = { t, … }` an, `pointermove` ändert den Zustand je nach `drag.t`, `pointerup` schließt ab und ruft `commit()` auf.
 
 | `drag.t` | Vorgang |
 |---|---|
 | `move`, `resize`, `pcreate` | Platzhalter verschieben, skalieren, frei aufziehen (mit Einrasten) |
 | `pan`, `iscale` | Bild im Platzhalter verschieben, zoomen |
+| `lmove`, `lscale`, `lrot` | gewählte Ebene verschieben, skalieren, drehen (Werkzeug Bild) |
 | `inset`, `rcreate`, `rmove` | Inset in eine Ecke ziehen, Ausschnitt aufziehen, verschieben |
 | `acreate`, `amove`, `anode` | Annotation zeichnen, verschieben, an einem Griff umformen |
 | `measure` | Maßstab nachzeichnen |

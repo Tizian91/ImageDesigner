@@ -93,6 +93,21 @@ button.mini{padding:1px 6px;font-size:12px}
 .handle{flex:none;cursor:grab;color:var(--muted);user-select:none;padding:0 2px}
 .card{border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin:6px 0}
 .card .row:first-child{margin-top:2px}
+/* Ebenen eines Platzhalters: oben in der Liste = oben im Bild, das Grundbild liegt immer zuunterst */
+.lyrs{border:1px solid var(--border);border-radius:6px;padding:3px;margin:4px 0}
+.lyr{display:flex;align-items:center;gap:5px;padding:2px 4px;border:1px solid transparent;border-radius:5px;cursor:pointer}
+.lyr:hover{border-color:var(--border)}
+.lyr.sel{background:var(--accent-soft);border-color:var(--accent)}
+.lyr.off .nm,.lyr.off .thumb,.lyr.off .sw{opacity:.35}
+.lyr.drag{opacity:.4}
+.lyr.base{border-top:1px dashed var(--border);border-radius:0 0 5px 5px;margin-top:2px}
+.lyr .thumb{width:30px;height:22px;object-fit:cover;border-radius:3px;border:1px solid var(--border);flex:none}
+.lyr .sw{width:9px;height:22px;border-radius:2px;border:1px solid var(--border);flex:none}
+.lyr .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lyr .eye{width:28px;padding:1px 0;flex:none}
+.lyr .handle.none{visibility:hidden}
+.lcard{box-shadow:inset 3px 0 var(--accent)}
+.lcard .lhead{font-weight:600;margin:2px 0 4px}
 #stage{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
 .toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--border)}
 .toolbar label{display:flex;align-items:center;gap:4px}
@@ -291,6 +306,10 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
       <button data-at="ellipse" title="Ellipse">◯</button>
       <button data-at="text" title="Text">T</button>
     </span>
+    <span class="seg" id="ptools" hidden title="Was beim Ziehen an den Griffen eines Platzhalters mit dem Bild passiert – Strg beim Ziehen kehrt es um">
+      <button data-pm="scale" title="Griffe: das Bild (samt Ebenen) skaliert mit dem Platzhalter">⇲ Bild skaliert mit</button>
+      <button data-pm="crop" title="Griffe: das Bild bleibt stehen, der Platzhalter schneidet zu (Strg beim Ziehen kehrt um)">✂ Zuschneiden</button>
+    </span>
     <span class="sep"></span>
     <button id="btnUndo" title="Rückgängig (Strg+Z)">↶</button><button id="btnRedo" title="Wiederholen (Strg+Y)">↷</button>
     <span class="sep"></span>
@@ -331,12 +350,20 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
     </ul>
     <h3>Werkzeuge</h3>
     <table>
-      <tr><td>▣ Platzhalter <kbd>V</kbd></td><td>Platzhalter verschieben und an den Griffen skalieren; das Bild skaliert mit. Shift/Strg + Klick wählt mehrere. Bei Layout „Frei“: auf leerer Fläche neue Platzhalter aufziehen. Insets in eine andere Ecke ziehen.</td></tr>
-      <tr><td>🖼 Bild <kbd>B</kbd></td><td>Bild im Platzhalter verschieben, an den Ecken oder mit dem Mausrad zoomen; der Platzhalter bleibt und schneidet ab.</td></tr>
+      <tr><td>▣ Platzhalter <kbd>V</kbd></td><td>Platzhalter verschieben und an den Griffen skalieren; das Bild skaliert mit. <b>Zuschneiden</b>: Umschalter „✂ Zuschneiden“ oder <kbd>Strg</kbd> beim Ziehen eines Griffs – das Bild bleibt stehen, der Platzhalter schneidet ab. Shift/Strg + Klick wählt mehrere. Bei Layout „Frei“: auf leerer Fläche neue Platzhalter aufziehen. Insets in eine andere Ecke ziehen.</td></tr>
+      <tr><td>🖼 Bild <kbd>B</kbd></td><td>Bild im Platzhalter verschieben, an den Ecken oder mit dem Mausrad zoomen; der Platzhalter bleibt und schneidet ab. Ist rechts eine <b>Ebene</b> gewählt, wirkt es nur auf sie: ziehen, Ecken = skalieren, runder Griff = drehen.</td></tr>
       <tr><td>⟷ Maßstab <kbd>M</kbd></td><td>Entlang eines vorhandenen Maßstabs im Bild ziehen und die Länge eingeben (Kalibrieren).</td></tr>
       <tr><td>✎ Annotation <kbd>A</kbd></td><td>Pfeil, Linie, Rechteck, Ellipse oder Text einzeichnen (Shift = gerade/rund); ↖ wählt und verschiebt. Die gewählte Annotation an ihren Griffen umformen: Enden bzw. Ecken und Kanten.</td></tr>
       <tr><td>⧉ Inset <kbd>I</kbd></td><td>Im Bild einen Ausschnitt aufziehen – er erscheint vergrößert in einer Ecke, auf Wunsch mit Markierung und Verbindungslinien.</td></tr>
     </table>
+    <h3>Ebenen (z. B. EDX-Maps über einer REM-Aufnahme)</h3>
+    <ul>
+      <li>Ein Bild auf einen Platzhalter mit Bild ziehen → „Als Ebene“ (oder rechts „+ Ebene…“). Ganz unten liegt das <b>Grundbild</b>: Es bestimmt Lage, Zoom, Maßstab und Annotationen.</li>
+      <li>Mischmodus „Aufhellen“: Schwarz verschwindet, Farben mischen sich (Rot + Grün = Gelb). Je Ebene: einblenden (Alt + Klick aufs Auge = nur diese), einfärben, Deckkraft, Helligkeit/Kontrast, Reihenfolge mit ⠿.</li>
+      <li>Beim Einfügen liegen Ebenen deckungsgleich – sind beide Bilder kalibriert, im gleichen Maßstab. Fein ausrichten: Ebene wählen, dann Werkzeug „🖼 Bild“.</li>
+      <li><b>⌖ Passpunkte</b>: dasselbe Merkmal abwechselnd im Grundbild und in der Ebene anklicken (mind. 2, besser 3 Paare). Die App berechnet Lage, Maßstab und Drehung und zeigt den Restfehler. Rücktaste = Punkt zurück, Enter = fertig, Esc = abbrechen. Mit „dieselbe Korrektur auf die anderen Ebenen anwenden“ (bei gleich großen Ebenen vorbelegt) reicht es, eine Map einer Messung auszurichten.</li>
+      <li>„Farblegende“ zeigt Farbkästchen mit den Ebenennamen; jeder Eintrag lässt sich umbenennen oder weglassen. Im SVG-Export wird ein Platzhalter mit Ebenen zu einem Bild zusammengefasst.</li>
+    </ul>
     <h3>Tastenkürzel</h3>
     <table>
       <tr><td><kbd>?</kbd></td><td>diese Kurzanleitung</td></tr>
@@ -345,7 +372,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
       <tr><td><kbd>Strg</kbd>+<kbd>A</kbd></td><td>alle Platzhalter auswählen</td></tr>
       <tr><td><kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd></td><td>Rückgängig / Wiederholen</td></tr>
       <tr><td><kbd>Strg</kbd>+<kbd>S</kbd> / +<kbd>Umschalt</kbd> / <kbd>Strg</kbd>+<kbd>O</kbd></td><td>Projekt speichern / speichern unter / öffnen</td></tr>
-      <tr><td><kbd>Entf</kbd></td><td>gewählte Annotation, Inset oder Platzhalter löschen</td></tr>
+      <tr><td><kbd>Entf</kbd></td><td>gewählte Annotation, Inset, Ebene oder Platzhalter löschen</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Auswahl aufheben</td></tr>
       <tr><td>Alt beim Ziehen</td><td>ohne Einrasten</td></tr>
       <tr><td>Alt + Klick auf einen Bereich links</td><td>nur diesen Bereich offen lassen</td></tr>
@@ -416,7 +443,12 @@ const median = a => { const s = a.slice().sort((x, y) => x - y); return s.length
    Alles davon ist JSON und wird für Rückgängig/Speichern komplett kopiert. Die Pixel liegen in IMG. */
 const freshAdj = () => ({ b: 0, c: 0, g: 1, inv: false });
 const newPanel = () => ({ id: uid(), x: 0, y: 0, w: 200, h: 150, img: null, zoom: 1, cx: 0.5, cy: 0.5, fit: 'cover', label: '', st: {},
-  sb: { on: true, val: null, unit: 'µm' }, texts: [], insets: [], annots: [], adj: freshAdj() });
+  sb: { on: true, val: null, unit: 'µm' }, texts: [], insets: [], annots: [], adj: freshAdj(),
+  base: freshBase(), layers: [], legOn: false, legCorner: 'ur' });
+// Grundbild (p.img, p.adj) und Ebenen darüber. Eine Ebene sitzt über die Matrix t = [a, b, c, d, e, f] auf dem Grundbild:
+// Grundbild-Pixel = (a·x + c·y + e, b·x + d·y + f) für Ebenen-Pixel (x, y). leg: in der Farblegende (null = automatisch)
+function freshBase() { return { name: '', tint: '', on: true, leg: null, legName: '' }; }
+const newLayer = (img, t) => ({ id: uid(), img, name: '', on: true, op: 1, blend: 'screen', tint: '', adj: freshAdj(), t, leg: true, legName: '' });
 const freshState = () => ({ S: { ...DEF }, L: { mode: 'smart', cols: 2, rows: 1, cells: null }, panels: [], imgs: {} });
 let ST = freshState();
 let S = ST.S;
@@ -425,6 +457,8 @@ let sel = null;            // id des ausgewählten Platzhalters (Bezug für Eige
 let msel = new Set();      // Mehrfachauswahl (Shift/Strg + Klick) fürs Ausrichten
 let projHandle = null, projName = '', projDirty = false;   // Projektdatei: Dateizugriff (Edge/Chrome), Name, ungespeicherte Änderungen
 let selItem = null;        // { kind: 'annot'|'inset'|'text', id }
+let selLayer = null;       // gewählte Ebene im gewählten Platzhalter: id einer Ebene, sonst das Grundbild
+let REG = null;            // laufende Passpunkt-Ausrichtung: { pid, lid, pairs: [{ b, l }], cur, step: 'b'|'l', t0 }
 let mode = 'layout', atool = 'arrow';
 let zoom = 1;
 
@@ -717,17 +751,23 @@ function lut(a) {
   return t;
 }
 const adjCache = new Map();
-// Quelle zum Zeichnen: Vorschau (≤ 2048 px) oder volle Auflösung, ggf. mit Anpassung
-function imgSource(id, adj, hi) {
+// Quelle zum Zeichnen: Vorschau (≤ 2048 px) oder volle Auflösung, ggf. mit Anpassung und Einfärbung.
+// Einfärben: Intensität = hellster Kanal, so bleibt eine farbige Map auf Schwarz in ihren Verläufen erhalten.
+const HEX_RGB = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+function imgSource(id, adj, hi, tint) {
   const im = IMG.get(id); if (!im) return null;
   const base = hi ? im.full : im.prev;
-  if (!adjActive(adj)) return base;
-  const key = id + (hi ? 'H' : 'P') + JSON.stringify(adj);
+  if (!adjActive(adj) && !tint) return base;
+  const key = id + (hi ? 'H' : 'P') + JSON.stringify(adj) + (tint || '');
   if (adjCache.has(key)) return adjCache.get(key);
   const c = document.createElement('canvas'); c.width = base.width; c.height = base.height;
   const x = c.getContext('2d'); x.drawImage(base, 0, 0);
-  const id_ = x.getImageData(0, 0, c.width, c.height), d = id_.data, t = lut(adj);
-  for (let i = 0; i < d.length; i += 4) { d[i] = t[d[i]]; d[i + 1] = t[d[i + 1]]; d[i + 2] = t[d[i + 2]]; }
+  const id_ = x.getImageData(0, 0, c.width, c.height), d = id_.data, t = lut(adj || freshAdj());
+  const tc = tint && /^#[0-9a-f]{6}$/i.test(tint) ? HEX_RGB(tint).map(v => v / 255) : null;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = t[d[i]]; d[i + 1] = t[d[i + 1]]; d[i + 2] = t[d[i + 2]];
+    if (tc) { const v = Math.max(d[i], d[i + 1], d[i + 2]); d[i] = v * tc[0]; d[i + 1] = v * tc[1]; d[i + 2] = v * tc[2]; }
+  }
   x.putImageData(id_, 0, 0);
   for (const k of adjCache.keys()) if (k.startsWith(id + (hi ? 'H' : 'P'))) adjCache.delete(k);
   if (!hi) adjCache.set(key, c);
@@ -909,6 +949,120 @@ function geom(p) {
   return { sr, s, x0, y0, w: sr.w * s, h: sr.h * s, toFig: (ix, iy) => [x0 + (ix - sr.x) * s, y0 + (iy - sr.y) * s], toImg: (fx, fy) => [sr.x + (fx - x0) / s, sr.y + (fy - y0) / s] };
 }
 
+/* ---------- Ebenen: Lage auf dem Grundbild ----------
+   Matrizen im Canvas-Format [a, b, c, d, e, f]: (x, y) → (a·x + c·y + e, b·x + d·y + f). */
+const mApply = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+const mMul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];   // erst n, dann m
+function mInv(m) {
+  const det = m[0] * m[3] - m[1] * m[2] || 1e-12;
+  return [m[3] / det, -m[1] / det, -m[2] / det, m[0] / det, (m[2] * m[5] - m[3] * m[4]) / det, (m[1] * m[4] - m[0] * m[5]) / det];
+}
+const layerById = (p, id) => p && p.layers.find(L => L.id === id) || null;
+const stripExt = n => String(n || '').replace(/\.[^.]+$/, '');
+const baseName = p => p.base.name || stripExt((ST.imgs[p.img] || {}).name) || 'Grundbild';
+const layerName = L => L.name || stripExt((ST.imgs[L.img] || {}).name) || 'Ebene';
+// Ebenen-Pixel → Figurpixel (über das Grundbild)
+const figMatrix = (g, t) => mMul([g.s, 0, 0, g.s, g.x0 - g.sr.x * g.s, g.y0 - g.sr.y * g.s], t);
+function layerGeo(L, g) {
+  const sr = srcRect(L.img); if (!sr) return null;
+  const M = figMatrix(g, L.t), inv = mInv(M), f = (x, y) => mApply(M, x, y);
+  const corners = [f(sr.x, sr.y), f(sr.x + sr.w, sr.y), f(sr.x + sr.w, sr.y + sr.h), f(sr.x, sr.y + sr.h)];
+  const c = f(sr.x + sr.w / 2, sr.y + sr.h / 2), top = [(corners[0][0] + corners[1][0]) / 2, (corners[0][1] + corners[1][1]) / 2];
+  const L0 = Math.hypot(top[0] - c[0], top[1] - c[1]) || 1, rh = [top[0] + (top[0] - c[0]) / L0 * 24 / zoom, top[1] + (top[1] - c[1]) / L0 * 24 / zoom];
+  return { sr, M, corners, c, top, rh, toFig: f, toLayer: (x, y) => mApply(inv, x, y) };
+}
+// Lage beim Einfügen: beide kalibriert → gleicher Maßstab, mittig; sonst deckungsgleich auf die sichtbare Fläche des Grundbilds
+function defaultT(baseId, img, calib = true) {
+  const s0 = srcRect(baseId), s1 = srcRect(img), m0 = (ST.imgs[baseId] || {}).mpp, m1 = (ST.imgs[img] || {}).mpp;
+  if (calib && m0 > 0 && m1 > 0) { const k = m1 / m0; return [k, 0, 0, k, s0.x + s0.w / 2 - k * (s1.x + s1.w / 2), s0.y + s0.h / 2 - k * (s1.y + s1.h / 2)]; }
+  const a = s0.w / s1.w, d = s0.h / s1.h;
+  return [a, 0, 0, d, s0.x - a * s1.x, s0.y - d * s1.y];
+}
+// Maßstab, Drehung, Lage der Ebenenmitte aus der Matrix (eine Scherung wird dabei verworfen) und zurück
+function tParts(L) {
+  const [a, b, c, d] = L.t, sx = Math.hypot(a, b), sr = srcRect(L.img), ctr = mApply(L.t, sr.x + sr.w / 2, sr.y + sr.h / 2);
+  return { cx: ctr[0], cy: ctr[1], sx, sy: (a * d - b * c) / (sx || 1), r: Math.atan2(b, a) * 180 / Math.PI };
+}
+function tFrom(L, q) {
+  const r = q.r * Math.PI / 180, co = Math.cos(r), si = Math.sin(r), sr = srcRect(L.img), lx = sr.x + sr.w / 2, ly = sr.y + sr.h / 2;
+  const a = co * q.sx, b = si * q.sx, c = -si * q.sy, d = co * q.sy;
+  return [a, b, c, d, q.cx - (a * lx + c * ly), q.cy - (b * lx + d * ly)];
+}
+// Passpunkte: Ähnlichkeitstransformation (Verschieben, Drehen, gleichmäßig skalieren) nach kleinsten Quadraten
+function fitSim(pairs) {
+  const n = pairs.length; if (n < 2) return null;
+  let mlx = 0, mly = 0, mbx = 0, mby = 0;
+  for (const { b, l } of pairs) { mlx += l[0] / n; mly += l[1] / n; mbx += b[0] / n; mby += b[1] / n; }
+  let sxx = 0, sxy = 0, ll = 0;
+  for (const { b, l } of pairs) { const X = l[0] - mlx, Y = l[1] - mly, U = b[0] - mbx, V = b[1] - mby; sxx += X * U + Y * V; sxy += X * V - Y * U; ll += X * X + Y * Y; }
+  if (!(ll > 0)) return null;
+  const s = Math.hypot(sxx, sxy) / ll, th = Math.atan2(sxy, sxx), co = s * Math.cos(th), si = s * Math.sin(th);
+  const t = [co, si, -si, co, mbx - (co * mlx - si * mly), mby - (si * mlx + co * mly)];
+  const rms = Math.sqrt(pairs.reduce((q, { b, l }) => { const m = mApply(t, l[0], l[1]); return q + (m[0] - b[0]) ** 2 + (m[1] - b[1]) ** 2; }, 0) / n);
+  return { t, rms };
+}
+// Farbe einer Map für die Legende: mittlere Farbe der hellen Pixel, auf volle Helligkeit gebracht; Graustufen ergeben ''
+const colorCache = new Map();
+function autoColor(id) {
+  if (colorCache.has(id)) return colorCache.get(id);
+  const im = IMG.get(id); if (!im) return '';
+  const c = im.prev, d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < d.length; i += 16) { const m = Math.max(d[i], d[i + 1], d[i + 2]); if (m > 90) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
+  let col = '';
+  if (n) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx > 0 && (mx - mn) / mx > 0.25) col = '#' + [r, g, b].map(v => Math.round(v / mx * 255).toString(16).padStart(2, '0')).join(''); }
+  colorCache.set(id, col);
+  return col;
+}
+const layerColor = L => L.tint || autoColor(L.img) || '#ffffff';
+// Zuschneiden: der Platzhalter hat eine neue Lage/Größe, das Bild (samt Ebenen) bleibt in der Abbildung stehen; g0 = geom vorher
+function keepImage(p, g0) {
+  if (!g0) return;
+  if (!magOn(p)) p.zoom = g0.s / baseScale(p, g0.sr);
+  p.cx = (g0.x0 + g0.w / 2 - p.x) / p.w; p.cy = (g0.y0 + g0.h / 2 - p.y) / p.h;
+}
+// Konvexe Polygone (Ecken in Figurpixeln): Halbebenen n·x ≤ c, Zuschnitt an einer Halbebene
+const polyArea = P => P.reduce((s, a, i) => { const b = P[(i + 1) % P.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0) / 2;
+function halfPlanes(P) {
+  const s = polyArea(P) > 0 ? 1 : -1;
+  return P.map((a, i) => { const b = P[(i + 1) % P.length], n = [s * (b[1] - a[1]), -s * (b[0] - a[0])]; return { n, c: n[0] * a[0] + n[1] * a[1] }; });
+}
+function clipHalf(P, n, c) {
+  const out = [];
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], da = n[0] * a[0] + n[1] * a[1] - c, db = n[0] * b[0] + n[1] * b[1] - c;
+    if (da <= 0) out.push(a);
+    if ((da < 0 && db > 0) || (da > 0 && db < 0)) { const t = da / (da - db); out.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]); }
+  }
+  return out;
+}
+// Größtes achsparalleles Rechteck mit Seitenverhältnis asp (Breite/Höhe) in einem konvexen Polygon. Ein Rechteck liegt
+// darin, wenn alle Ecken darin liegen: n·Mitte + hw·(|nx| + |ny|/asp) ≤ c. Größtes hw per Bisektion, Mitte = Schwerpunkt der möglichen Mitten.
+function maxRectIn(P, asp) {
+  const H = halfPlanes(P), xs = P.map(q => q[0]), ys = P.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const box = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const feas = hw => { let C = box; for (const { n, c } of H) { C = clipHalf(C, n, c - hw * (Math.abs(n[0]) + Math.abs(n[1]) / asp)); if (!C.length) return null; } return C; };
+  if (!feas(0)) return null;
+  let lo = 0, hi = (x1 - x0) / 2 + 1;
+  for (let k = 0; k < 50; k++) { const m = (lo + hi) / 2; if (feas(m)) lo = m; else hi = m; }
+  const C = feas(lo * 0.999) || feas(lo), cx = C.reduce((s, q) => s + q[0], 0) / C.length, cy = C.reduce((s, q) => s + q[1], 0) / C.length;
+  return { x: cx - lo, y: cy - lo / asp, w: 2 * lo, h: 2 * lo / asp };
+}
+// Fläche, die alle sichtbaren Schichten gemeinsam abdecken (innerhalb des Platzhalters): darin das größte Rechteck im
+// Seitenverhältnis des Platzhalters – so verschwinden leere Ecken neben schief eingepassten Ebenen
+function commonCrop(p) {
+  const g = geom(p); if (!g) return null;
+  const rect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  let P = rect(p.x, p.y, p.w, p.h);
+  const polys = p.base.on !== false ? [rect(g.x0, g.y0, g.w, g.h)] : [];
+  for (const L of p.layers) if (L.on) { const lg = layerGeo(L, g); if (lg) polys.push(lg.corners); }
+  for (const Q of polys) for (const { n, c } of halfPlanes(Q)) { P = clipHalf(P, n, c); if (P.length < 3) return null; }
+  return maxRectIn(P, p.w / p.h);
+}
+// Alle Bildschichten eines Platzhalters von unten nach oben; das Grundbild als erste, mit festen Mischwerten
+const stack = p => p.img ? [{ base: true, id: 'base', img: p.img, adj: p.adj, tint: p.base.tint, on: p.base.on !== false, op: 1, blend: 'normal',
+  name: baseName(p), leg: p.base.leg != null ? p.base.leg : !!autoColor(p.img), legName: p.base.legName }, ...p.layers.map(L => ({ ...L, name: layerName(L) }))] : [];
+
 /* ---------- Maßstabsbalken ---------- */
 const SB_UNITS = [['nm', 1e-9], ['µm', 1e-6], ['mm', 1e-3], ['m', 1]];
 function niceLen(m) {   // Länge in Metern → schöner Wert 1-2-5 und passende Einheit
@@ -966,6 +1120,18 @@ function headOps() {
     else ops.push({ k: 'text', x: p.x - hb.gp, y: p.y + p.h / 2 + (mt.asc - mt.desc) / 2, t, f: hb.f, fill: S.headColor, anchor: 'end' });
   });
   return ops;
+}
+// Farblegende eines Platzhalters: Kästchen in der Farbe jeder Schicht und ihr Name; Schrift und Kasten wie Textfelder
+function legendItem(p) {
+  const rows = stack(p).filter(L => L.on && L.leg).reverse().map(L => ({ col: L.base ? (L.tint || autoColor(L.img) || '#ffffff') : layerColor(L), t: (L.legName || L.name).trim() })).filter(r => r.t);
+  if (!rows.length) return null;
+  const v = svOf({ st: {} }, p), f = font(v('txtSize'), v('txtBold')), mt = metr(f), lh = f.px * 1.25, sw = f.px * 0.8, gap = f.px * 0.4, box = boxStyle(v, 'txt');
+  const bp = box ? f.px * 0.3 + box.sw : 0, tw0 = Math.max(...rows.map(r => tw(r.t, f))), w = sw + gap + tw0 + 2 * bp, h = rows.length * lh + 2 * bp;
+  return { w, h, draw: (x, y) => [...(box ? [boxRect(x, y, w, h, box)] : []), ...rows.flatMap((r, i) => {
+    const cy = y + bp + i * lh + lh / 2;
+    return [{ k: 'rect', x: x + bp, y: cy - sw / 2, w: sw, h: sw, fill: r.col, stroke: '#888888', sw: Math.max(0.5, f.px * 0.04) },
+      { k: 'text', x: x + bp + sw + gap, y: cy + (mt.asc - mt.desc) / 2, t: r.t, f, fill: v('txtColor') }];
+  })] };
 }
 // Textblock mit optionalem Kasten; v = Stilwerte, pre = 'txt' (Textfeld) oder 'an' (Text-Annotation)
 function textItem(text, align, v, pre) {
@@ -1064,6 +1230,21 @@ function annotOps(a, g, p) {
   }
   return o;
 }
+// Grundbild und Ebenen eines Platzhalters. Beim Ausrichten über Passpunkte zeigt die Vorschau abwechselnd nur das
+// Grundbild bzw. nur die auszurichtende Ebene; beim Ziehen einer Ebene scheint das Grundbild durch.
+function imageOps(p, g, o) {
+  const reg = o.preview && REG && REG.pid === p.id ? REG : null, out = [];
+  if (p.base.on !== false && !(reg && reg.step === 'l'))
+    out.push({ k: 'img', id: p.img, adj: p.adj, tint: p.base.tint, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h });
+  for (const L of p.layers) {
+    if (reg ? reg.step === 'b' || L.id !== reg.lid : !L.on) continue;
+    const sr = srcRect(L.img); if (!sr) continue;
+    const ghost = o.preview && drag && drag.L && drag.L.id === L.id;
+    out.push({ k: 'limg', id: L.img, adj: L.adj, tint: L.tint, blend: reg ? 'normal' : L.blend, op: reg ? 1 : ghost ? Math.min(L.op, 0.55) : L.op,
+      m: figMatrix(g, L.t), sx: sr.x, sy: sr.y, sw: sr.w, sh: sr.h });
+  }
+  return out;
+}
 function buildOps(o = {}) {
   applyLayout();
   const W = figWpx(), H0 = toPx(S.figH, S.figUnit), ops = [], hits = [], m = S.margin * MM;
@@ -1075,8 +1256,9 @@ function buildOps(o = {}) {
     const R = { x: p.x, y: p.y, w: p.w, h: p.h }, g = geom(p), hit = { id: p.id, R, g, insets: [] }, inner = [], v = svOf(p, p);
     hits.push(hit);
     if (g) {
-      if (!v('panelBgOff')) inner.push({ k: 'rect', ...R, fill: v('panelBg') });
-      inner.push({ k: 'img', id: p.img, adj: p.adj, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h });
+      const bg = v('panelBgOff') ? [] : [{ k: 'rect', ...R, fill: v('panelBg') }], pix = imageOps(p, g, o);
+      // Mit Ebenen: Grund, Grundbild und Ebenen als eine Gruppe (die Mischmodi wirken nur darin; im SVG ein flaches Bild)
+      if (p.layers.length) inner.push({ k: 'comp', ...R, s: g.s, ops: [...bg, ...pix] }); else inner.push(...bg, ...pix);
       for (const a of p.annots) inner.push(...annotOps(a, g, p));
     }
     // Elemente in den Ecken, jedes mit seinem eigenen Abstand zum Rand (pt)
@@ -1087,6 +1269,7 @@ function buildOps(o = {}) {
     if (sbc[0] === 'l') put(sbc, sb, v('sbPad'));
     for (const ins of p.insets) put(ins.corner || 'ur', insetItem(p, ins, g, hit, o.preview), sv('insPad', ins, p));
     for (const tx of p.texts) { const tv = svOf(tx, p); put(tx.corner || 'ur', textItem(tx.text, tx.align, tv, 'txt'), tv('txtPad')); }
+    if (p.legOn && g) put(p.legCorner || 'ur', legendItem(p), v('txtPad'));
     if (sbc[0] === 'u') put(sbc, sb, v('sbPad'));
     // Ecken füllen: oben von oben nach unten, unten von unten nach oben; nie näher am Rand als der eigene Abstand
     for (const c of Object.keys(C)) {
@@ -1111,6 +1294,9 @@ function buildOps(o = {}) {
 }
 
 /* ---------- Ausgabe: Canvas ---------- */
+// Aufhellen: Schwarz verschwindet, Farben addieren sich weich (Rot + Grün = Gelb); Abdunkeln: Weiß verschwindet
+const BLEND_OP = { screen: 'screen', normal: 'source-over', multiply: 'multiply' };
+const BLEND_LABEL = { screen: 'Aufhellen – Schwarz verschwindet', normal: 'Normal – deckend', multiply: 'Abdunkeln – Weiß verschwindet' };
 function drawOps(ctx, ops, hi) {
   for (const o of ops) {
     switch (o.k) {
@@ -1119,16 +1305,27 @@ function drawOps(ctx, ops, hi) {
         if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineJoin = o.join || 'miter'; ctx.lineCap = o.cap || 'butt'; ctx.setLineDash(o.dash || []); ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.setLineDash([]); }
         break;
       case 'img': {
-        const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi); if (!src) break;
+        const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi, o.tint); if (!src) break;
         const kx = src.width / im.w, ky = src.height / im.h, m = ctx.getTransform();
         ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         // SVG: sobald das Raster für die Vergrößerung nicht reicht, direkt als Vektor zeichnen (scharf, aber langsamer)
-        if (im.vec && !adjActive(o.adj) && Math.hypot(m.a, m.b) * o.w / o.sw > kx * 1.01) {
+        if (im.vec && !adjActive(o.adj) && !o.tint && Math.hypot(m.a, m.b) * o.w / o.sw > kx * 1.01) {
           const q = im.vec.naturalWidth / im.w, r = im.vec.naturalHeight / im.h;
           ctx.drawImage(im.vec, o.sx * q, o.sy * r, o.sw * q, o.sh * r, o.x, o.y, o.w, o.h);
         } else ctx.drawImage(src, o.sx * kx, o.sy * ky, o.sw * kx, o.sh * ky, o.x, o.y, o.w, o.h);
         break;
       }
+      case 'limg': {   // Ebene: eigene Lage (Matrix), Mischmodus und Deckkraft
+        const im = IMG.get(o.id), src = imgSource(o.id, o.adj, hi, o.tint); if (!src) break;
+        const kx = src.width / im.w, ky = src.height / im.h;
+        ctx.save();
+        ctx.globalAlpha *= o.op; ctx.globalCompositeOperation = BLEND_OP[o.blend] || 'source-over';
+        ctx.transform(...o.m); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(src, o.sx * kx, o.sy * ky, o.sw * kx, o.sh * ky, o.sx, o.sy, o.sw, o.sh);
+        ctx.restore();
+        break;
+      }
+      case 'comp': ctx.save(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'clip': ctx.save(); ctx.beginPath(); ctx.rect(o.x, o.y, o.w, o.h); ctx.clip(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'tr': ctx.save(); ctx.translate(o.dx, o.dy); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'path': {
@@ -1201,23 +1398,33 @@ async function buildSVG() {
   let n = 0;
   const attr = o => Object.entries(o).filter(([, v]) => v != null && v !== '').map(([k, v]) => ` ${k}="${typeof v === 'number' ? f2(v) : esc(v)}"`).join('');
   const strokeStyle = o => o.stroke ? { 'stroke-linecap': o.cap, 'stroke-linejoin': o.join, 'stroke-dasharray': o.dash ? o.dash.map(f2).join(' ') : null } : {};
-  const collect = ops => { for (const o of ops) { if (o.ops) collect(o.ops); if (o.k === 'img') { const key = o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
+  const imgKey = o => o.id + JSON.stringify(adjActive(o.adj) || o.tint ? [o.adj, o.tint] : null), comps = [];
+  const collect = ops => { for (const o of ops) { if (o.k === 'comp') { comps.push(o); continue; } if (o.ops) collect(o.ops); if (o.k === 'img') { const key = imgKey(o); if (!used.has(key)) used.set(key, { id: 'im' + n++, o }); } } };
   collect(r.ops);
   for (const [, u] of used) {
-    const im = IMG.get(u.o.id), d = ST.imgs[u.o.id] || {};
+    const im = IMG.get(u.o.id), d = ST.imgs[u.o.id] || {}, changed = adjActive(u.o.adj) || u.o.tint;
     let blob = im.blob;
-    if (!adjActive(u.o.adj) && isSvgBlob(im)) {   // Vektoren bleiben Vektoren; nur wenn das SVG nicht lesbar ist, als Bild einbetten
+    if (!changed && isSvgBlob(im)) {   // Vektoren bleiben Vektoren; nur wenn das SVG nicht lesbar ist, als Bild einbetten
       const text = await im.blob.text();
       if (inlineSvg(text, 'x', im.w, im.h, d.physW, d.physH)) { u.svg = text; continue; }
     }
-    if (adjActive(u.o.adj)) blob = await new Promise(res => imgSource(u.o.id, u.o.adj, true).toBlob(res, 'image/png'));
+    if (changed) blob = await new Promise(res => imgSource(u.o.id, u.o.adj, true, u.o.tint).toBlob(res, 'image/png'));
     defs.push(`<image id="${u.id}" width="${im.w}" height="${im.h}" preserveAspectRatio="none" href="${await blobURL(blob)}"/>`);
+  }
+  // Platzhalter mit Ebenen: flach als ein Bild – Inkscape zeigt Mischmodi nicht zuverlässig. Auflösung: Export-dpi,
+  // mindestens die des Grundbilds, höchstens 8000 px je Seite
+  for (const o of comps) {
+    const k = Math.min(8000 / Math.max(o.w, o.h), Math.max((+S.dpi || 300) / 96, 1 / o.s)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(o.w * k)); c.height = Math.max(1, Math.round(o.h * k));
+    const x = c.getContext('2d'); x.scale(c.width / o.w, c.height / o.h); x.translate(-o.x, -o.y); drawOps(x, o.ops, true);
+    o.url = await blobURL(await new Promise(res => c.toBlob(res, 'image/png')));
   }
   const out = ops => ops.map(o => {
     switch (o.k) {
       case 'rect': return `<rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h, fill: o.fill || 'none', 'fill-opacity': o.fill && o.fa != null && o.fa < 1 ? o.fa : null, stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o) })}/>`;
       // Ausschnitt per Zuschnitt + Matrix statt verschachteltem <svg viewBox>: Inkscape ignoriert dessen Beschnitt
-      case 'img': { const u = used.get(o.id + JSON.stringify(adjActive(o.adj) ? o.adj : null)), kx = o.w / o.sw, ky = o.h / o.sh, id = 'c' + n++;
+      case 'comp': return `<image${attr({ x: o.x, y: o.y, width: o.w, height: o.h, preserveAspectRatio: 'none', href: o.url })}/>`;
+      case 'img': { const u = used.get(imgKey(o)), kx = o.w / o.sw, ky = o.h / o.sh, id = 'c' + n++;
         defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`);
         const mx = `matrix(${+kx.toPrecision(6)} 0 0 ${+ky.toPrecision(6)} ${f2(o.x - o.sx * kx)} ${f2(o.y - o.sy * ky)})`;
         if (u.svg != null) { const im = IMG.get(o.id), d = ST.imgs[o.id] || {}; return `<g clip-path="url(#${id})"><g transform="${mx}">${inlineSvg(u.svg, `${u.id}_${n++}_`, im.w, im.h, d.physW, d.physH)}</g></g>`; }
@@ -1354,9 +1561,13 @@ function status(r) {
     const un = ST.panels.map((p, i) => p.img && !magOn(p) && !isGraphic(p.img) ? panelLabels()[i] || i + 1 : null).filter(Boolean);
     if (un.length) notes.push('gleiche Vergrößerung: nicht kalibriert ' + un.join(', '));
   }
-  const hint = { layout: 'Platzhalter ziehen/skalieren (Bild skaliert mit) · Doppelklick: Bild bearbeiten', image: 'Bild verschieben · Ecken ziehen oder Mausrad = Bild skalieren, der Platzhalter bleibt als Maske',
+  let hint = { layout: 'Platzhalter ziehen/skalieren (Bild skaliert mit) · Doppelklick: Bild bearbeiten', image: 'Bild verschieben · Ecken ziehen oder Mausrad = Bild skalieren, der Platzhalter bleibt als Maske',
     scale: 'Entlang des Maßstabs im Bild ziehen (waagerecht; Alt = frei), dann Länge eingeben', annot: 'Ziehen zum Zeichnen · Text: klicken · ↖ zum Auswählen/Verschieben · Entf löscht',
-    inset: 'Ausschnitt im Bild aufziehen → vergrößertes Inset · Rahmen verschieben' }[mode];
+    inset: 'Ausschnitt im Bild aufziehen → vergrößertes Inset · Rahmen verschieben', reg: regHint() }[mode];
+  const sl = mode === 'image' && layerById(selP(), selLayer);
+  if (mode === 'layout' && !drag) hint += cropMode ? ' · Griffe schneiden zu, das Bild bleibt (Strg = Bild skaliert mit)' : ' · Strg an den Griffen = zuschneiden';
+  if (drag && drag.t === 'resize') hint = drag.crop ? '✂ Zuschneiden: das Bild bleibt stehen (Strg = Bild skaliert mit)' : 'Bild skaliert mit (Strg = zuschneiden, Bild bleibt stehen)';
+  if (sl) hint = `Ebene „${layerName(sl)}“ ausrichten: ziehen = verschieben · Ecken = skalieren (Shift = frei) · runder Griff = drehen (Shift = 15°) · Mausrad = skalieren`;
   $('#status').innerHTML = esc(st.join(' · ')) + (notes.length ? ' · <b>' + esc(notes.join(' · ')) + '</b>' : '') + ' · ' + esc(hint);
 }
 // Diagramm oder Grafik (SVG, PNG mit Druck-dpi, transparente PNG) statt Aufnahme: keine Kalibrierungs-/Auflösungshinweise
@@ -1385,7 +1596,19 @@ function drawOverlay(ctx, r) {
     }
     ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.strokeRect(R.x, R.y, R.w, R.h);
     if (mode === 'layout') for (const hd of HANDLES) { const [x, y] = handlePos(R, hd); ctx.fillStyle = '#fff'; ctx.fillRect(x - 4 * px, y - 4 * px, 8 * px, 8 * px); ctx.strokeRect(x - 4 * px, y - 4 * px, 8 * px, 8 * px); }
-    if (mode === 'image' && h.g) {   // ganzes Bild blass zeigen: so sieht man, was die Maske abschneidet
+    const L = mode === 'image' && h.g ? layerById(p, selLayer) : null, lg = L && layerGeo(L, h.g);
+    if (lg) {   // gewählte Ebene: ganz blass zeigen, Umriss, Eckgriffe zum Skalieren, runder Griff zum Drehen
+      ctx.globalAlpha = 0.3; drawOps(ctx, [{ k: 'limg', id: L.img, adj: L.adj, tint: L.tint, blend: 'normal', op: 1, m: lg.M, sx: lg.sr.x, sy: lg.sr.y, sw: lg.sr.w, sh: lg.sr.h }], false); ctx.globalAlpha = 1;
+      ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip(); drawOps(ctx, last.ops.filter(o => o.k === 'clip' && o.x === R.x && o.y === R.y), false); ctx.restore();
+      ctx.strokeStyle = acc; ctx.lineWidth = 1.5 * px; ctx.setLineDash([5 * px, 4 * px]);
+      ctx.beginPath(); lg.corners.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(...lg.top); ctx.lineTo(...lg.rh); ctx.stroke();
+      ctx.fillStyle = '#fff'; for (const [x, y] of lg.corners) { ctx.beginPath(); ctx.rect(x - 4.5 * px, y - 4.5 * px, 9 * px, 9 * px); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(lg.rh[0], lg.rh[1], 5.5 * px, 0, 7); ctx.fill();
+      ctx.strokeRect(R.x, R.y, R.w, R.h);
+    }
+    if (REG && REG.pid === h.id && h.g) drawRegMarks(ctx, p, h.g, px);
+    if (mode === 'image' && h.g && !lg) {   // ganzes Bild blass zeigen: so sieht man, was die Maske abschneidet
       const g = h.g;
       ctx.globalAlpha = 0.3; drawOps(ctx, [{ k: 'img', id: p.img, adj: p.adj, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h }], false); ctx.globalAlpha = 1;
       ctx.save(); ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip(); drawOps(ctx, last.ops.filter(o => o.k === 'clip' && o.x === R.x && o.y === R.y), false); ctx.restore();
@@ -1414,6 +1637,27 @@ function drawOverlay(ctx, r) {
   if (drag && drag.draw) drag.draw(ctx, px, acc);
   if (drag && drag.snaps) { ctx.lineWidth = px; for (const s of drag.snaps) { ctx.strokeStyle = s.img ? '#16a34a' : '#e0407a'; ctx.lineWidth = (s.img ? 2 : 1) * px; ctx.beginPath(); if (s.x != null) { ctx.moveTo(s.x, VT.y0); ctx.lineTo(s.x, VT.y1); } else { ctx.moveTo(VT.x0, s.y); ctx.lineTo(VT.x1, s.y); } ctx.stroke(); } }
   ctx.restore();
+}
+// Passpunkte: im Grundbild (blau) bzw. in der Ebene (orange) nummeriert; die Seite, die gerade dran ist, kräftig
+function drawRegMarks(ctx, p, g, px) {
+  const L = layerById(p, REG.lid), lg = L && layerGeo(L, g), R = hitOf(p.id).R; if (!lg) return;
+  // die Seite, die dran ist, ganz zeigen (blass außerhalb des Platzhalters) – Merkmale am Rand bleiben anklickbar
+  ctx.globalAlpha = 0.35;
+  drawOps(ctx, [REG.step === 'b' ? { k: 'img', id: p.img, adj: p.adj, tint: p.base.tint, sx: g.sr.x, sy: g.sr.y, sw: g.sr.w, sh: g.sr.h, x: g.x0, y: g.y0, w: g.w, h: g.h }
+    : { k: 'limg', id: L.img, adj: L.adj, tint: L.tint, blend: 'normal', op: 1, m: lg.M, sx: lg.sr.x, sy: lg.sr.y, sw: lg.sr.w, sh: lg.sr.h }], false);
+  ctx.globalAlpha = 1;
+  drawOps(ctx, last.ops.filter(o => o.k === 'clip' && o.x === R.x && o.y === R.y), false);
+  const mark = (x, y, n, col, strong) => {
+    ctx.globalAlpha = strong ? 1 : 0.45; ctx.lineWidth = 2 * px; ctx.strokeStyle = '#000'; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(x, y, 7 * px, 0, 7); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 1.5 * px;
+    ctx.beginPath(); ctx.moveTo(x - 11 * px, y); ctx.lineTo(x + 11 * px, y); ctx.moveTo(x, y - 11 * px); ctx.lineTo(x, y + 11 * px); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 7 * px, 0, 7); ctx.stroke();
+    ctx.font = `bold ${11 * px}px "Segoe UI", sans-serif`; ctx.textAlign = 'left'; ctx.lineWidth = 3 * px; ctx.strokeStyle = '#000';
+    ctx.strokeText(n, x + 9 * px, y - 8 * px); ctx.fillText(n, x + 9 * px, y - 8 * px); ctx.globalAlpha = 1;
+  };
+  const inB = REG.step === 'b';
+  REG.pairs.forEach((q, i) => { mark(...g.toFig(...q.b), i + 1, '#38bdf8', inB); mark(...lg.toFig(...q.l), i + 1, '#fb923c', !inB); });
+  if (REG.cur) mark(...g.toFig(...REG.cur), REG.pairs.length + 1, '#38bdf8', false);
 }
 function annotBox(a, g) {
   if (a.type === 'text' && TEXT_BB.has(a.id)) return TEXT_BB.get(a.id);
@@ -1478,6 +1722,21 @@ function fitSnap(p, x, y, w, h, axis) {
   const g = geom({ ...p, x, y, w: axis === 'x' ? v : w, h: axis === 'x' ? h : v });
   return g && Math.abs((axis === 'x' ? g.w : g.h) - v) < 0.01 ? v : null;
 }
+function inPoly(pt, P) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > pt.y) !== (P[j][1] > pt.y) && pt.x < (P[j][0] - P[i][0]) * (pt.y - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) inside = !inside;
+  return inside;
+}
+// Ebene um ihre Mitte skalieren (entlang ihrer eigenen Achsen) bzw. drehen; t0 = Ausgangsmatrix
+function scaleLayer(L, t0, kx, ky) {
+  const sr = srcRect(L.img), lx = sr.x + sr.w / 2, ly = sr.y + sr.h / 2, C = mApply(t0, lx, ly);
+  const a = t0[0] * kx, b = t0[1] * kx, c = t0[2] * ky, d = t0[3] * ky;
+  return [a, b, c, d, C[0] - (a * lx + c * ly), C[1] - (b * lx + d * ly)];
+}
+function rotateLayer(L, t0, dr) {
+  const sr = srcRect(L.img), C = mApply(t0, sr.x + sr.w / 2, sr.y + sr.h / 2), co = Math.cos(dr), si = Math.sin(dr);
+  return mMul([co, si, -si, co, C[0] - (co * C[0] - si * C[1]), C[1] - (si * C[0] + co * C[1])], t0);
+}
 function snap1(vals, targets, tol) {   // bester Versatz, damit einer der Werte auf einem Ziel liegt
   let best = null;
   for (const v of vals) for (const t of targets) { const d = t - v; if (Math.abs(d) <= tol && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, at: t }; }
@@ -1498,21 +1757,37 @@ function popup(title, html, at, onOk) {
   pop.onkeydown = e => { if (e.key === 'Enter' && !(e.target.tagName === 'TEXTAREA' && !e.ctrlKey)) { e.preventDefault(); popDone && popDone(true); } if (e.key === 'Escape') popDone && popDone(false); };
   const first = pop.querySelector('input,textarea,select'); if (first) { first.focus(); first.select && first.select(); }
 }
-function closePop() { if (popDone) { popDone = null; $('#pop').hidden = true; } }
+function closePop() { if (popDone) popDone(false); }
 const unitSel = cur => `<select>${SB_UNITS.map(u => `<option${u[0] === cur ? ' selected' : ''}>${u[0]}</option>`).join('')}</select>`;
 
 /* ---------- Werkzeuge ---------- */
 function setMode(m) {
+  if (REG && m !== 'reg') { REG = null; buildProps(); }   // Passpunkte: Wechsel des Werkzeugs beendet die Ausrichtung (Ergebnis bleibt)
   mode = m; drag = null; closePop();
-  $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $$('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === m || (m === 'reg' && b.dataset.mode === 'image')));
   $('#atools').hidden = m !== 'annot';
-  cv.style.cursor = { layout: 'default', image: 'grab', scale: 'crosshair', annot: 'crosshair', inset: 'crosshair' }[m];
+  $('#ptools').hidden = m !== 'layout';
+  cv.style.cursor = modeCursor();
   render();
 }
 function setAtool(t) { atool = t; $$('#atools button').forEach(b => b.classList.toggle('on', b.dataset.at === t)); }
+// Griffe des Platzhalters: Bild skaliert mit (Standard) oder Zuschneiden (Bild bleibt stehen); Strg beim Ziehen kehrt um.
+// Eine Arbeitsweise, kein Inhalt – daher im Browser gemerkt, nicht im Projekt.
+let cropMode = false;
+try { cropMode = localStorage.getItem(STORE + '.crop') === '1'; } catch { }
+function setCropMode(on) {
+  cropMode = on; try { localStorage.setItem(STORE + '.crop', on ? '1' : '0'); } catch { }
+  $$('#ptools button').forEach(b => b.classList.toggle('on', (b.dataset.pm === 'crop') === on));
+}
+$$('#ptools button').forEach(b => b.onclick = () => setCropMode(b.dataset.pm === 'crop'));
+setCropMode(cropMode);
 $$('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $$('#atools button').forEach(b => b.onclick = () => setAtool(b.dataset.at));
-function select(id, item = null) { const ch = sel !== id; sel = id; selItem = item; msel = new Set(id ? [id] : []); if (ch) buildProps(); else refreshItemProps(); buildList(); render(); }
+function select(id, item = null) {
+  const ch = sel !== id; sel = id; selItem = item; msel = new Set(id ? [id] : []);
+  if (ch) { selLayer = null; if (REG) setMode('image'); buildProps(); } else refreshItemProps();
+  buildList(); render();
+}
 function toggleMulti(id) {
   if (msel.has(id)) { msel.delete(id); if (sel === id) sel = [...msel].pop() || null; }
   else { msel.add(id); sel = id; }
@@ -1552,6 +1827,42 @@ function zoomAt(p, fx, fy, f) {
   p.cx = (fx + (cx - fx) * f - p.x) / p.w; p.cy = (fy + (cy - fy) * f - p.y) / p.h;
 }
 function toFree() { if (ST.L.mode !== 'free') { ST.L.mode = 'free'; ST.S.autoH = false; syncUI(); } }
+// Passpunkte: abwechselnd ein Merkmal im Grundbild und dasselbe in der Ebene anklicken; ab zwei Paaren wird die Ebene
+// laufend eingepasst. Die Punkte der Ebene stehen in Ebenen-Pixeln, deshalb bleiben sie beim Neueinpassen gültig.
+// all: dieselbe Korrektur am Ende auch auf die übrigen Ebenen anwenden – vorbelegt, wenn es gleich große gibt
+// (typisch: alle Element-Maps einer Messung sind gegenüber dem Grundbild gleich versetzt)
+const sameSize = (a, b) => { const x = IMG.get(a), y = IMG.get(b); return !!(x && y && x.w === y.w && x.h === y.h); };
+function startReg(p, L) {
+  REG = { pid: p.id, lid: L.id, pairs: [], cur: null, step: 'b', t0: L.t.slice(), rms: null, all: p.layers.some(x => x !== L && sameSize(x.img, L.img)) };
+  selLayer = L.id; setMode('reg'); buildProps();
+}
+function regClick(pt) {
+  const p = panelById(REG.pid), g = p && geom(p), L = layerById(p, REG.lid), lg = L && g && layerGeo(L, g);
+  if (!lg) return;
+  if (REG.step === 'b') { REG.cur = g.toImg(pt.x, pt.y); REG.step = 'l'; }
+  else { REG.pairs.push({ b: REG.cur, l: lg.toLayer(pt.x, pt.y) }); REG.cur = null; REG.step = 'b'; regFit(); }
+  buildProps(); render();
+}
+function regFit() {
+  const L = layerById(panelById(REG.pid), REG.lid), r = fitSim(REG.pairs);
+  if (!L) return;
+  if (r) { L.t = r.t; REG.rms = r.rms; } else { L.t = REG.t0.slice(); REG.rms = null; }
+}
+function regUndo() {
+  if (REG.cur) { REG.cur = null; REG.step = 'b'; } else if (REG.pairs.length) { REG.pairs.pop(); REG.step = 'b'; regFit(); }
+  buildProps(); render();
+}
+function regEnd(ok) {
+  const p = panelById(REG.pid), L = layerById(p, REG.lid), n = REG.pairs.length;
+  if (L && (!ok || n < 2)) L.t = REG.t0.slice();
+  // Korrektur C (alte Lage → neue Lage, in Grundbild-Pixeln) auf die übrigen Ebenen anwenden; ihr Abstand zueinander bleibt
+  let more = 0;
+  if (ok && n >= 2 && L && REG.all) { const C = mMul(L.t, mInv(REG.t0)); for (const x of p.layers) if (x !== L) { x.t = mMul(C, x.t); more++; } }
+  REG = null; setMode('image'); commit(); buildProps(); render();
+  toast(!ok ? 'Ausrichtung abgebrochen' : n < 2 ? 'Zu wenige Passpunkte – Lage unverändert'
+    : more ? `Ebene ausgerichtet – dieselbe Korrektur auf ${more} weitere ${more === 1 ? 'Ebene' : 'Ebenen'} angewendet` : 'Ebene ausgerichtet');
+}
+const regHint = () => REG ? `Passpunkt ${REG.pairs.length + 1}: ${REG.step === 'b' ? 'im Grundbild auf ein Merkmal klicken' : 'dasselbe Merkmal in der Ebene klicken'} · Rücktaste = letzter Punkt zurück · Enter = fertig · Esc = abbrechen` : '';
 
 cv.addEventListener('pointerdown', e => {
   if (e.button === 1 || (e.button === 0 && spaceDown)) {   // Ansicht verschieben
@@ -1563,11 +1874,12 @@ cv.addEventListener('pointerdown', e => {
   closePop();
   const pt = figPt(e), tol = 7 / zoom;
   try { cv.setPointerCapture(e.pointerId); } catch { }
+  if (mode === 'reg') { regClick(pt); return; }
   const an = hitAnnotHandle(pt);   // Griff der gewählten Annotation hat in jedem Werkzeug Vorrang
   if (an) { drag = { t: 'anode', p: an.p, a: an.a, g: an.g, k: an.k, pt0: pt, P0: an.a.p.map(q => an.g.toFig(q[0], q[1])) }; return; }
   const sp = selP(), sh = sp && hitOf(sp.id);
   if (mode === 'layout') {
-    if (sp && sh) for (const hd of HANDLES) { const [x, y] = handlePos(sh.R, hd); if (Math.abs(pt.x - x) < tol && Math.abs(pt.y - y) < tol) { drag = { t: 'resize', p: sp, hd, R0: { ...sh.R }, pt0: pt }; return; } }
+    if (sp && sh) for (const hd of HANDLES) { const [x, y] = handlePos(sh.R, hd); if (Math.abs(pt.x - x) < tol && Math.abs(pt.y - y) < tol) { drag = { t: 'resize', p: sp, hd, R0: { ...sh.R }, pt0: pt, g0: sh.g, z0: sp.zoom, cx0: sp.cx, cy0: sp.cy, mz0: S.magZoom }; return; } }
     const hi = hitInset(pt);
     if (hi) { select(hi.h.id, { kind: 'inset', id: hi.ir.id }); drag = { t: 'inset', p: selP(), ir: { ...hi.ir }, pt0: pt, R: hi.h.R }; return; }
     const h = hitPanel(pt);
@@ -1591,7 +1903,15 @@ cv.addEventListener('pointerdown', e => {
     return;
   }
   if (mode === 'image') {
-    if (sp && sh && sh.g) { const g = sh.g, cs = [[g.x0, g.y0], [g.x0 + g.w, g.y0], [g.x0, g.y0 + g.h], [g.x0 + g.w, g.y0 + g.h]];
+    // Gewählte Ebene: das Werkzeug wirkt nur auf sie (Drehgriff, Ecken = skalieren, sonst im Platzhalter = verschieben)
+    const L = sp && sh && sh.g && layerById(sp, selLayer), lg = L && layerGeo(L, sh.g);
+    if (lg) {
+      const base = { p: sp, L, g: sh.g, c: lg.c, t0: L.t.slice(), pt0: pt };
+      if (Math.hypot(pt.x - lg.rh[0], pt.y - lg.rh[1]) < tol * 1.4) { drag = { t: 'lrot', ...base, a0: Math.atan2(pt.y - lg.c[1], pt.x - lg.c[0]), r0: Math.atan2(L.t[1], L.t[0]) }; return; }
+      for (const q of lg.corners) if (Math.hypot(pt.x - q[0], pt.y - q[1]) < tol * 1.4) { drag = { t: 'lscale', ...base, u0: [pt.x - lg.c[0], pt.y - lg.c[1]] }; return; }
+      if (inR(pt, sh.R) || inPoly(pt, lg.corners)) { drag = { t: 'lmove', ...base }; cv.style.cursor = 'grabbing'; return; }
+    }
+    if (sp && sh && sh.g && !lg) { const g = sh.g, cs = [[g.x0, g.y0], [g.x0 + g.w, g.y0], [g.x0, g.y0 + g.h], [g.x0 + g.w, g.y0 + g.h]];
       for (let k = 0; k < 4; k++) if (Math.hypot(pt.x - cs[k][0], pt.y - cs[k][1]) < tol * 1.3) { const an = cs[3 - k]; drag = { t: 'iscale', p: sp, an, d0: Math.hypot(pt.x - an[0], pt.y - an[1]), z0: sp.zoom, mz0: S.magZoom, cx0: sp.cx, cy0: sp.cy }; return; } }
     const h = hitPanel(pt);
     if (h) { select(h.id); if (h.g) { drag = { t: 'pan', p: selP(), pt0: pt, cx0: selP().cx, cy0: selP().cy }; cv.style.cursor = 'grabbing'; } }
@@ -1658,6 +1978,16 @@ cv.addEventListener('pointermove', e => {
     }
     case 'resize': {
       toFree();
+      // Zuschneiden (Umschalter, Strg kehrt um): das Bild bleibt stehen; bei jedem Schritt vom Ausgangszustand aus rechnen,
+      // damit Strg auch mitten im Ziehen umschalten kann
+      const crop = !!d.g0 && cropMode !== (e.ctrlKey || e.metaKey);
+      d.crop = crop; Object.assign(p, { zoom: d.z0, cx: d.cx0, cy: d.cy0 }); S.magZoom = d.mz0;
+      d.draw = crop ? (ctx, px, acc) => {   // ganzes Bild blass: so sieht man, was wegfällt
+        const g = geom(p); if (!g) return;
+        ctx.save(); ctx.globalAlpha = 0.3; drawOps(ctx, imageOps(p, g, {}), false); ctx.restore();
+        drawOps(ctx, last.ops.filter(o => o.k === 'clip' && o.x === p.x && o.y === p.y), false);
+        ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.strokeRect(p.x, p.y, p.w, p.h);
+      } : null;
       let { x, y, w, h } = d.R0;
       const T = e.altKey ? null : snapTargets(p.id); d.snaps = [];
       if (d.hd.includes('e')) { let r = x + w + dx; const s = T && snap1([r], T.xs, tol); if (s) { r += s.d; d.snaps.push({ x: s.at }); } w = r - x; }
@@ -1665,16 +1995,43 @@ cv.addEventListener('pointermove', e => {
       if (d.hd.includes('s')) { let b = y + h + dy; const s = T && snap1([b], T.ys, tol); if (s) { b += s.d; d.snaps.push({ y: s.at }); } h = b - y; }
       if (d.hd.includes('n')) { let t = y + dy; const s = T && snap1([t], T.ys, tol); if (s) { t += s.d; d.snaps.push({ y: s.at }); } h = y + h - t; y = t; }
       // Bildkante hat Vorrang: die gezogene Seite rastet dort ein, wo der Platzhalter genau so groß ist wie das sichtbare Bild
-      if (!e.altKey && !(e.shiftKey && d.hd.length === 2)) {
+      if (crop && !e.altKey && !(e.shiftKey && d.hd.length === 2)) {   // Zuschneiden: an Kanten und Ecken von Grundbild und Ebenen einrasten
+        if (!d.cropT) {
+          const xs = [d.g0.x0, d.g0.x0 + d.g0.w], ys = [d.g0.y0, d.g0.y0 + d.g0.h];
+          for (const L of p.layers) if (L.on) { const lg = layerGeo(L, d.g0); if (lg) for (const q of lg.corners) { xs.push(q[0]); ys.push(q[1]); } }
+          d.cropT = { xs, ys };
+        }
+        const sx = /[ew]/.test(d.hd) && snap1([d.hd.includes('e') ? x + w : x], d.cropT.xs, tol), sy = /[ns]/.test(d.hd) && snap1([d.hd.includes('s') ? y + h : y], d.cropT.ys, tol);
+        if (sx) { if (d.hd.includes('e')) w += sx.d; else { x += sx.d; w -= sx.d; } d.snaps = d.snaps.filter(s => s.x == null); d.snaps.push({ x: sx.at, img: true }); }
+        if (sy) { if (d.hd.includes('s')) h += sy.d; else { y += sy.d; h -= sy.d; } d.snaps = d.snaps.filter(s => s.y == null); d.snaps.push({ y: sy.at, img: true }); }
+      } else if (!e.altKey && !(e.shiftKey && d.hd.length === 2)) {
         if (/[ew]/.test(d.hd)) { const v = fitSnap(p, x, y, w, h, 'x'); if (v != null && Math.abs(w - v) <= tol) { if (d.hd.includes('w')) x += w - v; w = v; d.snaps = d.snaps.filter(s => s.x == null); d.snaps.push({ x: d.hd.includes('e') ? x + w : x, img: true }); } }
         if (/[ns]/.test(d.hd)) { const v = fitSnap(p, x, y, w, h, 'y'); if (v != null && Math.abs(h - v) <= tol) { if (d.hd.includes('n')) y += h - v; h = v; d.snaps = d.snaps.filter(s => s.y == null); d.snaps.push({ y: d.hd.includes('s') ? y + h : y, img: true }); } }
       }
       if (e.shiftKey && d.hd.length === 2) { const a = d.R0.w / d.R0.h; if (w / h > a) w = h * a; else h = w / a; if (d.hd.includes('w')) x = d.R0.x + d.R0.w - w; if (d.hd.includes('n')) y = d.R0.y + d.R0.h - h; }
       if (w > 10 && h > 10) Object.assign(p, { x, y, w, h });
+      if (crop) keepImage(p, d.g0);
       break;
     }
     case 'inset': d.draw = (ctx, px, acc) => { ctx.strokeStyle = acc; ctx.lineWidth = 2 * px; ctx.strokeRect(d.ir.x + pt.x - d.pt0.x, d.ir.y + pt.y - d.pt0.y, d.ir.w, d.ir.h); }; break;
     case 'pan': p.cx = d.cx0 + dx / p.w; p.cy = d.cy0 + dy / p.h; break;
+    case 'lmove': { const t = d.t0.slice(); t[4] += dx / d.g.s; t[5] += dy / d.g.s; d.L.t = t; break; }
+    case 'lscale': {   // um die Ebenenmitte; gleichmäßig, mit Shift entlang der eigenen Achsen getrennt
+      const u = [pt.x - d.c[0], pt.y - d.c[1]], [a, b, c, dd] = d.t0;
+      let kx, ky;
+      if (e.shiftKey) {
+        const ex = [a, b], ey = [c, dd], n = v => Math.hypot(...v) || 1, dot = (v, w) => (v[0] * w[0] + v[1] * w[1]) / n(w);
+        kx = Math.abs(dot(u, ex)) / Math.max(1e-6, Math.abs(dot(d.u0, ex))); ky = Math.abs(dot(u, ey)) / Math.max(1e-6, Math.abs(dot(d.u0, ey)));
+      } else kx = ky = Math.hypot(...u) / Math.max(1e-6, Math.hypot(...d.u0));
+      d.L.t = scaleLayer(d.L, d.t0, clamp(kx, 0.01, 100), clamp(ky, 0.01, 100));
+      break;
+    }
+    case 'lrot': {   // um die Ebenenmitte; Shift = in 15°-Schritten (bezogen auf die Gesamtdrehung)
+      let r = d.r0 + Math.atan2(pt.y - d.c[1], pt.x - d.c[0]) - d.a0;
+      if (e.shiftKey) r = Math.round(r / (Math.PI / 12)) * (Math.PI / 12);
+      d.L.t = rotateLayer(d.L, d.t0, r - d.r0);
+      break;
+    }
     case 'iscale': {
       const f = Math.hypot(pt.x - d.an[0], pt.y - d.an[1]) / d.d0;
       Object.assign(p, { zoom: d.z0, cx: d.cx0, cy: d.cy0 }); S.magZoom = d.mz0; zoomAt(p, d.an[0], d.an[1], f); break;
@@ -1719,7 +2076,7 @@ cv.addEventListener('pointermove', e => {
     case 'rmove': d.ins.region = { ...d.r0, x: d.r0.x + dx / d.g.s, y: d.r0.y + dy / d.g.s }; break;
   }
   render();
-  if (['move', 'resize', 'pan', 'iscale'].includes(d.t)) refreshNumbers();
+  if (['move', 'resize', 'pan', 'iscale', 'lmove', 'lscale', 'lrot'].includes(d.t)) refreshNumbers();
 });
 cv.addEventListener('pointerup', e => {
   const d = drag; drag = null;
@@ -1789,7 +2146,12 @@ cv.addEventListener('wheel', e => {
   const k = wheelK(e);
   if (e.ctrlKey || e.metaKey) { zoomView(zoom * Math.exp(-e.deltaY * k * 0.002), e); return; }
   if (mode === 'image') {
-    const pt = figPt(e), h = hitPanel(pt);
+    const pt = figPt(e), h = hitPanel(pt), L = h && h.g && h.id === sel && layerById(selP(), selLayer);
+    if (L) {   // gewählte Ebene: um den Zeiger skalieren
+      const f = Math.exp(-e.deltaY * k * 0.0015), P = h.g.toImg(pt.x, pt.y), t = L.t;
+      L.t = [t[0] * f, t[1] * f, t[2] * f, t[3] * f, P[0] + f * (t[4] - P[0]), P[1] + f * (t[5] - P[1])];
+      commitSoon(); render(); refreshNumbers(); return;
+    }
     if (h && h.g) {
       if (h.id !== sel) select(h.id);
       zoomAt(selP(), pt.x, pt.y, Math.exp(-e.deltaY * k * 0.0015)); commitSoon(); render(); refreshNumbers();
@@ -1810,7 +2172,7 @@ document.addEventListener('wheel', e => {
 // Mittlere Maustaste: kein automatisches Scrollen des Browsers
 cv.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
 let spaceDown = false;
-const modeCursor = () => ({ layout: 'default', image: 'grab', scale: 'crosshair', annot: 'crosshair', inset: 'crosshair' }[mode]);
+const modeCursor = () => ({ layout: 'default', image: 'grab', scale: 'crosshair', annot: 'crosshair', inset: 'crosshair', reg: 'crosshair' }[mode]);
 document.addEventListener('keyup', e => { if (e.key === ' ' && spaceDown) { e.preventDefault(); spaceDown = false; if (!drag) cv.style.cursor = modeCursor(); } });
 window.addEventListener('blur', () => { spaceDown = false; });
 cv.addEventListener('dblclick', e => {
@@ -1863,7 +2225,7 @@ async function loadInto(files, target, inset, at) {
       Object.assign(p, { x: at.x - w / 2 + 15 * k, y: at.y - h / 2 + 15 * k, w, h });
     }
     const plot = ST.imgs[id].kind === 'plot' || ST.imgs[id].dpi >= 150;   // Diagramm (SVG oder PNG mit Druck-dpi): ganz zeigen, heller Grund, dunkles Label
-    Object.assign(p, { img: id, zoom: 1, cx: 0.5, cy: 0.5, annots: [], adj: freshAdj(), fit: plot ? 'contain' : 'cover' });
+    Object.assign(p, { img: id, zoom: 1, cx: 0.5, cy: 0.5, annots: [], adj: freshAdj(), base: freshBase(), fit: plot ? 'contain' : 'cover' });
     // Durchsichtige Stellen zeigen den Abbildungshintergrund statt der (schwarzen) Bildfläche
     if (plot || ST.imgs[id].alpha) Object.assign(p.st, ST.imgs[id].alpha ? { panelBgOff: true } : { panelBg: '#ffffff' }, { lblColor: '#000000' });
     else if ((p.st.panelBg === '#ffffff' || p.st.panelBgOff) && p.st.lblColor === '#000000') { delete p.st.panelBg; delete p.st.panelBgOff; delete p.st.lblColor; }
@@ -1874,6 +2236,63 @@ async function loadInto(files, target, inset, at) {
     if (m.mpp) toast(`${f.name}: Pixelgröße ${fmtSI(m.mpp, 'm')} aus ${m.mppSrc}`);
   }
   commit(); refreshAll();
+}
+// Dateien als Ebenen über das Grundbild legen; under = die (eine) neue Datei wird das Grundbild, das bisherige eine Ebene
+async function addLayers(p, files, under) {
+  files = files.filter(f => IMG_RE.test(f.name) || f.type.startsWith('image/'));
+  if (!files.length) { toast('Keine unterstützte Bilddatei (PNG, JPG, TIFF, SVG)'); return; }
+  if (!p.img) { loadInto(files, p); return; }
+  $('#status').textContent = 'Lade ' + files.map(f => f.name).join(', ') + ' …';
+  let last = null;
+  for (const f of files) {
+    let id;
+    try { id = await loadImageFile(f); } catch (err) { console.error(err); toast(`${f.name}: ${err.message || 'konnte nicht gelesen werden'}`); continue; }
+    const L = newLayer(id, defaultT(p.img, id));
+    p.layers.push(L); last = L;
+    const d0 = ST.imgs[p.img] || {}, d1 = ST.imgs[id] || {};
+    if (d0.mpp && d1.mpp && !under) toast(`„${layerName(L)}“ im gleichen Maßstab eingesetzt (beide kalibriert)`);
+  }
+  if (!last) return;
+  sel = p.id; msel = new Set([p.id]);
+  if (under) { makeBase(p, last); selLayer = null; toast('Neues Grundbild darunter – das bisherige liegt jetzt als Ebene darüber'); } else selLayer = last.id;
+  commit(); refreshAll();
+}
+// Ebene L wird Grundbild; das bisherige Grundbild wird die unterste Ebene. Alles, was in Pixeln des alten Grundbilds steht
+// (Ebenen, Annotationen, Inset-Ausschnitte), wird umgerechnet; die Ansicht bleibt möglichst gleich.
+function makeBase(p, L) {
+  const A = L.t, inv = mInv(A), g0 = geom(p), sr0 = srcRect(p.img);
+  const oldBase = { ...newLayer(p.img, inv), name: p.base.name, tint: p.base.tint, on: p.base.on !== false, adj: p.adj, blend: 'normal',
+    leg: p.base.leg != null ? p.base.leg : !!autoColor(p.img), legName: p.base.legName };
+  const others = p.layers.filter(x => x !== L).map(x => ({ ...x, t: mMul(inv, x.t) }));
+  const mp = q => mApply(inv, q[0], q[1]);
+  for (const a of p.annots) a.p = a.p.map(mp);
+  for (const i of p.insets) if (i.src === 'region' && i.region) {
+    const c = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([u, v]) => mp([i.region.x + u * i.region.w, i.region.y + v * i.region.h]));
+    const xs = c.map(q => q[0]), ys = c.map(q => q[1]);
+    i.region = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  }
+  Object.assign(p, { img: L.img, adj: L.adj, base: { name: L.name, tint: L.tint, on: L.on, leg: L.leg, legName: L.legName }, layers: [oldBase, ...others] });
+  // Ansicht: gleicher Bildmaßstab und dieselbe Stelle in der Mitte des Platzhalters
+  const g1 = geom(p); if (!g0 || !g1 || !sr0) return;
+  const mid = g0.toImg(p.x + p.w / 2, p.y + p.h / 2), u = mApply(inv, mid[0], mid[1]), sNew = g0.s * Math.hypot(A[0], A[1]);
+  if (!magOn(p)) p.zoom = clamp(sNew / (g1.s / p.zoom), 0.05, 50);
+  const g2 = geom(p), sr = g2.sr;
+  p.cx = 0.5 + (sr.w * g2.s / 2 - (u[0] - sr.x) * g2.s) / p.w; p.cy = 0.5 + (sr.h * g2.s / 2 - (u[1] - sr.y) * g2.s) / p.h;
+}
+// Auswahlfenster mit mehreren Knöpfen; liefert den Wert des gewählten Knopfs (null = Abbrechen, Esc, Klick daneben)
+function choose(title, html, at, options) {
+  return new Promise(res => {
+    closePop();
+    const pop = $('#pop');
+    pop.innerHTML = `<div class="t">${esc(title)}</div>${html}<div class="btns" style="justify-content:flex-end;margin-top:8px">${options.map((o, i) => `<button data-i="${i}"${o.primary ? ' class="primary"' : ''}>${esc(o.label)}</button>`).join('')}</div>`;
+    pop.hidden = false;
+    const r = pop.getBoundingClientRect();
+    pop.style.left = clamp(at.x + 12, 8, innerWidth - r.width - 8) + 'px'; pop.style.top = clamp(at.y + 12, 8, innerHeight - r.height - 8) + 'px';
+    popDone = ok => { popDone = null; pop.hidden = true; res(ok === true ? null : ok || null); };
+    pop.querySelectorAll('[data-i]').forEach(b => b.onclick = () => popDone && popDone(options[+b.dataset.i].v || false));
+    pop.onkeydown = e => { if (e.key === 'Escape') popDone && popDone(false); };
+    const first = pop.querySelector('button.primary'); if (first) first.focus();
+  });
 }
 const view = $('#view');
 ['dragenter', 'dragover'].forEach(ev => view.addEventListener(ev, e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); view.classList.add('dropping'); } }));
@@ -1893,7 +2312,17 @@ view.addEventListener('drop', e => {
   if (hi) { const p = panelById(hi.h.id), ins = p.insets.find(i => i.id === hi.ir.id); if (ins.src !== 'region') { sel = p.id; loadInto(fs, p, ins); return; } }
   const h = hitPanel(pt);
   if (!h && ST.L.mode === 'free') { loadInto(fs, null, null, pt); return; }
-  loadInto(fs, h ? panelById(h.id) : null);
+  const tp = h && panelById(h.id);
+  if (tp && tp.img) {   // Platzhalter hat schon ein Bild: fragen, ob ersetzen oder als Ebene darüberlegen
+    const n = fs.length, what = n > 1 ? `${n} Dateien` : `„${fs[0].name}“`;
+    choose('Bild einfügen', `<p class="hint" style="max-width:320px">${esc(what)} auf einen Platzhalter mit Bild.</p>`, { x: e.clientX, y: e.clientY }, [
+      { v: 'layer', label: n > 1 ? 'Alle als Ebenen' : 'Als Ebene', primary: true },
+      ...(n === 1 ? [{ v: 'under', label: 'Als Grundbild darunter' }] : []),
+      { v: 'replace', label: 'Ersetzen' }, { v: null, label: 'Abbrechen' }
+    ]).then(c => { if (c === 'replace') loadInto(fs, tp); else if (c) addLayers(tp, fs, c === 'under'); });
+    return;
+  }
+  loadInto(fs, tp);
 });
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => e.preventDefault());
@@ -1919,12 +2348,18 @@ document.addEventListener('keydown', e => {
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openHelp(); return; }
   if (e.key === ' ') { e.preventDefault(); if (!spaceDown) { spaceDown = true; if (!drag) cv.style.cursor = 'grab'; } return; }   // Leertaste + Ziehen = Ansicht verschieben
+  if (mode === 'reg' && REG) {
+    if (e.key === 'Escape') { e.preventDefault(); regEnd(false); return; }
+    if (e.key === 'Enter') { e.preventDefault(); regEnd(true); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); regUndo(); return; }
+  }
   const p = selP();
-  if (e.key === 'Escape') { if (drag) { drag = null; render(); } else if (selItem) select(sel); else select(null); return; }
+  if (e.key === 'Escape') { if (drag) { drag = null; render(); } else if (selItem) select(sel); else if (layerById(p, selLayer)) { selLayer = null; buildProps(); render(); } else select(null); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && p) {
     e.preventDefault();
     if (selItem && selItem.kind === 'annot') p.annots = p.annots.filter(a => a.id !== selItem.id);
     else if (selItem && selItem.kind === 'inset') p.insets = p.insets.filter(a => a.id !== selItem.id);
+    else if (layerById(p, selLayer)) { p.layers = p.layers.filter(x => x.id !== selLayer); selLayer = null; }
     else if (msel.size > 1) { ST.panels = ST.panels.filter(q => !msel.has(q.id)); sel = null; msel = new Set(); commit(); refreshAll(); return; }
     else { removePanel(p); return; }
     selItem = null; commit(); buildProps(); render(); return;
@@ -1932,7 +2367,9 @@ document.addEventListener('keydown', e => {
   if (e.key.startsWith('Arrow') && p) {
     e.preventDefault();
     const st = e.shiftKey ? 10 : 1, dx = { ArrowLeft: -st, ArrowRight: st }[e.key] || 0, dy = { ArrowUp: -st, ArrowDown: st }[e.key] || 0;
-    if (mode === 'image' && p.img) { p.cx += dx / p.w; p.cy += dy / p.h; }
+    const L = mode === 'image' && layerById(p, selLayer), g = L && geom(p);
+    if (L && g) { L.t[4] += dx / zoom / g.s; L.t[5] += dy / zoom / g.s; }
+    else if (mode === 'image' && p.img) { p.cx += dx / p.w; p.cy += dy / p.h; }
     else if (selItem && selItem.kind === 'annot' && p.img) { const a = p.annots.find(x => x.id === selItem.id), g = geom(p); if (a) a.p = a.p.map(q => [q[0] + dx / g.s, q[1] + dy / g.s]); }
     else { toFree(); for (const q of ST.panels) if (q === p || msel.has(q.id)) { q.x += dx / zoom; q.y += dy / zoom; } }
     commitSoon(); render(); refreshNumbers(); return;
@@ -2018,7 +2455,7 @@ function buildList() {
   box.innerHTML = '';
   ST.panels.forEach((p, i) => {
     const d = document.createElement('div'); d.className = 'item' + (p.id === sel || msel.has(p.id) ? ' sel' : ''); d.dataset.id = p.id;
-    const nm = p.img ? (ST.imgs[p.img] || {}).name || IMG.get(p.img)?.name || 'Bild' : '(leer)';
+    const nm = p.img ? ((ST.imgs[p.img] || {}).name || IMG.get(p.img)?.name || 'Bild') + (p.layers.length ? ` · ${p.layers.length + 1} Ebenen` : '') : '(leer)';
     d.innerHTML = `<span class="handle" draggable="true" title="Ziehen zum Umsortieren">⠿</span><span class="lbl">${esc(labels[i] || '–')}</span>` +
       (p.img ? `<img class="thumb" src="${thumb(p.img)}" alt="">` : '<span class="thumb"></span>') + `<span class="nm" title="${esc(nm)}">${esc(nm)}</span>` +
       `<button class="mini" data-a="up" title="nach vorn">▲</button><button class="mini" data-a="down" title="nach hinten">▼</button><button class="mini" data-a="del" title="Platzhalter entfernen">✕</button>`;
@@ -2135,7 +2572,9 @@ function styBlock(scope, kinds, el, p) {
     <div class="row"><span class="hint">${p !== el && p.fix ? '📌 Platzhalter ist fixiert' : ''}</span><button class="mini${el.fix ? ' fixon' : ''}" data-act="fix" title="${fixTitle}">📌 ${el.fix ? 'fixiert – lösen' : 'fixieren'}</button></div>
     ${kinds.map(k => (kinds.length > 1 ? `<div class="sub">${KIND[k].name}</div>` : '') + styRows(k, el, p)).join('')}</details>`;
 }
-const scopeObj = (p, scope) => scope === 'p' ? p : scope === 'img' ? ST.imgs[p.img] : scope === 'an' ? p.annots.find(x => selItem && x.id === selItem.id)
+const scopeObj = (p, scope) => scope === 'p' ? p : scope === 'img' ? ST.imgs[p.img] : scope === 'pb' ? p.base
+  : scope === 'ly' ? layerById(p, selLayer) : scope === 'limg' ? (layerById(p, selLayer) ? ST.imgs[layerById(p, selLayer).img] : null)
+  : scope === 'an' ? p.annots.find(x => selItem && x.id === selItem.id)
   : scope.startsWith('tx') ? p.texts[+scope.slice(2)] : scope.startsWith('in') ? p.insets[+scope.slice(2)] : null;
 function buildProps() {
   const box = $('#panelProps'), p = selP();
@@ -2150,22 +2589,11 @@ function buildProps() {
   if (!im) h += `<div class="btns"><button data-act="load">Bild laden…</button></div><p class="hint">Oder eine Datei auf den Platzhalter ziehen.</p>`;
   else {
     const z = Math.round(p.zoom * 100);
-    h += `<div class="hint" title="${esc(im.name)}">${esc(im.name)} · ${im.w} × ${im.h} px</div>
-      <div class="btns"><button data-act="load">Ersetzen…</button><button data-act="cover" class="${p.fit !== 'contain' ? 'on' : ''}" title="Platzhalter ganz füllen (Überstand wird abgeschnitten)">Füllen</button><button data-act="contain" class="${p.fit === 'contain' ? 'on' : ''}" title="Ganzes Bild zeigen – gut für Diagramme">Einpassen</button>${d.physW ? `<button data-act="orig" title="Platzhalter auf die Originalgröße des Diagramms setzen (${r2(fromPx(d.physW, 'cm'))} × ${r2(fromPx(d.physH, 'cm'))} cm), damit Schriftgrößen erhalten bleiben">Originalgröße</button>` : ''}<button data-act="rot">↻ 90°</button><button data-act="rotl">↺ 90°</button><button data-act="unload">Entfernen</button></div>
+    h += `<div class="btns"><button data-act="load" title="Grundbild durch eine andere Datei ersetzen">Ersetzen…</button><button data-act="cover" class="${p.fit !== 'contain' ? 'on' : ''}" title="Platzhalter ganz füllen (Überstand wird abgeschnitten)">Füllen</button><button data-act="contain" class="${p.fit === 'contain' ? 'on' : ''}" title="Ganzes Bild zeigen – gut für Diagramme">Einpassen</button>${d.physW ? `<button data-act="orig" title="Platzhalter auf die Originalgröße des Diagramms setzen (${r2(fromPx(d.physW, 'cm'))} × ${r2(fromPx(d.physH, 'cm'))} cm), damit Schriftgrößen erhalten bleiben">Originalgröße</button>` : ''}<button data-act="rot">↻ 90°</button><button data-act="rotl">↺ 90°</button>${p.layers.length ? `<button data-act="cropCommon" title="${ST.L.mode === 'free' ? 'Platzhalter so verkleinern' : 'Bild so vergrößern'}, dass keine leeren Ecken neben schief eingepassten Ebenen bleiben – nur die Fläche, die alle sichtbaren Ebenen abdecken, im Seitenverhältnis des Platzhalters">⧈ Gemeinsame Bildfläche</button>` : ''}<button data-act="unload">Entfernen</button></div>
       <div class="row"><span>Zoom (%)</span><input type="number" step="5" min="5" data-b="p:zoom" data-pct="1" value="${z}"></div>
-      <div class="sub">Helligkeit &amp; Kontrast</div>
-      <div class="row"><span>Helligkeit</span><input type="range" min="-100" max="100" data-b="p:adj.b" value="${p.adj.b}" style="flex:1.4"><output>${p.adj.b}</output></div>
-      <div class="row"><span>Kontrast</span><input type="range" min="-100" max="100" data-b="p:adj.c" value="${p.adj.c}" style="flex:1.4"><output>${p.adj.c}</output></div>
-      <div class="row"><span>Gamma</span><input type="range" min="0.2" max="3" step="0.05" data-b="p:adj.g" value="${p.adj.g}" style="flex:1.4"><output>${p.adj.g}</output></div>
-      <div class="row"><label><input type="checkbox" data-b="p:adj.inv"${p.adj.inv ? ' checked' : ''}> invertieren</label></div>
-      <div class="btns"><button data-act="auto">Auto-Kontrast</button><button data-act="adj0">Zurücksetzen</button><button data-act="adjAll" title="Diese Einstellung auf alle Bilder übertragen">Auf alle</button></div>`;
-    const meta = im.meta && im.meta.items.length ? im.meta.items : [];
-    h += `<div class="sub">Metadaten &amp; Zuschnitt</div>`;
-    if (meta.length) h += `<div class="hint">${meta.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>')}</div><div class="btns"><button data-act="metaText">Messdaten als Textfeld</button></div>`;
-    h += `<div class="row"><label><input type="checkbox" data-b="img:hideBar"${d.hideBar ? ' checked' : ''}> Infobalken unten ausblenden</label><input type="number" min="0" data-b="img:bar" value="${d.bar || 0}" title="Höhe in Bildpixeln" style="width:64px"><span class="hint">px</span></div>
-      <div class="row"><span>Zuschnitt O / U / L / R (px)</span>${['t', 'b', 'l', 'r'].map(k => `<input type="number" min="0" data-b="img:crop.${k}" value="${d.crop[k] || 0}" style="width:52px">`).join('')}</div>
-      <p class="hint">${d.bar ? 'Infobalken erkannt' + (im.meta && im.meta.bar ? ' (aus den Metadaten)' : ' (geschätzt – Höhe ggf. anpassen)') + '. ' : 'Kein Infobalken erkannt – Höhe bei Bedarf eintragen. '}Ausgeblendetes wird nicht exportiert.</p>
-      <div class="sub">Maßstab</div>
+      <p class="hint">Füllen, Einpassen, Zoom und Drehen gelten für den ganzen Platzhalter; die Ebenen bleiben auf dem Grundbild liegen.</p>`;
+    h += layersHTML(p, d, im);
+    h += `<div class="sub">Maßstab</div>
       <div class="row"><span>Pixelgröße</span><input type="number" step="any" min="0" id="mppVal" value="${d.mpp ? +(d.mpp / mppUnit(d.mpp)[1]).toPrecision(6) : ''}" placeholder="unbekannt" style="width:90px"><select id="mppUnit">${SB_UNITS.map(x => `<option${d.mpp && mppUnit(d.mpp)[0] === x[0] ? ' selected' : ''}>${x[0]}</option>`).join('')}</select><span class="hint">/ px</span></div>
       <div class="hint">${d.mpp ? 'Quelle: ' + esc(d.mppSrc || 'eingegeben') : 'Nicht kalibriert: Werkzeug „⟷ Maßstab“ wählen und im Bild entlang eines bekannten Maßstabs ziehen.'}</div>
       <div class="btns"><button data-act="calib">Maßstab nachzeichnen</button>${d.mpp ? '<button data-act="mppAll">Kalibrierung auf alle Bilder</button><button data-act="mpp0">Löschen</button>' : ''}</div>
@@ -2198,6 +2626,73 @@ function buildProps() {
   box.innerHTML = h;
   bindProps(box, p);
 }
+// Bildanpassung (Helligkeit, Kontrast, Gamma) und Zuschnitt – gleich für Grundbild (scope p/img) und Ebene (ly/limg)
+function adjHTML(sc, a, extra) {
+  return `<div class="sub">Helligkeit &amp; Kontrast</div>
+    <div class="row"><span>Helligkeit</span><input type="range" min="-100" max="100" data-b="${sc}:adj.b" value="${a.b}" style="flex:1.4"><output>${a.b}</output></div>
+    <div class="row"><span>Kontrast</span><input type="range" min="-100" max="100" data-b="${sc}:adj.c" value="${a.c}" style="flex:1.4"><output>${a.c}</output></div>
+    <div class="row"><span>Gamma</span><input type="range" min="0.2" max="3" step="0.05" data-b="${sc}:adj.g" value="${a.g}" style="flex:1.4"><output>${a.g}</output></div>
+    <div class="row"><label><input type="checkbox" data-b="${sc}:adj.inv"${a.inv ? ' checked' : ''}> invertieren</label></div>
+    <div class="btns"><button data-act="${sc === 'p' ? 'auto' : 'lauto'}">Auto-Kontrast</button><button data-act="${sc === 'p' ? 'adj0' : 'ladj0'}">Zurücksetzen</button>${extra || ''}</div>`;
+}
+function cropHTML(sc, d, im) {
+  const meta = im.meta && im.meta.items.length ? im.meta.items : [];
+  return `<div class="sub">Metadaten &amp; Zuschnitt</div>` +
+    (meta.length ? `<div class="hint">${meta.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>')}</div>${sc === 'img' ? '<div class="btns"><button data-act="metaText">Messdaten als Textfeld</button></div>' : ''}` : '') +
+    `<div class="row"><label><input type="checkbox" data-b="${sc}:hideBar"${d.hideBar ? ' checked' : ''}> Infobalken unten ausblenden</label><input type="number" min="0" data-b="${sc}:bar" value="${d.bar || 0}" title="Höhe in Bildpixeln" style="width:64px"><span class="hint">px</span></div>
+    <div class="row"><span>Zuschnitt O / U / L / R (px)</span>${['t', 'b', 'l', 'r'].map(k => `<input type="number" min="0" data-b="${sc}:crop.${k}" value="${(d.crop || {})[k] || 0}" style="width:52px">`).join('')}</div>
+    <p class="hint">${d.bar ? 'Infobalken erkannt' + (im.meta && im.meta.bar ? ' (aus den Metadaten)' : ' (geschätzt – Höhe ggf. anpassen)') + '. ' : 'Kein Infobalken erkannt – Höhe bei Bedarf eintragen. '}Ausgeblendetes wird nicht exportiert.</p>`;
+}
+const tintHTML = (sc, tint, img) => `<div class="row"><span>Farbe</span><label><input type="checkbox" data-tint="${sc}"${tint ? ' checked' : ''}> einfärben</label><input type="color" data-tintc="${sc}" value="${tint || autoColor(img) || '#ffffff'}"></div>`;
+// Ebenenliste (oben = oben im Bild, Grundbild zuunterst), Legende und die Einstellungen der gewählten Schicht
+function layersHTML(p, d, im) {
+  const st = stack(p), sl = layerById(p, selLayer);
+  const row = L => `<div class="lyr${L.base ? ' base' : ''}${(L.base ? !sl : sl && sl.id === L.id) ? ' sel' : ''}${L.on ? '' : ' off'}" data-lid="${L.id}">
+    <span class="handle${L.base ? ' none' : ''}"${L.base ? '' : ' draggable="true"'} title="Ziehen zum Umsortieren">⠿</span>
+    <button class="mini eye" data-act="leye" data-lid="${L.id}" title="Ein-/ausblenden · Alt + Klick: nur diese zeigen">${L.on ? '👁' : '–'}</button>
+    <img class="thumb" src="${thumb(L.img)}" alt=""><span class="sw" style="background:${L.tint || autoColor(L.img) || '#888888'}"></span>
+    <span class="nm" title="${esc(L.name)}">${esc(L.name)}${L.base ? ' <span class="hint">· Grundbild</span>' : ''}</span>
+    ${L.base ? '' : `<button class="mini" data-act="ldel" data-lid="${L.id}" title="Ebene entfernen">✕</button>`}</div>`;
+  let h = `<div class="sub">Ebenen (${st.length})</div><div class="lyrs" id="lyrList">${st.slice(1).reverse().map(row).join('')}${row(st[0])}</div>
+    <div class="btns"><button data-act="ladd" title="Bilder als Ebenen über das Grundbild legen – oder eine Datei auf den Platzhalter ziehen">+ Ebene…</button><button data-act="lunder" title="Ein Bild als neues Grundbild darunterlegen, z. B. eine REM-Aufnahme unter die Maps">+ Grundbild darunter…</button></div>
+    <div class="row"><label><input type="checkbox" data-b="p:legOn"${p.legOn ? ' checked' : ''}> Farblegende</label><select data-b="p:legCorner" title="Ecke der Legende">${optList(CORNERS, p.legCorner || 'ur')}</select></div>`;
+  if (!sl) {   // Grundbild
+    h += `<div class="card lcard"><div class="lhead">Grundbild <span class="hint">· ${im.w} × ${im.h} px</span></div>
+      <div class="row"><span>Name</span><input data-b="pb:name" value="${esc(p.base.name)}" placeholder="${esc(stripExt(d.name))}" style="width:150px"></div>
+      ${tintHTML('pb', p.base.tint, p.img)}
+      <div class="row"><label><input type="checkbox" data-b="pb:leg"${st[0].leg ? ' checked' : ''}> in der Legende als</label><input data-b="pb:legName" value="${esc(p.base.legName)}" placeholder="${esc(baseName(p))}" style="width:120px"></div>
+      ${adjHTML('p', p.adj, '<button data-act="adjAll" title="Diese Einstellung auf die Grundbilder aller Platzhalter übertragen">Auf alle</button>')}
+      ${cropHTML('img', d, im)}
+      ${p.layers.length ? '<p class="hint">Grundbild gewählt: Das Werkzeug „🖼 Bild“ verschiebt und zoomt alle Ebenen gemeinsam. Eine Ebene oben in der Liste anklicken, um nur sie auszurichten.</p>' : ''}</div>`;
+    return h;
+  }
+  const q = tParts(sl), dl = ST.imgs[sl.img] || {}, iml = IMG.get(sl.img), m0 = d.mpp, m1 = dl.mpp;
+  h += `<div class="card lcard"><div class="lhead">Ebene „${esc(layerName(sl))}“ <span class="hint">· ${iml ? `${iml.w} × ${iml.h} px` : ''}</span></div>
+    <div class="row"><span>Name</span><input data-b="ly:name" value="${esc(sl.name)}" placeholder="${esc(stripExt(dl.name))}" style="width:150px"></div>
+    ${tintHTML('ly', sl.tint, sl.img)}
+    <div class="row"><span>Mischmodus</span><select data-b="ly:blend">${optList(BLEND_LABEL, sl.blend)}</select></div>
+    <div class="row"><span>Deckkraft</span><input type="range" min="0" max="1" step="0.05" data-b="ly:op" value="${sl.op}" style="flex:1.4"><output>${sl.op}</output></div>
+    <div class="row"><label><input type="checkbox" data-b="ly:leg"${sl.leg ? ' checked' : ''}> in der Legende als</label><input data-b="ly:legName" value="${esc(sl.legName)}" placeholder="${esc(layerName(sl))}" style="width:120px"></div>
+    <div class="sub">Ausrichtung</div>
+    <div class="row"><span>Mitte X / Y (px Grundbild)</span><input type="number" step="1" data-lt="cx" value="${r2(q.cx)}"><input type="number" step="1" data-lt="cy" value="${r2(q.cy)}"></div>
+    <div class="row"><span>Maßstab X / Y (%)</span><input type="number" step="0.5" data-lt="sx" value="${r2(q.sx * 100)}"><input type="number" step="0.5" data-lt="sy" value="${r2(q.sy * 100)}"></div>
+    <div class="row"><span>Drehung (°)</span><input type="number" step="0.1" data-lt="r" value="${r2(q.r)}"></div>`;
+  if (REG && REG.lid === sl.id) {
+    h += `<div class="card" style="border-color:var(--accent)"><b>⌖ Passpunkte</b>
+      <p class="hint">${esc(regHint())}</p>
+      <div class="hint">${REG.pairs.length} ${REG.pairs.length === 1 ? 'Paar' : 'Paare'}${REG.rms != null ? ` · Restfehler ${String(r2(REG.rms)).replace('.', ',')} px${m0 ? ' ≈ ' + fmtSI(REG.rms * m0, 'm') : ''}` : ' · ab 2 Paaren wird die Ebene eingepasst, 3 und mehr gleichen Klickungenauigkeiten aus'}</div>
+      ${p.layers.length > 1 ? `<div class="row"><label title="Die anderen Ebenen werden beim Fertigstellen genauso verschoben, gedreht und skaliert wie diese – z. B. alle Element-Maps einer Messung"><input type="checkbox" data-regall${REG.all ? ' checked' : ''}> dieselbe Korrektur auf die ${p.layers.length - 1} anderen ${p.layers.length === 2 ? 'Ebene' : 'Ebenen'} anwenden</label></div>` : ''}
+      <div class="btns"><button data-act="regundo">Letzten Punkt zurück</button><button data-act="regok" class="primary">Fertig</button><button data-act="regcancel">Abbrechen</button></div></div>`;
+  } else {
+    h += `<div class="btns"><button data-act="lreg" title="Dasselbe Merkmal abwechselnd im Grundbild und in der Ebene anklicken – die App rechnet Lage, Maßstab und Drehung aus">⌖ Passpunkte setzen</button>
+      <button data-act="lfit" title="Ebene auf die sichtbare Fläche des Grundbilds strecken">Deckungsgleich</button>
+      ${m0 && m1 ? '<button data-act="lcal" title="Maßstab aus den Kalibrierungen beider Bilder, Lage und Drehung bleiben">Gleicher Maßstab</button>' : ''}
+      <button data-act="lbase" title="Diese Ebene wird das Grundbild (unten); das bisherige Grundbild wird eine Ebene">Als Grundbild</button></div>
+      <p class="hint">Mit gewählter Ebene wirkt das Werkzeug „🖼 Bild“ nur auf sie: ziehen = verschieben, Ecken = skalieren (Shift = frei), runder Griff = drehen (Shift = 15°), Mausrad = skalieren, Pfeiltasten = verschieben.</p>`;
+  }
+  h += adjHTML('ly', sl.adj) + (iml ? cropHTML('limg', dl, iml) : '') + '</div>';
+  return h;
+}
 const mppUnit = m => { let u = SB_UNITS[0]; for (const x of SB_UNITS) if (m >= x[1] * 0.9999) u = x; return u; };
 function bindProps(box, p) {
   const obj = scope => scopeObj(p, scope);
@@ -2221,22 +2716,92 @@ function bindProps(box, p) {
       if (el.dataset.u) { if (v == null || v <= 0 && /:[wh]$/.test(el.dataset.b)) return; v = toPx(v, S.figUnit); toFree(); }
       if (el.dataset.pct) { if (!(v > 0)) return; v /= 100; }
       const ks = path.split('.'), lastK = ks.pop(), tgt = ks.reduce((a, k) => a[k], o);
+      const g0 = el.dataset.u && cropMode && scope === 'p' ? geom(p) : null;   // Zuschneiden gilt auch für die Zahlenfelder
       tgt[lastK] = v;
+      if (g0) keepImage(p, g0);
       if (el.nextElementSibling && el.nextElementSibling.tagName === 'OUTPUT') el.nextElementSibling.textContent = v;
-      if (scope === 'img' && path === 'bar') ST.imgs[p.img].hideBar = v > 0 && ST.imgs[p.img].hideBar;
+      if (path === 'bar') o.hideBar = v > 0 && o.hideBar;
       if (path === 'label' || path === 'corner') buildList();
       commitSoon(); render();
     });
+    if (/^(ly|pb):(name|leg)$/.test(el.dataset.b)) el.addEventListener('change', () => { buildProps(); buildList(); });   // Liste erst nach dem Tippen erneuern
   });
+  // Einfärben: Häkchen schaltet die Farbe ein/aus, die Farbwahl setzt sie (und schaltet ein)
+  box.querySelectorAll('[data-tint]').forEach(cb => cb.addEventListener('change', () => {
+    const o = scopeObj(p, cb.dataset.tint), c = box.querySelector(`[data-tintc="${cb.dataset.tint}"]`);
+    if (o) { o.tint = cb.checked ? c.value : ''; commit(); buildProps(); render(); }
+  }));
+  box.querySelectorAll('[data-tintc]').forEach(c => c.addEventListener('input', () => {
+    const o = scopeObj(p, c.dataset.tintc), cb = box.querySelector(`[data-tint="${c.dataset.tintc}"]`);
+    if (o) { o.tint = c.value; cb.checked = true; commitSoon(); render(); }
+  }));
+  box.querySelectorAll('[data-regall]').forEach(cb => cb.addEventListener('change', () => { if (REG) REG.all = cb.checked; }));
+  // Ausrichtung als Zahlen: Mitte, Maßstab, Drehung
+  box.querySelectorAll('[data-lt]').forEach(inp => inp.addEventListener('input', () => {
+    const L = layerById(p, selLayer), v = parseFloat(inp.value); if (!L || !isFinite(v)) return;
+    const q = tParts(L), k = inp.dataset.lt;
+    q[k] = k === 'sx' || k === 'sy' ? Math.max(0.01, v / 100) : v;
+    L.t = tFrom(L, q); commitSoon(); render();
+  }));
+  // Ebenen: anklicken = wählen, ⠿ ziehen = Reihenfolge (das Grundbild bleibt unten)
+  const list = box.querySelector('#lyrList');
+  if (list) {
+    list.querySelectorAll('.lyr').forEach(r => r.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      selLayer = r.classList.contains('base') ? null : r.dataset.lid; buildProps(); render();
+    }));
+    let dragEl = null;
+    list.addEventListener('dragstart', e => { const r = e.target.closest('.lyr'); if (!r || r.classList.contains('base') || !e.target.classList.contains('handle')) return; dragEl = r; r.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', r.dataset.lid); } catch { } });
+    list.addEventListener('dragover', e => { if (!dragEl) return; e.preventDefault(); const r = e.target.closest('.lyr'); if (!r || r === dragEl || r.classList.contains('base')) return; const b = r.getBoundingClientRect(); list.insertBefore(dragEl, e.clientY < b.top + b.height / 2 ? r : r.nextSibling); });
+    list.addEventListener('dragend', () => {
+      if (!dragEl) return; dragEl.classList.remove('drag'); dragEl = null;
+      const order = [...list.querySelectorAll('.lyr:not(.base)')].map(r => r.dataset.lid).reverse();   // Liste oben = Ebene oben
+      p.layers.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)); commit(); buildProps(); render();
+    });
+  }
   const mv = box.querySelector('#mppVal'), mu = box.querySelector('#mppUnit');
   if (mv) { const f = () => { const v = parseFloat(mv.value); const d = ST.imgs[p.img]; d.mpp = v > 0 ? v * SB_UNITS.find(x => x[0] === mu.value)[1] : null; d.mppSrc = 'eingegeben'; commitSoon(); render(); }; mv.oninput = f; mu.onchange = f; }
-  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => propAction(b.dataset.act, p, b));
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = ev => propAction(b.dataset.act, p, b, ev));
 }
-async function propAction(a, p, b) {
-  const i = +b.dataset.i, d = p.img && ST.imgs[p.img];
+async function propAction(a, p, b, ev) {
+  const i = +b.dataset.i, d = p.img && ST.imgs[p.img], L = layerById(p, b.dataset.lid || selLayer);
   switch (a) {
     case 'load': pickFiles(true, f => loadInto(f, p)); return;
-    case 'unload': p.img = null; p.annots = []; p.insets = p.insets.filter(x => x.src !== 'region'); break;
+    case 'unload':   // mit Ebenen: die unterste Ebene wird das Grundbild
+      if (p.layers.length) { makeBase(p, p.layers[0]); p.layers.shift(); selLayer = null; break; }
+      p.img = null; p.annots = []; p.insets = p.insets.filter(x => x.src !== 'region'); break;
+    // Ebenen
+    case 'ladd': pickFiles(true, f => addLayers(p, f, false)); return;
+    case 'lunder': pickFiles(false, f => addLayers(p, f, true)); return;
+    case 'leye': {   // Alt + Klick: nur diese zeigen (nochmal: wieder alle)
+      const base = b.dataset.lid === 'base';
+      const all = [{ me: base, get: () => p.base.on !== false, set: v => { p.base.on = v; } }, ...p.layers.map(x => ({ me: x === L && !base, get: () => x.on, set: v => { x.on = v; } }))];
+      if (ev && ev.altKey) { const only = all.every(s => s.get() === s.me); for (const s of all) s.set(only || s.me); }
+      else { const s = all.find(x => x.me); if (s) s.set(!s.get()); }
+      break;
+    }
+    case 'ldel': p.layers = p.layers.filter(x => x !== L); if (selLayer === b.dataset.lid) selLayer = null; break;
+    case 'lauto': L.adj = autoAdj(L.img); break;
+    case 'ladj0': L.adj = freshAdj(); break;
+    case 'lfit': L.t = defaultT(p.img, L.img, false); break;
+    case 'lcal': { const q = tParts(L); q.sx = q.sy = ST.imgs[L.img].mpp / d.mpp; L.t = tFrom(L, q); break; }
+    case 'lbase': makeBase(p, L); selLayer = null; toast('Ist jetzt das Grundbild – das bisherige liegt als Ebene darüber'); break;
+    case 'cropCommon': {   // frei angeordnet: Platzhalter schrumpft, Bild bleibt; festes Layout: Platzhalter bleibt, Bild wird größer
+      const K = commonCrop(p), g0 = geom(p);
+      if (!K || K.w < 4 || K.h < 4) { toast('Keine gemeinsame Bildfläche gefunden – sind die Ebenen eingeblendet und überlappen sie?'); return; }
+      if (ST.L.mode === 'free' || magOn(p)) { toFree(); Object.assign(p, K); keepImage(p, g0); toast('Platzhalter auf die gemeinsame Bildfläche zugeschnitten'); }
+      else {
+        const kc = g0.toImg(K.x + K.w / 2, K.y + K.h / 2); p.zoom *= p.w / K.w;
+        const g1 = geom(p), sr = g1.sr, s = g1.s;
+        p.cx = 0.5 + (sr.w * s / 2 - (kc[0] - sr.x) * s) / p.w; p.cy = 0.5 + (sr.h * s / 2 - (kc[1] - sr.y) * s) / p.h;
+        toast('Bild vergrößert – der Platzhalter zeigt nur noch die gemeinsame Bildfläche');
+      }
+      break;
+    }
+    case 'lreg': startReg(p, L); return;
+    case 'regundo': regUndo(); return;
+    case 'regok': regEnd(true); return;
+    case 'regcancel': regEnd(false); return;
     case 'cover': Object.assign(p, { fit: 'cover', zoom: 1, cx: 0.5, cy: 0.5 }); break;
     case 'contain': Object.assign(p, { fit: 'contain', zoom: 1, cx: 0.5, cy: 0.5 }); break;
     case 'orig': { const d2 = ST.imgs[p.img]; toFree(); Object.assign(p, { w: d2.physW, h: d2.physH, fit: 'contain', zoom: 1, cx: 0.5, cy: 0.5 }); break; }
@@ -2286,6 +2851,9 @@ async function rotateImg(p, dir) {
   const blob = await new Promise(r => c.toBlob(r, 'image/png')), full = await createImageBitmap(c), id = uid();
   IMG.set(id, { ...im, id, w: im.h, h: im.w, full, vec: null, prev: makePrev(full, im.h, im.w), blob });
   ST.imgs[id] = { ...ST.imgs[p.img], crop: { t: 0, b: 0, l: 0, r: 0 }, hideBar: false, bar: 0 };
+  // Ebenen drehen mit: alte Grundbild-Pixel → neue (90° im bzw. gegen den Uhrzeigersinn)
+  const P = dir > 0 ? [0, 1, -1, 0, im.h, 0] : [0, -1, 1, 0, 0, im.w];
+  for (const L of p.layers) L.t = mMul(P, L.t);
   Object.assign(p, { img: id, annots: [], zoom: 1, cx: 0.5, cy: 0.5 }); p.insets = p.insets.filter(i => i.src !== 'region');
   dbPutImg(id).catch(() => { });
   commit(); refreshAll();
@@ -2295,6 +2863,8 @@ function refreshNumbers() {
   const p = selP(); if (!p) return;
   $$('#panelProps [data-u]').forEach(el => { if (document.activeElement !== el) el.value = r2(fromPx(p[el.dataset.b.split(':')[1]], S.figUnit)); });
   const z = $('#panelProps [data-pct]'); if (z && document.activeElement !== z) z.value = Math.round(p.zoom * 100);
+  const L = layerById(p, selLayer);
+  if (L) { const q = tParts(L); $$('#panelProps [data-lt]').forEach(el => { if (document.activeElement !== el) el.value = r2(/^s[xy]$/.test(el.dataset.lt) ? q[el.dataset.lt] * 100 : q[el.dataset.lt]); }); }
 }
 
 /* ---------- Globale Einstellungen ---------- */
@@ -2604,7 +3174,7 @@ const db = (() => {
 async function dbPutImg(id) { const im = IMG.get(id); await db.put('imgs', id, { blob: im.blob, name: im.name, meta: im.meta }); }
 let saveT = null;
 function saveSoon() { clearTimeout(saveT); saveT = setTimeout(() => db.put('kv', 'state', JSON.stringify(ST)).catch(() => { }), 600); }
-const usedImgs = st => new Set(st.panels.flatMap(p => [p.img, ...p.insets.map(i => i.img)]).filter(Boolean));
+const usedImgs = st => new Set(st.panels.flatMap(p => [p.img, ...p.insets.map(i => i.img), ...(p.layers || []).map(L => L.img)]).filter(Boolean));
 async function addImage(id, rec) {
   const svg = rec.blob.type ? rec.blob.type === 'image/svg+xml' : /\.svg$/i.test(rec.name || '');   // ein gedrehtes SVG ist ein PNG, trägt aber noch den alten Namen
   const r = svg ? await rasterSvg(rec.blob) : { full: await createImageBitmap(rec.blob) };
@@ -2615,7 +3185,13 @@ function sanitize(st) {
   const f = freshState();
   if (!st || !Array.isArray(st.panels)) return f;
   st.S = { ...DEF, ...padCompat(st.S || {}) }; st.L = { ...f.L, ...(st.L || {}) }; st.imgs = st.imgs || {};
-  st.panels = st.panels.map(p => { const q = { ...newPanel(), ...p }; q.sb = { ...newPanel().sb, ...(p.sb || {}) }; q.adj = { ...freshAdj(), ...(p.adj || {}) }; migrateSt(q, st.S); return q; });
+  st.panels = st.panels.map(p => {
+    const q = { ...newPanel(), ...p }; q.sb = { ...newPanel().sb, ...(p.sb || {}) }; q.adj = { ...freshAdj(), ...(p.adj || {}) };
+    q.base = { ...freshBase(), ...(p.base || {}) };
+    q.layers = (Array.isArray(p.layers) ? p.layers : []).filter(L => L && L.img && Array.isArray(L.t) && L.t.length === 6 && L.t.every(Number.isFinite))
+      .map(L => ({ ...newLayer(L.img, L.t), ...L, adj: { ...freshAdj(), ...(L.adj || {}) } }));
+    migrateSt(q, st.S); return q;
+  });
   return st;
 }
 // Ältere Projekte: eigene Werte lagen direkt am Element; Annotationen und Insets hatten den Standard beim Anlegen
@@ -2646,7 +3222,7 @@ async function restore() {
   for (const id of need) { try { const rec = await db.get('imgs', id); if (rec) await addImage(id, rec); } catch (err) { console.error(err); } }
   for (const id of need) if (IMG.has(id) && ST.imgs[id] && ST.imgs[id].alpha == null) ST.imgs[id].alpha = hasAlpha(id);
   for (const p of ST.panels) { if (p.img && ST.imgs[p.img] && ST.imgs[p.img].alpha && p.st.panelBg == null && p.st.panelBgOff == null) p.st.panelBgOff = true;
-    if (p.img && !IMG.has(p.img)) p.img = null; p.insets = p.insets.filter(i => i.src === 'region' ? p.img : true); for (const i of p.insets) if (i.img && !IMG.has(i.img)) i.img = null; }
+    if (p.img && !IMG.has(p.img)) p.img = null; p.layers = p.img ? p.layers.filter(L => IMG.has(L.img)) : []; p.insets = p.insets.filter(i => i.src === 'region' ? p.img : true); for (const i of p.insets) if (i.img && !IMG.has(i.img)) i.img = null; }
   try { for (const k of await db.keys('imgs')) if (!need.has(k)) db.del('imgs', k); } catch { }
 }
 /* ---------- Projektdatei: Speichern, Speichern unter, Öffnen (auch per Drag & Drop) ----------
