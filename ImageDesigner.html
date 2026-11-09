@@ -360,7 +360,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
     <ul>
       <li>Ein Bild auf einen Platzhalter mit Bild ziehen → „Als Ebene“ (oder rechts „+ Ebene…“). Ganz unten liegt das <b>Grundbild</b>: Es bestimmt Lage, Zoom, Maßstab und Annotationen.</li>
       <li>Mischmodus „Aufhellen“: Schwarz verschwindet, Farben mischen sich (Rot + Grün = Gelb). Je Ebene: einblenden (Alt + Klick aufs Auge = nur diese), einfärben, Deckkraft, Helligkeit/Kontrast, Reihenfolge mit ⠿.</li>
-      <li>Beim Einfügen liegen Ebenen deckungsgleich – sind beide Bilder kalibriert, im gleichen Maßstab. Fein ausrichten: Ebene wählen, dann Werkzeug „🖼 Bild“.</li>
+      <li>Beim Einfügen behalten Ebenen ihr Seitenverhältnis und werden mittig in das Grundbild eingepasst (bei gleichem Seitenverhältnis also deckungsgleich) – sind beide Bilder kalibriert, im gleichen Maßstab. Fein ausrichten: Ebene wählen, dann Werkzeug „🖼 Bild“.</li>
       <li><b>⌖ Passpunkte</b>: dasselbe Merkmal abwechselnd im Grundbild und in der Ebene anklicken (mind. 2, besser 3 Paare). Die App berechnet Lage, Maßstab und Drehung und zeigt den Restfehler. Rücktaste = Punkt zurück, Enter = fertig, Esc = abbrechen. Mit „dieselbe Korrektur auf die anderen Ebenen anwenden“ (bei gleich großen Ebenen vorbelegt) reicht es, eine Map einer Messung auszurichten.</li>
       <li>„Farblegende“ zeigt Farbkästchen mit den Ebenennamen; jeder Eintrag lässt sich umbenennen oder weglassen. Im SVG-Export wird ein Platzhalter mit Ebenen zu einem Bild zusammengefasst.</li>
     </ul>
@@ -971,12 +971,12 @@ function layerGeo(L, g) {
   const L0 = Math.hypot(top[0] - c[0], top[1] - c[1]) || 1, rh = [top[0] + (top[0] - c[0]) / L0 * 24 / zoom, top[1] + (top[1] - c[1]) / L0 * 24 / zoom];
   return { sr, M, corners, c, top, rh, toFig: f, toLayer: (x, y) => mApply(inv, x, y) };
 }
-// Lage beim Einfügen: beide kalibriert → gleicher Maßstab, mittig; sonst deckungsgleich auf die sichtbare Fläche des Grundbilds
+// Lage beim Einfügen, immer mittig und ohne Verzerrung: beide kalibriert → gleicher Maßstab; sonst so groß wie möglich
+// in die sichtbare Fläche des Grundbilds eingepasst (bei gleichem Seitenverhältnis also deckungsgleich)
 function defaultT(baseId, img, calib = true) {
   const s0 = srcRect(baseId), s1 = srcRect(img), m0 = (ST.imgs[baseId] || {}).mpp, m1 = (ST.imgs[img] || {}).mpp;
-  if (calib && m0 > 0 && m1 > 0) { const k = m1 / m0; return [k, 0, 0, k, s0.x + s0.w / 2 - k * (s1.x + s1.w / 2), s0.y + s0.h / 2 - k * (s1.y + s1.h / 2)]; }
-  const a = s0.w / s1.w, d = s0.h / s1.h;
-  return [a, 0, 0, d, s0.x - a * s1.x, s0.y - d * s1.y];
+  const k = calib && m0 > 0 && m1 > 0 ? m1 / m0 : Math.min(s0.w / s1.w, s0.h / s1.h);
+  return [k, 0, 0, k, s0.x + s0.w / 2 - k * (s1.x + s1.w / 2), s0.y + s0.h / 2 - k * (s1.y + s1.h / 2)];
 }
 // Maßstab, Drehung, Lage der Ebenenmitte aus der Matrix (eine Scherung wird dabei verworfen) und zurück
 function tParts(L) {
@@ -2685,7 +2685,7 @@ function layersHTML(p, d, im) {
       <div class="btns"><button data-act="regundo">Letzten Punkt zurück</button><button data-act="regok" class="primary">Fertig</button><button data-act="regcancel">Abbrechen</button></div></div>`;
   } else {
     h += `<div class="btns"><button data-act="lreg" title="Dasselbe Merkmal abwechselnd im Grundbild und in der Ebene anklicken – die App rechnet Lage, Maßstab und Drehung aus">⌖ Passpunkte setzen</button>
-      <button data-act="lfit" title="Ebene auf die sichtbare Fläche des Grundbilds strecken">Deckungsgleich</button>
+      <button data-act="lfit" title="Ebene mittig und so groß wie möglich in die sichtbare Fläche des Grundbilds setzen, ohne Verzerrung (bei gleichem Seitenverhältnis deckungsgleich)">Einpassen</button>
       ${m0 && m1 ? '<button data-act="lcal" title="Maßstab aus den Kalibrierungen beider Bilder, Lage und Drehung bleiben">Gleicher Maßstab</button>' : ''}
       <button data-act="lbase" title="Diese Ebene wird das Grundbild (unten); das bisherige Grundbild wird eine Ebene">Als Grundbild</button></div>
       <p class="hint">Mit gewählter Ebene wirkt das Werkzeug „🖼 Bild“ nur auf sie: ziehen = verschieben, Ecken = skalieren (Shift = frei), runder Griff = drehen (Shift = 15°), Mausrad = skalieren, Pfeiltasten = verschieben.</p>`;

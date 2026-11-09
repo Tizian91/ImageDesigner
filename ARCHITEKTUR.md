@@ -67,7 +67,7 @@ IMG = Map(id → { w, h, full, prev, blob, meta })   // die Pixel, nicht in ST
 
 - Das **Grundbild** (`p.img`) bestimmt alles Geometrische: Lage und Zoom im Platzhalter (`geom`), Kalibrierung und Maßstab, Annotationen und Inset-Ausschnitte (in seinen Pixeln).
 - Jede **Ebene** sitzt über die Matrix `t` auf dem Grundbild: Ebenen-Pixel → Grundbild-Pixel. `figMatrix(g, t)` setzt sie mit `geom` zu Ebenen-Pixel → Figurpixel zusammen; `layerGeo()` liefert Umriss, Griffe und die Umkehrung für die Maus. Eine allgemeine Matrix statt Lage/Maßstab/Drehung erlaubt es, Ebenen exakt zu verketten und umzukehren (`makeBase`, Drehen des Grundbilds).
-- `defaultT()` legt neue Ebenen deckungsgleich bzw. bei zwei kalibrierten Bildern im gleichen Maßstab an; `fitSim()` passt aus Passpunkten eine Ähnlichkeitstransformation an. `tParts()`/`tFrom()` übersetzen zwischen Matrix und den Zahlenfeldern.
+- `defaultT()` legt neue Ebenen ohne Verzerrung mittig an: eingepasst in die sichtbare Fläche des Grundbilds bzw. bei zwei kalibrierten Bildern im gleichen Maßstab; `fitSim()` passt aus Passpunkten eine Ähnlichkeitstransformation an. `tParts()`/`tFrom()` übersetzen zwischen Matrix und den Zahlenfeldern.
 - **Zeichnen:** `imageOps()` liefert Grundbild (`img`) und Ebenen (`limg` mit Matrix, Mischmodus, Deckkraft). Mit Ebenen steckt alles in einer Gruppe `comp`: Auf dem Canvas wirken die Mischmodi darin, im SVG wird sie flach als ein PNG eingebettet.
 - **Einfärben** (`tint`) rechnet in `imgSource()`: Intensität = hellster Kanal, mal Farbe. Die Legendenfarbe einer nicht eingefärbten Map schätzt `autoColor()`.
 - Ebenen-Einstellungen sind Inhalt, kein Stil: Sie gehören nicht zum Stilsystem.
