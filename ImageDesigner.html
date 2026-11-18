@@ -633,9 +633,13 @@ function tiffMeta(T, H) {
     add('Hochspannung', g(/EHT\s*=\s*([^\r\n]+)/)); add('Arbeitsabstand', g(/\bWD\s*=\s*([^\r\n]+)/));
     add('Detektor', g(/Signal A\s*=\s*([^\r\n]+)/)); add('Vergrößerung', g(/\bMag\s*=\s*([^\r\n]+)/)); add('Datum', g(/Date\s*:?\s*=?\s*([^\r\n]+)/));
   }
-  if (!m.mpp && /ImageJ=/.test(desc) && T[282] > 0) {
+  // ImageJ: pixel_width in der Beschreibung hat Vorrang. Sonst steht die Kalibrierung in XResolution (Pixel je Bildeinheit) –
+  // aber nicht, wenn die Auflösung in Zoll angegeben ist: dann hat ein anderes Programm eine Druckauflösung (z. B. 300 dpi) gesetzt
+  if (!m.mpp && /ImageJ=/.test(desc)) {
     const u = (/unit=([^\r\n]+)/.exec(desc) || [])[1], f = u && UNIT_M[u.replace(/\\u00B5/i, 'µ').trim()];
-    if (f) { m.mpp = f / T[282]; m.src = 'ImageJ-Kalibrierung'; }
+    const pw = parseFloat((/pixel_width=([\d.eE+-]+)/.exec(desc) || [])[1]);
+    if (f && pw > 0) { m.mpp = pw * f; m.src = 'ImageJ-Kalibrierung'; }
+    else if (f && T[282] > 0 && T[296] !== 2) { m.mpp = f / T[282]; m.src = 'ImageJ-Kalibrierung'; }
   }
   if (!m.mpp && T[296] === 3 && T[282] > 1e4) { m.mpp = 0.01 / T[282]; m.src = 'TIFF-Auflösung (bitte prüfen)'; }
   if (!m.mpp && T[296] === 2 && T[282] > 25400) { m.mpp = 0.0254 / T[282]; m.src = 'TIFF-Auflösung (bitte prüfen)'; }
