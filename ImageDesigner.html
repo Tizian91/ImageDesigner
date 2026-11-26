@@ -301,6 +301,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
     <span class="seg" id="atools" hidden>
       <button data-at="select" title="Annotation auswählen und verschieben">↖</button>
       <button data-at="arrow" title="Pfeil">➝</button>
+      <button data-at="darrow" title="Doppelpfeil: Spitzen an beiden Enden">⟷</button>
       <button data-at="line" title="Linie">／</button>
       <button data-at="rect" title="Rechteck">▭</button>
       <button data-at="ellipse" title="Ellipse">◯</button>
@@ -355,7 +356,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
       <tr><td>▣ Platzhalter <kbd>V</kbd></td><td>Platzhalter verschieben und an den Griffen skalieren; das Bild skaliert mit. <b>Zuschneiden</b>: Umschalter „✂ Zuschneiden“ oder <kbd>Strg</kbd> beim Ziehen eines Griffs – das Bild bleibt stehen, der Platzhalter schneidet ab. Shift/Strg + Klick wählt mehrere. Bei Layout „Frei“: auf leerer Fläche neue Platzhalter aufziehen. Insets in eine andere Ecke ziehen.</td></tr>
       <tr><td>🖼 Bild <kbd>B</kbd></td><td>Bild im Platzhalter verschieben, an den Ecken oder mit dem Mausrad zoomen; der Platzhalter bleibt und schneidet ab. Ist rechts eine <b>Ebene</b> gewählt, wirkt es nur auf sie: ziehen, Ecken = skalieren, runder Griff = drehen.</td></tr>
       <tr><td>⟷ Maßstab <kbd>M</kbd></td><td>Entlang eines vorhandenen Maßstabs im Bild ziehen und die Länge eingeben (Kalibrieren).</td></tr>
-      <tr><td>✎ Annotation <kbd>A</kbd></td><td>Pfeil, Linie, Rechteck, Ellipse oder Text einzeichnen (Shift = gerade/rund); ↖ wählt und verschiebt. Die gewählte Annotation an ihren Griffen umformen: Enden bzw. Ecken und Kanten.<br>Messen (Bild kalibriert): 📏 Strecke mit Länge, ⌀ Pore – über den Durchmesser ziehen, seitliche Griffe formen die Ellipse (Shift = Kreis). Die Beschriftung lässt sich entlang der Linie bzw. um die Pore ziehen; über die Linie hinweg wechselt sie die Seite (Shift = Raster).</td></tr>
+      <tr><td>✎ Annotation <kbd>A</kbd></td><td>Pfeil, Doppelpfeil, Linie, Rechteck, Ellipse oder Text einzeichnen (Shift = gerade/rund); ↖ wählt und verschiebt. Die gewählte Annotation an ihren Griffen umformen: Enden bzw. Ecken und Kanten.<br>Messen (Bild kalibriert): 📏 Strecke mit Länge, ⌀ Pore – über den Durchmesser ziehen, seitliche Griffe formen die Ellipse (Shift = Kreis). Die Beschriftung lässt sich entlang der Linie bzw. um die Pore ziehen; über die Linie hinweg wechselt sie die Seite (Shift = Raster).</td></tr>
       <tr><td>⧉ Inset <kbd>I</kbd></td><td>Im Bild einen Ausschnitt aufziehen – er erscheint vergrößert in einer Ecke, auf Wunsch mit Markierung und Verbindungslinien.</td></tr>
     </table>
     <h3>Ebenen (z. B. EDX-Maps über einer REM-Aufnahme)</h3>
@@ -1218,7 +1219,7 @@ function dashFor(style, w, cap) {
    Beschriftung: a.t = Lage (Strecke: Anteil der Länge; Ellipse: Winkel als Anteil einer Umdrehung, im Uhrzeigersinn ab rechts),
    a.side = 'b' für die andere Seite (Strecke: unten bzw. rechts; Ellipse: innen). Eigener Text a.text, {} = Messwert. */
 const isMeas = a => a.type === 'mline' || a.type === 'mell';
-const isLineLike = a => a.type === 'arrow' || a.type === 'line' || a.type === 'mline';
+const isLineLike = a => a.type === 'arrow' || a.type === 'darrow' || a.type === 'line' || a.type === 'mline';
 const T_DEF = { mline: 0.5, mell: 0.875 };
 const MEAS_BB = new WeakMap();   // Annotation → { c, w, h, rot } der Beschriftung (für Auswahl und Ziehen)
 const MDEC = { s3: 'automatisch (3 gültige Ziffern)', d0: '0', d1: '1', d2: '2', d3: '3' };
@@ -1297,16 +1298,20 @@ function annotOps(a, g, p) {
   const v = svOf(a, p), col = v('anColor'), w = v('anW') * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
   const cap = v('anCap'), dash = dashFor(v('anDash'), w, cap), join = cap === 'round' ? 'round' : 'miter';
   const [p1, p2] = [P[0], P[1] || P[0]];
-  if (a.type === 'arrow' || a.type === 'line') {
-    let e = p2;
-    if (a.type === 'arrow') {
-      const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
-      const hl = Math.min(L, (4 + 2.5 * v('anW')) * PT), hw = hl * 0.42;
-      e = [p2[0] - ux * hl * 0.8, p2[1] - uy * hl * 0.8];
-      const b = [p2[0] - ux * hl, p2[1] - uy * hl];
-      o.push({ k: 'path', d: `M${f2(p2[0])} ${f2(p2[1])}L${f2(b[0] - uy * hw)} ${f2(b[1] + ux * hw)}L${f2(b[0] + uy * hw)} ${f2(b[1] - ux * hw)}Z`, fill: col });
+  if (a.type === 'arrow' || a.type === 'darrow' || a.type === 'line') {
+    let s = p1, e = p2;
+    if (a.type !== 'line') {   // Spitze am Ende, beim Doppelpfeil auch am Anfang; die Linie endet unter der Spitze
+      const dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.hypot(dx, dy) || 1;
+      const hl = Math.min(a.type === 'darrow' ? L / 2 : L, (4 + 2.5 * v('anW')) * PT), hw = hl * 0.42;
+      const head = (tip, ux, uy) => {
+        const b = [tip[0] - ux * hl, tip[1] - uy * hl];
+        o.push({ k: 'path', d: `M${f2(tip[0])} ${f2(tip[1])}L${f2(b[0] - uy * hw)} ${f2(b[1] + ux * hw)}L${f2(b[0] + uy * hw)} ${f2(b[1] - ux * hw)}Z`, fill: col });
+        return [tip[0] - ux * hl * 0.8, tip[1] - uy * hl * 0.8];
+      };
+      e = head(p2, dx / L, dy / L);
+      if (a.type === 'darrow') s = head(p1, -dx / L, -dy / L);
     }
-    o.unshift({ k: 'path', d: `M${f2(p1[0])} ${f2(p1[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap, dash });
+    o.unshift({ k: 'path', d: `M${f2(s[0])} ${f2(s[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap, dash });
   } else if (a.type === 'rect') {
     o.push({ k: 'rect', x: Math.min(p1[0], p2[0]), y: Math.min(p1[1], p2[1]), w: Math.abs(p2[0] - p1[0]), h: Math.abs(p2[1] - p1[1]), stroke: col, sw: w, cap, join, dash });
   } else if (a.type === 'ellipse') {
@@ -2612,7 +2617,7 @@ function movePanel(i, j) { const [p] = ST.panels.splice(i, 1); ST.panels.splice(
 /* ---------- Seitenleiste: ausgewählter Platzhalter ---------- */
 const CORNERS = { ul: 'oben links', uc: 'oben Mitte', ur: 'oben rechts', ll: 'unten links', lc: 'unten Mitte', lr: 'unten rechts' };
 const optList = (o, cur) => Object.entries(o).map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
-const ANAME = { arrow: 'Pfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', mline: 'Strecke', mell: 'Kreis/Ellipse' };
+const ANAME = { arrow: 'Pfeil', darrow: 'Doppelpfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', mline: 'Strecke', mell: 'Kreis/Ellipse' };
 
 /* ---------- Stil-Tabelle: eine Quelle für links (Standard, data-k) und rechts (nur die Auswahl, el.st) ----------
    F: Eingabefeld je Schlüssel. KIND: Zeilen je Elementart; das optionale dritte Feld blendet eine Zeile rechts je nach Element aus. */
@@ -2750,8 +2755,9 @@ function buildProps() {
     const a = selItem && selItem.kind === 'annot' && p.annots.find(x => x.id === selItem.id);
     if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : isMeas(x) ? ': ' + esc(measText(x, p, svOf(x, p)).split('\n')[0]) : ''}</button>`).join('')}</div>`;
     if (a) h += `<div class="card"><div class="row"><b>${ANAME[a.type]}</b><span style="flex:1"></span><button class="mini" data-act="adel">✕</button></div>` +
-      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea>` : '') + (isMeas(a) ? measPropsHTML(a, p) : '') + styBlock('an', ['an'], a, p) + '</div>';
-    h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit. Eine ausgewählte Annotation lässt sich an ihren Griffen umformen: Pfeil und Linie an den Enden (Shift = 45°-Schritte), Rechteck und Ellipse an Ecken und Kanten (Shift = Seitenverhältnis halten). Messen: 📏 Strecke, ⌀ Pore (über den Durchmesser ziehen; seitliche Griffe = Ellipse, Shift = Kreis); die Beschriftung im Bild entlang ziehen, über die Linie hinweg wechselt die Seite.</p>`;
+      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea>` : '') +
+      (a.type === 'arrow' || a.type === 'darrow' ? `<div class="row"><span>Spitzen</span><span class="seg">${[['arrow', '➝ am Ende'], ['darrow', '⟷ an beiden Enden']].map(([t, l]) => `<button class="mini${a.type === t ? ' on' : ''}" data-act="atype" data-v="${t}">${l}</button>`).join('')}</span></div>` : '') + (isMeas(a) ? measPropsHTML(a, p) : '') + styBlock('an', ['an'], a, p) + '</div>';
+    h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Doppelpfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit. Eine ausgewählte Annotation lässt sich an ihren Griffen umformen: Pfeil, Doppelpfeil und Linie an den Enden (Shift = 45°-Schritte), Rechteck und Ellipse an Ecken und Kanten (Shift = Seitenverhältnis halten). Messen: 📏 Strecke, ⌀ Pore (über den Durchmesser ziehen; seitliche Griffe = Ellipse, Shift = Kreis); die Beschriftung im Bild entlang ziehen, über die Linie hinweg wechselt die Seite.</p>`;
   }
   h += `<div class="btns" style="margin-top:10px"><button data-act="dup">Duplizieren</button><button data-act="pdel">Platzhalter entfernen</button></div>`;
   box.innerHTML = h;
@@ -2968,7 +2974,7 @@ async function propAction(a, p, b, ev) {
     case 'idel': p.insets.splice(i, 1); break;
     case 'asel': selItem = { kind: 'annot', id: b.dataset.id }; break;
     case 'adel': p.annots = p.annots.filter(x => !selItem || x.id !== selItem.id); selItem = null; break;
-    case 'aside': case 'acirc': { const an = p.annots.find(x => selItem && x.id === selItem.id); if (!an) return; if (a === 'aside') an.side = b.dataset.v; else an.r = 1; break; }
+    case 'aside': case 'acirc': case 'atype': { const an = p.annots.find(x => selItem && x.id === selItem.id); if (!an) return; if (a === 'aside') an.side = b.dataset.v; else if (a === 'atype') an.type = b.dataset.v; else an.r = 1; break; }
     // ↺ eigene Werte der Zeile entfernen · ⇧ als Standard übernehmen · 📌 Element fixieren bzw. lösen
     case 'sreset': case 'sstd': {
       const el = scopeObj(p, b.closest('[data-el]').dataset.el), keys = b.closest('.row').dataset.keys.split(',');
