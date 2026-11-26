@@ -53,7 +53,7 @@ ST = {
               st: { … }, fix: { … },                    // eigener Stil, fixierter Stand (siehe unten)
               texts:   [ { id, text, corner, align, st, fix } ],
               insets:  [ { id, src: 'region' | 'image', region | img, corner, st, fix } ],
-              annots:  [ { id, type, p: [[x, y], …], text?, st, fix } ] } ],   // p in Bildpixeln
+              annots:  [ { id, type, p: [[x, y], …], text?, t?, side?, r?, st, fix } ] } ],   // p in Bildpixeln
   imgs:   { [id]: { name, mpp, crop, bar, hideBar, … } }
 }
 IMG = Map(id → { w, h, full, prev, blob, meta })   // die Pixel, nicht in ST
@@ -121,14 +121,22 @@ Damit funktionieren automatisch: das Feld links und rechts, die Abweichungsanzei
 | `limg` | Ebene: Bildausschnitt über eine Matrix `m`, mit Mischmodus `blend` und Deckkraft `op` |
 | `comp` | Grundbild und Ebenen eines Platzhalters als Gruppe (SVG: ein flaches Bild) |
 | `clip` | Gruppe mit rechteckigem Zuschnitt (jeder Platzhalter) |
-| `tr` | verschobene Gruppe (Seiten-Export) |
-| `path`, `ell`, `text` | SVG-Pfad, Ellipse, Textzeile |
+| `tr` | verschobene, optional gedrehte Gruppe (`rot` in Grad; Seiten-Export, Messbeschriftungen) |
+| `path`, `ell`, `text` | SVG-Pfad, Ellipse (optional gedreht, `rot`), Textzeile |
 
 - **Ecken:** Labels, Maßstabsbalken, Insets und Textfelder liefern je ein Element `{ w, h, draw(x, y) }`. `buildOps` stapelt sie pro Ecke, jedes mit seinem eigenen Abstand zum Rand.
 - `hits` enthält die Lage von Platzhaltern und Insets für die Trefferprüfung mit der Maus.
 - **Ausgabe:** `drawOps()` zeichnet auf ein Canvas (Vorschau, PNG, TIFF, JPG, „Für Word kopieren“), `buildSVG()` schreibt SVG (auch für PDF über Drucken). Neue Grundelemente müssen in **beiden** ergänzt werden.
 - In SVG werden Bildausschnitte als `clipPath` mit Transformationsmatrix geschrieben, nicht als verschachteltes `<svg viewBox>`, weil Inkscape dessen Beschnitt ignoriert.
 - Eingefügte SVG-Dateien werden für die schnelle Vorschau gerastert (`IMG.prev`, `IMG.full`). Reicht das Raster für die aktuelle Vergrößerung nicht, zeichnet `drawOps()` stattdessen das geladene SVG `IMG.vec`, auch im PNG-/TIFF-Export. Das Original bleibt in `IMG.blob`. `buildSVG()` setzt es mit `inlineSvg()` als `<g>` ein, denn `<image>` mit SVG-Daten behandelt Inkscape als Bild ohne bearbeitbare Pfade. IDs bekommen je Vorkommen ein Präfix, eingebettetes CSS wird auf die Gruppe begrenzt.
+
+## Messungen
+
+Zwei Annotationsarten messen im Grundbild: `mline` (Strecke von `p[0]` nach `p[1]`) und `mell` (Kreis/Ellipse: `p` = Enden einer Achse, `r` = andere Achse / diese, 1 = Kreis; so ist die Ellipse beliebig gedreht und überlebt Drehen und `makeBase`).
+
+- `measText()` rechnet mit `ST.imgs[p.img].mpp`, ohne Kalibrierung in Pixeln. Eigener Text in `a.text` ersetzt den Wert, `{}` setzt ihn ein.
+- Beschriftung: `a.t` ist die Lage (Strecke: Anteil der Länge; Ellipse: Winkel als Anteil einer Umdrehung), `a.side = 'b'` die andere Seite. Seite `'a'` heißt bei eher waagerechten Linien oben, bei eher senkrechten links – unabhängig von der Zeichenrichtung (`measGeo()`). `measLabelPos()` legt den Textkasten an die Linie; `MEAS_BB` merkt sich seine Lage für Auswahl und Ziehen (Griff `k: 'lbl'` in `drag.t = 'anode'`).
+- Das Aussehen (Pfeilenden, Schrift, Farbe, Richtung, Abstand, Einheit, Genauigkeit) sind normale `an…`-Stilwerte; Lage, Seite und Text sind Inhalt.
 
 ## Bedienung
 

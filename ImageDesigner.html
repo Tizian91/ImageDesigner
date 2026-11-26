@@ -305,6 +305,8 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
       <button data-at="rect" title="Rechteck">▭</button>
       <button data-at="ellipse" title="Ellipse">◯</button>
       <button data-at="text" title="Text">T</button>
+      <button data-at="mline" title="Strecke messen: Pfeil ziehen, die Länge steht daneben (Shift = 45°-Schritte)">📏</button>
+      <button data-at="mell" title="Pore messen: über den Durchmesser ziehen = Kreis; an den seitlichen Griffen zur Ellipse formen">⌀</button>
     </span>
     <span class="seg" id="ptools" hidden title="Was beim Ziehen an den Griffen eines Platzhalters mit dem Bild passiert – Strg beim Ziehen kehrt es um">
       <button data-pm="scale" title="Griffe: das Bild (samt Ebenen) skaliert mit dem Platzhalter">⇲ Bild skaliert mit</button>
@@ -353,7 +355,7 @@ kbd{font:11.5px/1 Consolas,monospace;border:1px solid var(--border);border-botto
       <tr><td>▣ Platzhalter <kbd>V</kbd></td><td>Platzhalter verschieben und an den Griffen skalieren; das Bild skaliert mit. <b>Zuschneiden</b>: Umschalter „✂ Zuschneiden“ oder <kbd>Strg</kbd> beim Ziehen eines Griffs – das Bild bleibt stehen, der Platzhalter schneidet ab. Shift/Strg + Klick wählt mehrere. Bei Layout „Frei“: auf leerer Fläche neue Platzhalter aufziehen. Insets in eine andere Ecke ziehen.</td></tr>
       <tr><td>🖼 Bild <kbd>B</kbd></td><td>Bild im Platzhalter verschieben, an den Ecken oder mit dem Mausrad zoomen; der Platzhalter bleibt und schneidet ab. Ist rechts eine <b>Ebene</b> gewählt, wirkt es nur auf sie: ziehen, Ecken = skalieren, runder Griff = drehen.</td></tr>
       <tr><td>⟷ Maßstab <kbd>M</kbd></td><td>Entlang eines vorhandenen Maßstabs im Bild ziehen und die Länge eingeben (Kalibrieren).</td></tr>
-      <tr><td>✎ Annotation <kbd>A</kbd></td><td>Pfeil, Linie, Rechteck, Ellipse oder Text einzeichnen (Shift = gerade/rund); ↖ wählt und verschiebt. Die gewählte Annotation an ihren Griffen umformen: Enden bzw. Ecken und Kanten.</td></tr>
+      <tr><td>✎ Annotation <kbd>A</kbd></td><td>Pfeil, Linie, Rechteck, Ellipse oder Text einzeichnen (Shift = gerade/rund); ↖ wählt und verschiebt. Die gewählte Annotation an ihren Griffen umformen: Enden bzw. Ecken und Kanten.<br>Messen (Bild kalibriert): 📏 Strecke mit Länge, ⌀ Pore – über den Durchmesser ziehen, seitliche Griffe formen die Ellipse (Shift = Kreis). Die Beschriftung lässt sich entlang der Linie bzw. um die Pore ziehen; über die Linie hinweg wechselt sie die Seite (Shift = Raster).</td></tr>
       <tr><td>⧉ Inset <kbd>I</kbd></td><td>Im Bild einen Ausschnitt aufziehen – er erscheint vergrößert in einer Ecke, auf Wunsch mit Markierung und Verbindungslinien.</td></tr>
     </table>
     <h3>Ebenen (z. B. EDX-Maps über einer REM-Aufnahme)</h3>
@@ -418,6 +420,7 @@ const DEF = {
   insSize: 0.35, insColor: '#ffffff', insW: 1, insPad: 4, insMark: true, insLines: false,
   capOn: false, capText: '', capSize: 9, capAlign: 'justify',
   sameMag: false, magZoom: 1, anDash: 'solid', anCap: 'round',
+  anEnds: 'arrows', anMVal: 'd', anMAxes: false, anLblColor: '#ffffff', anLblSame: true, anMRot: 'along', anLblGap: 2, anMUnit: 'auto', anMDec: 's3',
   scaleWithFig: false, page: '', pageOri: 'p', pageW: 21, pageH: 29.7, pageMargin: 2.5, pageAlign: 'left', exportArea: 'figure',
   colHeads: '', rowHeads: '', headSize: 10, headBold: true, headColor: '#000000', rowRot: true
 };
@@ -1210,6 +1213,86 @@ function dashFor(style, w, cap) {
   const c = cap === 'butt' ? 0 : 1;
   return d.map((v, i) => (i % 2 ? v + c : Math.max(0.01, v - c)) * w);
 }
+/* ---------- Messungen ----------
+   mline: Strecke von p[0] nach p[1]. mell: Kreis/Ellipse; p = Enden einer Achse, a.r = andere Achse / diese (1 = Kreis).
+   Beschriftung: a.t = Lage (Strecke: Anteil der Länge; Ellipse: Winkel als Anteil einer Umdrehung, im Uhrzeigersinn ab rechts),
+   a.side = 'b' für die andere Seite (Strecke: unten bzw. rechts; Ellipse: innen). Eigener Text a.text, {} = Messwert. */
+const isMeas = a => a.type === 'mline' || a.type === 'mell';
+const isLineLike = a => a.type === 'arrow' || a.type === 'line' || a.type === 'mline';
+const T_DEF = { mline: 0.5, mell: 0.875 };
+const MEAS_BB = new WeakMap();   // Annotation → { c, w, h, rot } der Beschriftung (für Auswahl und Ziehen)
+const MDEC = { s3: '3 Stellen', d0: 'ganze Zahl', d1: '1 Nachkommastelle', d2: '2 Nachkommastellen', d3: '3 Nachkommastellen' };
+const fmtNum = (x, dec) => (dec && dec[0] === 'd' ? x.toFixed(+dec.slice(1)) : String(+x.toPrecision(3))).replace('.', ',');
+// Messwert in der Kalibrierung des Grundbilds; ohne Kalibrierung in Pixeln
+function measText(a, p, v) {
+  const d = p.img && ST.imgs[p.img], mpp = d && d.mpp, dec = v('anMDec'), A = a.p[0], B = a.p[1] || a.p[0];
+  const L1 = Math.hypot(B[0] - A[0], B[1] - A[1]), L2 = a.type === 'mell' ? L1 * (a.r ?? 1) : 0;
+  let u = ['px', 1];
+  if (mpp) u = SB_UNITS.find(x => x[0] === v('anMUnit')) || SB_UNITS.reduce((b, x) => Math.max(L1, L2) * mpp >= x[1] * 0.9999 ? x : b, SB_UNITS[0]);
+  const k = (mpp || 1) / u[1];
+  if (a.type === 'mline') return `${fmtNum(L1 * k, dec)} ${u[0]}`;
+  const dTxt = Math.abs((a.r ?? 1) - 1) < 1e-3 ? `Ø ${fmtNum(L1 * k, dec)} ${u[0]}` : `${fmtNum(Math.max(L1, L2) * k, dec)} × ${fmtNum(Math.min(L1, L2) * k, dec)} ${u[0]}`;
+  const aTxt = `A = ${fmtNum(Math.PI / 4 * L1 * L2 * k * k, dec)} ${u[0]}²`, w = v('anMVal');
+  return w === 'area' ? aTxt : w === 'both' ? dTxt + '\n' + aTxt : dTxt;
+}
+const measLabelText = (a, p, v) => { const m = measText(a, p, v); return a.text && a.text.trim() ? a.text.replace(/\{\}/g, m) : m; };
+// Lage in Figurpixeln. Strecke: n zeigt zur Seite 'a' – oben bei eher waagerechten, links bei eher senkrechten Linien,
+// unabhängig von der Zeichenrichtung. Ellipse: Mitte C, Halbachsen ra (entlang u) und rb (entlang n), Drehung ang.
+function measGeo(a, g) {
+  const A = g.toFig(a.p[0][0], a.p[0][1]), B = a.p[1] ? g.toFig(a.p[1][0], a.p[1][1]) : A;
+  const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1e-9, u = [dx / L, dy / L], horiz = Math.abs(u[0]) >= Math.abs(u[1]);
+  let n = [-u[1], u[0]];
+  if (a.type === 'mline') { if (horiz ? n[1] > 0 : n[0] > 0) n = [-n[0], -n[1]]; return { A, B, L, u, n, horiz }; }
+  return { A, B, L, u, n, C: [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], ra: L / 2, rb: Math.max(1e-6, L / 2 * (a.r ?? 1)), ang: Math.atan2(dy, dx) };
+}
+// normierter Abstand eines Punkts von der Ellipsenmitte (1 = auf dem Rand)
+function ellRho(G, q) {
+  const x = q[0] - G.C[0], y = q[1] - G.C[1];
+  return Math.hypot((x * G.u[0] + y * G.u[1]) / G.ra, (x * G.n[0] + y * G.n[1]) / G.rb);
+}
+// Mitte und Drehung (Grad) der Beschriftung mit Größe it.w × it.h
+function measLabelPos(a, G, it, v) {
+  const sgn = a.side === 'b' ? -1 : 1, gap = (v('anLblGap') + v('anW') / 2) * PT, t = a.t ?? T_DEF[a.type];
+  if (a.type === 'mline') {
+    const Q = [G.A[0] + (G.B[0] - G.A[0]) * t, G.A[1] + (G.B[1] - G.A[1]) * t], n = [G.n[0] * sgn, G.n[1] * sgn];
+    if (v('anMRot') === 'along') {   // lesbar halten: nie über Kopf, senkrecht von unten nach oben
+      let rot = Math.atan2(G.u[1], G.u[0]) * 180 / Math.PI;
+      if (rot >= 89.99) rot -= 180; else if (rot < -90.01) rot += 180;
+      const o = gap + it.h / 2; return { c: [Q[0] + n[0] * o, Q[1] + n[1] * o], rot };
+    }
+    const o = gap + Math.abs(n[0]) * it.w / 2 + Math.abs(n[1]) * it.h / 2;
+    return { c: [Q[0] + n[0] * o, Q[1] + n[1] * o], rot: 0 };
+  }
+  const th = t * 2 * Math.PI, d = [Math.cos(th), Math.sin(th)];
+  const rho = 1 / Math.hypot((d[0] * G.u[0] + d[1] * G.u[1]) / G.ra, (d[0] * G.n[0] + d[1] * G.n[1]) / G.rb);   // Rand in Richtung d
+  const o = rho + sgn * (gap + Math.abs(d[0]) * it.w / 2 + Math.abs(d[1]) * it.h / 2);
+  return { c: [G.C[0] + d[0] * o, G.C[1] + d[1] * o], rot: 0 };
+}
+function measLabelOps(a, p, v, G, o) {
+  const vl = k => k === 'anColor' && !v('anLblSame') ? v('anLblColor') : v(k), it = textItem(measLabelText(a, p, v), 'center', vl, 'an');
+  if (!it) { MEAS_BB.delete(a); return; }
+  const L = measLabelPos(a, G, it, v);
+  o.push({ k: 'tr', dx: L.c[0], dy: L.c[1], rot: L.rot, ops: it.draw(-it.w / 2, -it.h / 2) });
+  MEAS_BB.set(a, { c: L.c, w: it.w, h: it.h, rot: L.rot });
+}
+function inMeasLabel(a, pt, tol = 0) {
+  const b = MEAS_BB.get(a); if (!b) return false;
+  const r = -b.rot * Math.PI / 180, x = pt.x - b.c[0], y = pt.y - b.c[1];
+  return Math.abs(x * Math.cos(r) - y * Math.sin(r)) <= b.w / 2 + tol && Math.abs(x * Math.sin(r) + y * Math.cos(r)) <= b.h / 2 + tol;
+}
+// Beschriftung ziehen: entlang der Strecke bzw. um die Ellipse; über die Linie hinweg wechselt die Seite. Shift = Raster
+function dragMeasLabel(d, pt, snap) {
+  const G = measGeo(d.a, d.g), q = [pt.x, pt.y], q0 = [d.pt0.x, d.pt0.y];
+  if (d.a.type === 'mline') {
+    const proj = r => ((r[0] - G.A[0]) * G.u[0] + (r[1] - G.A[1]) * G.u[1]) / G.L;
+    let t = clamp(d.t0 + proj(q) - proj(q0), -0.5, 1.5); if (snap) t = Math.round(t * 4) / 4;
+    d.a.t = t; d.a.side = (q[0] - G.A[0]) * G.n[0] + (q[1] - G.A[1]) * G.n[1] < 0 ? 'b' : 'a';
+  } else {
+    const ang = r => Math.atan2(r[1] - G.C[1], r[0] - G.C[0]);
+    let t = ((d.t0 + (ang(q) - ang(q0)) / (2 * Math.PI)) % 1 + 1) % 1; if (snap) t = Math.round(t * 8) / 8 % 1;
+    d.a.t = t; d.a.side = ellRho(G, q) < 1 ? 'b' : 'a';
+  }
+}
 function annotOps(a, g, p) {
   const v = svOf(a, p), col = v('anColor'), w = v('anW') * PT, P = a.p.map(q => g.toFig(q[0], q[1])), o = [];
   const cap = v('anCap'), dash = dashFor(v('anDash'), w, cap), join = cap === 'round' ? 'round' : 'miter';
@@ -1231,6 +1314,30 @@ function annotOps(a, g, p) {
   } else if (a.type === 'text') {
     const it = textItem(a.text, a.align, v, 'an');
     if (it) { o.push(...it.draw(p1[0], p1[1])); TEXT_BB.set(a.id, [p1[0], p1[1], it.w, it.h]); }
+  } else if (a.type === 'mline') {
+    const G = measGeo(a, g), ends = v('anEnds'), hl = Math.min(G.L / 2.2, (4 + 2.5 * v('anW')) * PT), hw = hl * 0.42;
+    const head = (tip, u) => {   // Spitze bei tip, u zeigt zur Spitze; liefert das Linienende unter der Spitze
+      const b = [tip[0] - u[0] * hl, tip[1] - u[1] * hl];
+      o.push({ k: 'path', d: `M${f2(tip[0])} ${f2(tip[1])}L${f2(b[0] - u[1] * hw)} ${f2(b[1] + u[0] * hw)}L${f2(b[0] + u[1] * hw)} ${f2(b[1] - u[0] * hw)}Z`, fill: col });
+      return [tip[0] - u[0] * hl * 0.8, tip[1] - u[1] * hl * 0.8];
+    };
+    let s = G.A, e = G.B;
+    if (ends === 'arrows' || ends === 'arrow') e = head(G.B, G.u);
+    if (ends === 'arrows') s = head(G.A, [-G.u[0], -G.u[1]]);
+    if (ends === 'ticks') {
+      const tl = 2.5 * w + 2 * PT, n = G.n;
+      o.push({ k: 'path', d: [G.A, G.B].map(q => `M${f2(q[0] - n[0] * tl)} ${f2(q[1] - n[1] * tl)}L${f2(q[0] + n[0] * tl)} ${f2(q[1] + n[1] * tl)}`).join(''), stroke: col, sw: w, cap: 'butt' });
+    }
+    o.unshift({ k: 'path', d: `M${f2(s[0])} ${f2(s[1])}L${f2(e[0])} ${f2(e[1])}`, stroke: col, sw: w, cap: ends === 'ticks' ? 'butt' : cap, dash });
+    measLabelOps(a, p, v, G, o);
+  } else if (a.type === 'mell') {
+    const G = measGeo(a, g);
+    o.push({ k: 'ell', cx: G.C[0], cy: G.C[1], rx: G.ra, ry: G.rb, rot: G.ang * 180 / Math.PI, stroke: col, sw: w, cap, dash });
+    if (v('anMAxes')) {
+      const m = [[G.C[0] - G.n[0] * G.rb, G.C[1] - G.n[1] * G.rb], [G.C[0] + G.n[0] * G.rb, G.C[1] + G.n[1] * G.rb]];
+      o.push({ k: 'path', d: [[G.A, G.B], m].map(([q, r]) => `M${f2(q[0])} ${f2(q[1])}L${f2(r[0])} ${f2(r[1])}`).join(''), stroke: col, sw: w * 0.6, cap, dash: dashFor('dashed', w * 0.6, cap) });
+    }
+    measLabelOps(a, p, v, G, o);
   }
   return o;
 }
@@ -1331,7 +1438,7 @@ function drawOps(ctx, ops, hi) {
       }
       case 'comp': ctx.save(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'clip': ctx.save(); ctx.beginPath(); ctx.rect(o.x, o.y, o.w, o.h); ctx.clip(); drawOps(ctx, o.ops, hi); ctx.restore(); break;
-      case 'tr': ctx.save(); ctx.translate(o.dx, o.dy); drawOps(ctx, o.ops, hi); ctx.restore(); break;
+      case 'tr': ctx.save(); ctx.translate(o.dx, o.dy); if (o.rot) ctx.rotate(o.rot * Math.PI / 180); drawOps(ctx, o.ops, hi); ctx.restore(); break;
       case 'path': {
         const p = new Path2D(o.d);
         if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(p); }
@@ -1339,7 +1446,7 @@ function drawOps(ctx, ops, hi) {
         break;
       }
       case 'ell':
-        ctx.beginPath(); ctx.ellipse(o.cx, o.cy, Math.max(0.1, o.rx), Math.max(0.1, o.ry), 0, 0, 2 * Math.PI);
+        ctx.beginPath(); ctx.ellipse(o.cx, o.cy, Math.max(0.1, o.rx), Math.max(0.1, o.ry), (o.rot || 0) * Math.PI / 180, 0, 2 * Math.PI);
         if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
         if (o.stroke) { ctx.lineWidth = o.sw; ctx.strokeStyle = o.stroke; ctx.lineCap = o.cap || 'butt'; ctx.setLineDash(o.dash || []); ctx.stroke(); ctx.setLineDash([]); }
         break;
@@ -1433,10 +1540,10 @@ async function buildSVG() {
         const mx = `matrix(${+kx.toPrecision(6)} 0 0 ${+ky.toPrecision(6)} ${f2(o.x - o.sx * kx)} ${f2(o.y - o.sy * ky)})`;
         if (u.svg != null) { const im = IMG.get(o.id), d = ST.imgs[o.id] || {}; return `<g clip-path="url(#${id})"><g transform="${mx}">${inlineSvg(u.svg, `${u.id}_${n++}_`, im.w, im.h, d.physW, d.physH)}</g></g>`; }
         return `<g clip-path="url(#${id})"><use href="#${u.id}" transform="${mx}"/></g>`; }
-      case 'tr': return `<g transform="translate(${f2(o.dx)} ${f2(o.dy)})">${out(o.ops)}</g>`;
+      case 'tr': return `<g transform="translate(${f2(o.dx)} ${f2(o.dy)})${o.rot ? ` rotate(${f2(o.rot)})` : ''}">${out(o.ops)}</g>`;
       case 'clip': { const id = 'c' + n++; defs.push(`<clipPath id="${id}"><rect${attr({ x: o.x, y: o.y, width: o.w, height: o.h })}/></clipPath>`); return `<g clip-path="url(#${id})">${out(o.ops)}</g>`; }
       case 'path': return `<path${attr({ d: o.d, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.stroke ? o.sw : null, ...strokeStyle(o), 'stroke-linejoin': o.stroke ? 'round' : null })}/>`;
-      case 'ell': return `<ellipse${attr({ cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw, ...strokeStyle(o) })}/>`;
+      case 'ell': return `<ellipse${attr({ cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry, fill: o.fill || 'none', stroke: o.stroke, 'stroke-width': o.sw, ...strokeStyle(o), transform: o.rot ? `rotate(${f2(o.rot)} ${f2(o.cx)} ${f2(o.cy)})` : null })}/>`;
       case 'text': return `<text${attr({ x: o.x, y: o.y, 'font-family': o.f.fam.replace(/"/g, "'"), 'font-size': o.f.px, 'font-weight': o.f.b ? 'bold' : null, 'font-style': o.f.i ? 'italic' : null, fill: o.fill, 'text-anchor': o.anchor, transform: o.rot ? `rotate(${o.rot} ${f2(o.x)} ${f2(o.y)})` : null })} xml:space="preserve">${esc(o.t)}</text>`;
     }
     return '';
@@ -1625,9 +1732,11 @@ function drawOverlay(ctx, r) {
       if (a) {
         const b = annotBox(a, h.g), hs = annotHandles(a, h.g);
         ctx.strokeStyle = acc; ctx.lineWidth = px; ctx.setLineDash([3 * px, 3 * px]);
-        if (a.type !== 'arrow' && a.type !== 'line') ctx.strokeRect(b[0] - 3 * px, b[1] - 3 * px, b[2] + 6 * px, b[3] + 6 * px);
+        if (!isLineLike(a) && a.type !== 'mell') ctx.strokeRect(b[0] - 3 * px, b[1] - 3 * px, b[2] + 6 * px, b[3] + 6 * px);
+        const lb = isMeas(a) && MEAS_BB.get(a);   // Beschriftung einer Messung: zum Ziehen markiert
+        if (lb) { ctx.save(); ctx.translate(lb.c[0], lb.c[1]); ctx.rotate(lb.rot * Math.PI / 180); ctx.strokeRect(-lb.w / 2 - 2 * px, -lb.h / 2 - 2 * px, lb.w + 4 * px, lb.h + 4 * px); ctx.restore(); }
         ctx.setLineDash([]); ctx.fillStyle = '#fff';
-        for (const q of hs) {   // Enden rund, Kasten-Griffe eckig
+        for (const q of hs) {   // Enden rund, Kasten-Griffe und Nebenachse eckig
           ctx.beginPath(); if (typeof q.k === 'number') ctx.arc(q.x, q.y, 4.5 * px, 0, 7); else ctx.rect(q.x - 4 * px, q.y - 4 * px, 8 * px, 8 * px);
           ctx.fill(); ctx.stroke();
         }
@@ -1668,9 +1777,11 @@ function annotBox(a, g) {
   const P = a.p.map(q => g.toFig(q[0], q[1])), xs = P.map(p => p[0]), ys = P.map(p => p[1]);
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
 }
-// Griffe der gewählten Annotation: Pfeil/Linie an beiden Enden (k = 0/1), Rechteck/Ellipse an Ecken und Kantenmitten (k = 'nw' …)
+// Griffe der gewählten Annotation: Pfeil/Linie/Strecke an beiden Enden (k = 0/1), Rechteck/Ellipse an Ecken und Kantenmitten (k = 'nw' …),
+// Mess-Ellipse an den Enden der Achse (0/1) und der Nebenachse (k = 'm')
 function annotHandles(a, g) {
-  if (a.type === 'arrow' || a.type === 'line') return a.p.map((q, k) => { const [x, y] = g.toFig(q[0], q[1]); return { k, x, y }; });
+  if (a.type === 'mell') { const G = measGeo(a, g); return [{ k: 0, x: G.A[0], y: G.A[1] }, { k: 1, x: G.B[0], y: G.B[1] }, ...[1, -1].map(s => ({ k: 'm', x: G.C[0] + s * G.n[0] * G.rb, y: G.C[1] + s * G.n[1] * G.rb }))]; }
+  if (isLineLike(a)) return a.p.map((q, k) => { const [x, y] = g.toFig(q[0], q[1]); return { k, x, y }; });
   if (a.type !== 'rect' && a.type !== 'ellipse') return [];
   const b = annotBox(a, g), R = { x: b[0], y: b[1], w: b[2], h: b[3] };
   return HANDLES.map(k => { const [x, y] = handlePos(R, k); return { k, x, y }; });
@@ -1680,7 +1791,8 @@ function hitAnnotHandle(pt) {
   const p = selP(), h = p && hitOf(p.id), a = p && p.annots.find(x => x.id === selItem.id);
   if (!a || !h || !h.g) return null;
   const tol = 7 / zoom, hd = annotHandles(a, h.g).find(q => Math.abs(pt.x - q.x) < tol && Math.abs(pt.y - q.y) < tol);
-  return hd ? { p, a, g: h.g, k: hd.k } : null;
+  if (hd) return { p, a, g: h.g, k: hd.k };
+  return isMeas(a) && inMeasLabel(a, pt) ? { p, a, g: h.g, k: 'lbl' } : null;
 }
 const RESIZE_CUR = { n: 'ns', s: 'ns', e: 'ew', w: 'ew', nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw' };
 
@@ -1703,9 +1815,11 @@ function hitAnnot(pt) {
     if (!h.g || !inR(pt, h.R)) continue;
     const p = panelById(h.id);
     for (const a of [...p.annots].reverse()) {
+      if (isMeas(a) && inMeasLabel(a, pt, tol / 2)) return { p, a, lbl: true };
+      if (a.type === 'mell') { const G = measGeo(a, h.g); if (ellRho(G, [pt.x, pt.y]) <= 1 + tol / Math.min(G.ra, G.rb)) return { p, a }; continue; }
       const P = a.p.map(q => h.g.toFig(q[0], q[1])), b = annotBox(a, h.g);
-      if ((a.type === 'arrow' || a.type === 'line') && segDist(pt, P[0], P[1]) < tol + sv('anW', a, p) * PT) return { p, a };
-      if (a.type !== 'arrow' && a.type !== 'line' && inR(pt, { x: b[0], y: b[1], w: b[2], h: b[3] }, tol)) return { p, a };
+      if (isLineLike(a) && segDist(pt, P[0], P[1]) < tol + sv('anW', a, p) * PT) return { p, a };
+      if (!isLineLike(a) && inR(pt, { x: b[0], y: b[1], w: b[2], h: b[3] }, tol)) return { p, a };
     }
   }
   return null;
@@ -1880,7 +1994,7 @@ cv.addEventListener('pointerdown', e => {
   try { cv.setPointerCapture(e.pointerId); } catch { }
   if (mode === 'reg') { regClick(pt); return; }
   const an = hitAnnotHandle(pt);   // Griff der gewählten Annotation hat in jedem Werkzeug Vorrang
-  if (an) { drag = { t: 'anode', p: an.p, a: an.a, g: an.g, k: an.k, pt0: pt, P0: an.a.p.map(q => an.g.toFig(q[0], q[1])) }; return; }
+  if (an) { drag = { t: 'anode', p: an.p, a: an.a, g: an.g, k: an.k, pt0: pt, P0: an.a.p.map(q => an.g.toFig(q[0], q[1])), t0: an.a.t ?? T_DEF[an.a.type] }; return; }
   const sp = selP(), sh = sp && hitOf(sp.id);
   if (mode === 'layout') {
     if (sp && sh) for (const hd of HANDLES) { const [x, y] = handlePos(sh.R, hd); if (Math.abs(pt.x - x) < tol && Math.abs(pt.y - y) < tol) { drag = { t: 'resize', p: sp, hd, R0: { ...sh.R }, pt0: pt, g0: sh.g, z0: sp.zoom, cx0: sp.cx, cy0: sp.cy, mz0: S.magZoom }; return; } }
@@ -1925,7 +2039,8 @@ cv.addEventListener('pointerdown', e => {
   const h = hitPanel(pt);
   if (mode === 'annot' && atool === 'select') {
     const ha = hitAnnot(pt);
-    if (ha) { select(ha.p.id, { kind: 'annot', id: ha.a.id }); drag = { t: 'amove', p: ha.p, a: ha.a, g: hitOf(ha.p.id).g, pt0: pt, p0: ha.a.p.map(q => q.slice()) }; }
+    if (ha) { select(ha.p.id, { kind: 'annot', id: ha.a.id }); const g = hitOf(ha.p.id).g;
+      drag = ha.lbl ? { t: 'anode', k: 'lbl', p: ha.p, a: ha.a, g, pt0: pt, t0: ha.a.t ?? T_DEF[ha.a.type] } : { t: 'amove', p: ha.p, a: ha.a, g, pt0: pt, p0: ha.a.p.map(q => q.slice()) }; }
     else if (h) select(h.id); else select(null);
     return;
   }
@@ -1952,6 +2067,7 @@ cv.addEventListener('pointerdown', e => {
     const a = { id: uid(), type: atool, p: [ip, ip.slice()], st: {} };   // Stil kommt aus dem Standard (folgt ihm auch später)
     p.annots.push(a); selItem = { kind: 'annot', id: a.id };
     drag = { t: 'acreate', p, a, g, pt0: pt };
+    if (isMeas(a) && !(ST.imgs[p.img] || {}).mpp) toast('Bild nicht kalibriert – Messwert in Pixeln (Werkzeug „⟷ Maßstab“ kalibriert)');
     return;
   }
   if (mode === 'inset') {
@@ -2051,6 +2167,11 @@ cv.addEventListener('pointermove', e => {
     }
     case 'amove': d.a.p = d.p0.map(q => [q[0] + dx / d.g.s, q[1] + dy / d.g.s]); break;
     case 'anode': {
+      if (d.k === 'lbl') { dragMeasLabel(d, pt, e.shiftKey); break; }
+      if (d.k === 'm') {   // Nebenachse der Mess-Ellipse; Shift = Kreis
+        const G = measGeo(d.a, d.g), dist = Math.abs((pt.x - G.C[0]) * G.n[0] + (pt.y - G.C[1]) * G.n[1]);
+        d.a.r = e.shiftKey ? 1 : Math.max(0.02, dist / G.ra); break;
+      }
       const P = d.P0, toI = q => d.g.toImg(q[0], q[1]);
       if (typeof d.k === 'number') {   // Ende eines Pfeils/einer Linie; Shift = in 45°-Schritten um das andere Ende
         const o = P[1 - d.k]; let q = [pt.x, pt.y];
@@ -2126,7 +2247,7 @@ cv.addEventListener('pointerup', e => {
 function hover(pt) {
   if (spaceDown) { cv.style.cursor = 'grab'; return; }
   const an = hitAnnotHandle(pt);
-  if (an) { cv.style.cursor = typeof an.k === 'number' ? 'crosshair' : RESIZE_CUR[an.k] + '-resize'; return; }
+  if (an) { cv.style.cursor = typeof an.k === 'number' || an.k === 'm' ? 'crosshair' : an.k === 'lbl' ? 'move' : RESIZE_CUR[an.k] + '-resize'; return; }
   if (mode !== 'layout') { cv.style.cursor = modeCursor(); return; }
   const sp = selP(), sh = sp && hitOf(sp.id), tol = 7 / zoom;
   let cur = 'default';
@@ -2491,7 +2612,7 @@ function movePanel(i, j) { const [p] = ST.panels.splice(i, 1); ST.panels.splice(
 /* ---------- Seitenleiste: ausgewählter Platzhalter ---------- */
 const CORNERS = { ul: 'oben links', uc: 'oben Mitte', ur: 'oben rechts', ll: 'unten links', lc: 'unten Mitte', lr: 'unten rechts' };
 const optList = (o, cur) => Object.entries(o).map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
-const ANAME = { arrow: 'Pfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text' };
+const ANAME = { arrow: 'Pfeil', line: 'Linie', rect: 'Rechteck', ellipse: 'Ellipse', text: 'Text', mline: 'Strecke', mell: 'Kreis/Ellipse' };
 
 /* ---------- Stil-Tabelle: eine Quelle für links (Standard, data-k) und rechts (nur die Auswahl, el.st) ----------
    F: Eingabefeld je Schlüssel. KIND: Zeilen je Elementart; das optionale dritte Feld blendet eine Zeile rechts je nach Element aus. */
@@ -2504,18 +2625,24 @@ const F = {
   frameOn: ['chk', 'Rahmen um die Platzhalter'], frameColor: ['color'], frameW: ['num', 0.25, 0], panelBg: ['color'], panelBgOff: ['chk', 'durchsichtig'],
   txtSize: ['num', 0.5, 3], txtColor: ['color'], txtBold: ['chk', 'fett'],
   anColor: ['color'], anW: ['num', 0.25, 0.25], anDash: ['sel', ADASH_LABEL], anCap: ['sel', { round: 'rund', butt: 'eckig' }], anSize: ['num', 0.5, 3], anBold: ['chk', 'fett'],
+  anEnds: ['sel', { arrows: 'Doppelpfeil', arrow: 'Pfeil', ticks: 'Endstriche', none: 'ohne' }], anMVal: ['sel', { d: 'Durchmesser', area: 'Fläche', both: 'beides' }], anMAxes: ['chk', 'Achsen'],
+  anLblColor: ['color'], anLblSame: ['chk', 'wie Linie'], anMRot: ['sel', { along: 'entlang der Linie', horiz: 'waagerecht' }], anLblGap: ['num', 0.5, 0],
+  anMUnit: ['sel', { auto: 'automatisch', ...Object.fromEntries(SB_UNITS.map(x => [x[0], x[0]])) }], anMDec: ['sel', MDEC],
   insSize: ['num', 0.05, 0.05, 0.95], insColor: ['color'], insW: ['num', 0.25, 0],
   lblPad: ['num', 0.5, 0], sbPad: ['num', 0.5, 0], txtPad: ['num', 0.5, 0], insPad: ['num', 0.5, 0],
 };
 for (const b of ['lbl', 'sb', 'txt', 'an']) Object.assign(F, { [b + 'Box']: ['sel', { none: 'keine', box: 'Kasten' }], [b + 'BoxColor']: ['color'], [b + 'BoxAlpha']: ['num', 0.1, 0, 1], [b + 'BoxStroke']: ['color'], [b + 'BoxSW']: ['num', 0.25, 0] });
 const boxRows = (b, when) => [['Kasten / Deckkraft', [b + 'Box', b + 'BoxColor', b + 'BoxAlpha'], when], ['Kastenrand Farbe / Breite (pt)', [b + 'BoxStroke', b + 'BoxSW'], when]];
-const isText = a => a.type === 'text', notText = a => a.type !== 'text';
+const isText = a => a.type === 'text', notText = a => a.type !== 'text', hasLbl = a => a.type === 'text' || isMeas(a);
 const KIND = {
   lbl: { name: 'Label', many: 'Platzhaltern', rows: [['Größe (pt) / Farbe', ['lblSize', 'lblColor']], ['Schrift', ['lblBold', 'lblItalic']], ...boxRows('lbl'), ['Ecke / Abstand zum Rand (pt)', ['lblCorner', 'lblPad']]] },
   sb: { name: 'Maßstabsbalken', many: 'Platzhaltern', rows: [['Farbe / Dicke (pt)', ['sbColor', 'sbW']], ['Schrift (pt)', ['sbSize', 'sbBold']], ['Beschriftung', ['sbText']], ['Enden', ['sbEnds']], ...boxRows('sb'), ['Ecke / Abstand zum Rand (pt)', ['sbCorner', 'sbPad']]] },
   frame: { name: 'Rahmen & Bildfläche', many: 'Platzhaltern', rows: [['', ['frameOn']], ['Rahmen Farbe / Breite (pt)', ['frameColor', 'frameW']], ['Hintergrund leerer Bildflächen', ['panelBg', 'panelBgOff']]] },
   txt: { name: 'Textfeld', many: 'Textfeldern', rows: [['Größe (pt) / Farbe', ['txtSize', 'txtColor', 'txtBold']], ...boxRows('txt'), ['Abstand zum Rand (pt)', ['txtPad']]] },
-  an: { name: 'Annotation', many: 'Annotationen', rows: [['Farbe', ['anColor']], ['Linie (pt) / Stil / Enden', ['anW', 'anDash', 'anCap'], notText], ['Schrift (pt)', ['anSize', 'anBold'], isText], ...boxRows('an', isText)] },
+  an: { name: 'Annotation', many: 'Annotationen', rows: [['Farbe', ['anColor']], ['Linie (pt) / Stil / Enden', ['anW', 'anDash', 'anCap'], notText],
+    ['Messstrecke: Enden', ['anEnds'], a => a.type === 'mline'], ['Messellipse: Wert', ['anMVal', 'anMAxes'], a => a.type === 'mell'],
+    ['Schrift (pt)', ['anSize', 'anBold'], hasLbl], ['Messtext Farbe', ['anLblColor', 'anLblSame'], isMeas], ['Messtext Richtung', ['anMRot'], a => a.type === 'mline'],
+    ['Messtext Abstand (pt)', ['anLblGap'], isMeas], ['Einheit / Genauigkeit', ['anMUnit', 'anMDec'], isMeas], ...boxRows('an', hasLbl)] },
   ins: { name: 'Inset', many: 'Insets', rows: [['Größe (Anteil der Breite)', ['insSize']], ['Rahmen Farbe / Breite (pt)', ['insColor', 'insW']], ['Abstand zum Rand (pt)', ['insPad']]] },
 };
 const kindKeys = kind => KIND[kind].rows.flatMap(r => r[1]);
@@ -2621,14 +2748,25 @@ function buildProps() {
   if (im) {
     h += `<div class="sub">Annotationen</div>`;
     const a = selItem && selItem.kind === 'annot' && p.annots.find(x => x.id === selItem.id);
-    if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : ''}</button>`).join('')}</div>`;
+    if (p.annots.length) h += `<div class="btns">${p.annots.map(x => `<button class="mini${a && a.id === x.id ? ' on' : ''}" data-act="asel" data-id="${x.id}">${ANAME[x.type]}${x.type === 'text' ? ': ' + esc(x.text.slice(0, 12)) : isMeas(x) ? ': ' + esc(measText(x, p, svOf(x, p)).split('\n')[0]) : ''}</button>`).join('')}</div>`;
     if (a) h += `<div class="card"><div class="row"><b>${ANAME[a.type]}</b><span style="flex:1"></span><button class="mini" data-act="adel">✕</button></div>` +
-      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea>` : '') + styBlock('an', ['an'], a, p) + '</div>';
-    h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit. Eine ausgewählte Annotation lässt sich an ihren Griffen umformen: Pfeil und Linie an den Enden (Shift = 45°-Schritte), Rechteck und Ellipse an Ecken und Kanten (Shift = Seitenverhältnis halten).</p>`;
+      (a.type === 'text' ? `<textarea data-b="an:text">${esc(a.text)}</textarea>` : '') + (isMeas(a) ? measPropsHTML(a, p) : '') + styBlock('an', ['an'], a, p) + '</div>';
+    h += `<p class="hint">Werkzeug „✎ Annotation“ (A) wählen: Pfeil, Linie, Rechteck, Ellipse oder Text. Shift = gerade/rund. Annotationen hängen am Bild und wandern beim Verschieben mit. Eine ausgewählte Annotation lässt sich an ihren Griffen umformen: Pfeil und Linie an den Enden (Shift = 45°-Schritte), Rechteck und Ellipse an Ecken und Kanten (Shift = Seitenverhältnis halten). Messen: 📏 Strecke, ⌀ Pore (über den Durchmesser ziehen; seitliche Griffe = Ellipse, Shift = Kreis); die Beschriftung im Bild entlang ziehen, über die Linie hinweg wechselt die Seite.</p>`;
   }
   h += `<div class="btns" style="margin-top:10px"><button data-act="dup">Duplizieren</button><button data-act="pdel">Platzhalter entfernen</button></div>`;
   box.innerHTML = h;
   bindProps(box, p);
+}
+// Messung: Wert, eigener Text, Seite und Lage der Beschriftung
+function measPropsHTML(a, p) {
+  const g = geom(p), G = g && measGeo(a, g), side = a.side === 'b' ? 1 : 0, t = a.t ?? T_DEF[a.type], ell = a.type === 'mell';
+  const sides = ell ? ['außen', 'innen'] : G && !G.horiz ? ['links', 'rechts'] : ['oben', 'unten'];
+  return `<div class="row"><span>Messwert</span><b>${esc(measText(a, p, svOf(a, p)).replace('\n', ' · '))}</b></div>
+    ${(ST.imgs[p.img] || {}).mpp ? '' : '<p class="hint">Bild nicht kalibriert – Werte in Pixeln.</p>'}
+    <div class="row"><span>Text</span><input data-b="an:text" value="${esc(a.text || '')}" placeholder="Messwert" title="Eigener Text statt des Messwerts; {} setzt den Messwert ein, z. B. d = {}" style="width:130px"></div>
+    <div class="row"><span>Seite</span><span class="seg">${sides.map((l, i) => `<button class="mini${side === i ? ' on' : ''}" data-act="aside" data-v="${i ? 'b' : 'a'}">${l}</button>`).join('')}</span>${ell && Math.abs((a.r ?? 1) - 1) > 1e-3 ? '<button class="mini" data-act="acirc" title="Nebenachse gleich der Hauptachse">◯ Kreis</button>' : ''}</div>
+    <div class="row"><span>${ell ? 'Lage rundherum' : 'Lage entlang'}</span><input type="range" min="${ell ? 0 : -0.5}" max="${ell ? 1 : 1.5}" step="0.01" data-b="an:t" value="${t}" style="flex:1.4"></div>
+    <p class="hint">Text: leer = Messwert; {} setzt ihn ein, z. B. „d = {}“.</p>`;
 }
 // Bildanpassung (Helligkeit, Kontrast, Gamma) und Zuschnitt – gleich für Grundbild (scope p/img) und Ebene (ly/limg)
 function adjHTML(sc, a, extra) {
@@ -2830,6 +2968,7 @@ async function propAction(a, p, b, ev) {
     case 'idel': p.insets.splice(i, 1); break;
     case 'asel': selItem = { kind: 'annot', id: b.dataset.id }; break;
     case 'adel': p.annots = p.annots.filter(x => !selItem || x.id !== selItem.id); selItem = null; break;
+    case 'aside': case 'acirc': { const an = p.annots.find(x => selItem && x.id === selItem.id); if (!an) return; if (a === 'aside') an.side = b.dataset.v; else an.r = 1; break; }
     // ↺ eigene Werte der Zeile entfernen · ⇧ als Standard übernehmen · 📌 Element fixieren bzw. lösen
     case 'sreset': case 'sstd': {
       const el = scopeObj(p, b.closest('[data-el]').dataset.el), keys = b.closest('.row').dataset.keys.split(',');
