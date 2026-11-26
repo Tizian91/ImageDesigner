@@ -1221,7 +1221,7 @@ const isMeas = a => a.type === 'mline' || a.type === 'mell';
 const isLineLike = a => a.type === 'arrow' || a.type === 'line' || a.type === 'mline';
 const T_DEF = { mline: 0.5, mell: 0.875 };
 const MEAS_BB = new WeakMap();   // Annotation → { c, w, h, rot } der Beschriftung (für Auswahl und Ziehen)
-const MDEC = { s3: '3 Stellen', d0: 'ganze Zahl', d1: '1 Nachkommastelle', d2: '2 Nachkommastellen', d3: '3 Nachkommastellen' };
+const MDEC = { s3: 'automatisch (3 gültige Ziffern)', d0: '0', d1: '1', d2: '2', d3: '3' };
 const fmtNum = (x, dec) => (dec && dec[0] === 'd' ? x.toFixed(+dec.slice(1)) : String(+x.toPrecision(3))).replace('.', ',');
 // Messwert in der Kalibrierung des Grundbilds; ohne Kalibrierung in Pixeln
 function measText(a, p, v) {
@@ -2639,10 +2639,10 @@ const KIND = {
   sb: { name: 'Maßstabsbalken', many: 'Platzhaltern', rows: [['Farbe / Dicke (pt)', ['sbColor', 'sbW']], ['Schrift (pt)', ['sbSize', 'sbBold']], ['Beschriftung', ['sbText']], ['Enden', ['sbEnds']], ...boxRows('sb'), ['Ecke / Abstand zum Rand (pt)', ['sbCorner', 'sbPad']]] },
   frame: { name: 'Rahmen & Bildfläche', many: 'Platzhaltern', rows: [['', ['frameOn']], ['Rahmen Farbe / Breite (pt)', ['frameColor', 'frameW']], ['Hintergrund leerer Bildflächen', ['panelBg', 'panelBgOff']]] },
   txt: { name: 'Textfeld', many: 'Textfeldern', rows: [['Größe (pt) / Farbe', ['txtSize', 'txtColor', 'txtBold']], ...boxRows('txt'), ['Abstand zum Rand (pt)', ['txtPad']]] },
-  an: { name: 'Annotation', many: 'Annotationen', rows: [['Farbe', ['anColor']], ['Linie (pt) / Stil / Enden', ['anW', 'anDash', 'anCap'], notText],
+  an: { name: 'Annotation', many: 'Annotationen', rows: [['Farbe', ['anColor']], ['Messwert: Einheit / Nachkommastellen', ['anMUnit', 'anMDec'], isMeas],['Linie (pt) / Stil / Enden', ['anW', 'anDash', 'anCap'], notText],
     ['Messstrecke: Enden', ['anEnds'], a => a.type === 'mline'], ['Messellipse: Wert', ['anMVal', 'anMAxes'], a => a.type === 'mell'],
     ['Schrift (pt)', ['anSize', 'anBold'], hasLbl], ['Messtext Farbe', ['anLblColor', 'anLblSame'], isMeas], ['Messtext Richtung', ['anMRot'], a => a.type === 'mline'],
-    ['Messtext Abstand (pt)', ['anLblGap'], isMeas], ['Einheit / Genauigkeit', ['anMUnit', 'anMDec'], isMeas], ...boxRows('an', hasLbl)] },
+    ['Messtext Abstand (pt)', ['anLblGap'], isMeas], ...boxRows('an', hasLbl)] },
   ins: { name: 'Inset', many: 'Insets', rows: [['Größe (Anteil der Breite)', ['insSize']], ['Rahmen Farbe / Breite (pt)', ['insColor', 'insW']], ['Abstand zum Rand (pt)', ['insPad']]] },
 };
 const kindKeys = kind => KIND[kind].rows.flatMap(r => r[1]);
